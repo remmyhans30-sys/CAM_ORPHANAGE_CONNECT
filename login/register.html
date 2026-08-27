@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Register - CAM Orphanage</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <div class="photo-grid">
+            <img src="images/photo1.jpg" alt="">
+            <img src="images/photo2.jpg" alt="">
+            <img src="images/photo3.jpg" alt="">
+            <img src="images/photo4.jpg" alt="">
+            <img src="images/photo5.jpg" alt="">
+            <img src="images/photo6.jpg" alt="">
+            <img src="images/photo7.jpg" alt="">
+            <img src="images/photo8.jpg" alt="">
+        </div>
+        <div class="overlay"></div>
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <div class="brand">
+                    <img src="logo.png" alt="CAM Orphanage" class="logo" onerror="this.style.display='none'">
+                    <h1>CAM Orphanage</h1>
+                    <p class="subtitle">Create an account to get started</p>
+                </div>
+                <form class="register-form" novalidate>
+                    <div class="input-group">
+                        <label for="fullname">Full Name</label>
+                        <input type="text" id="fullname" name="fullname" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Create a password" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirm-password">Confirm Password</label>
+                        <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+                    </div>
+                    <div class="input-group">
+                        <label>I am registering as:</label>
+                           <div class="role-option">
+                            <label class="role-choice"></label>
+                            <input type="radio" id="admin" name="role" value="admin" required>
+                            Admin
+                        </label>
+                        <label class="role-choice">
+                            <input type="radio" id="user" name="role" value="user" required>
+                            Donor
+                        </label>
+                        <label class="role-choice">
+                            <input type="radio" id="volunteer" name="role" value="volunteer" required>
+                            Orphanage
+                        </label>    
+                    </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Create Account</button>
+                    <p class="back-link">Already have an account? <a href="index.html">login</a></p>
+                </form>
+            </div>
+        </div>
+    </body>
+</html>
