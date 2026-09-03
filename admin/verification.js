@@ -53,13 +53,19 @@ function render() {
     const coverClass = COVER_CLASSES[index % COVER_CLASSES.length];
     const isVerified = orphanage.status === 'verified';
     const isPending = orphanage.status === 'pending';
+    const docCount = (orphanage.documents || []).length;
+    const hasDocs = docCount > 0;
 
     const col = document.createElement('div');
     col.className = 'col-md-6 col-lg-4';
     col.dataset.id = orphanage.id;
 
+    const docsLine = hasDocs
+      ? '<p class="profile-docs">' + docCount + ' document' + (docCount === 1 ? '' : 's') + ' uploaded</p>'
+      : '<p class="profile-docs profile-docs-missing">No verification documents uploaded</p>';
+
     const actions = isPending
-      ? '<button class="btn btn-admin-primary btn-sm approve-btn">Approve</button>' +
+      ? '<button class="btn btn-admin-primary btn-sm approve-btn"' + (hasDocs ? '' : ' disabled title="Upload verification documents before approving"') + '>Approve</button>' +
         '<button class="btn btn-admin-danger btn-sm reject-btn">Reject</button>'
       : '<button class="btn btn-admin-outline btn-sm view-btn">View full profile</button>';
 
@@ -83,6 +89,7 @@ function render() {
             '<div class="stat"><strong>' + orphanageNeeds.length + '</strong><span>Active needs</span></div>' +
             '<div class="stat"><strong>' + formatFcfa(raised) + '</strong><span>Raised</span></div>' +
           '</div>' +
+          docsLine +
           '<div class="profile-actions">' + actions + '</div>' +
         '</div>' +
       '</div>';

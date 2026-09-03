@@ -287,6 +287,19 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: 0.03em;
 }
 
+.profile-docs {
+  font-size: 0.75rem;
+  color: var(--ink);
+  opacity: 0.6;
+  margin-bottom: 0.6rem;
+}
+
+.profile-docs-missing {
+  color: var(--coral);
+  opacity: 1;
+  font-weight: 600;
+}
+
 .profile-actions {
   display: flex;
   gap: 0.5rem;
@@ -294,6 +307,11 @@ h1, h2, h3, h4, h5, h6,
 
 .profile-actions .btn {
   flex: 1;
+}
+
+.profile-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Finance view */
