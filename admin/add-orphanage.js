@@ -13,6 +13,9 @@ document.getElementById('add-orphanage-form').addEventListener('submit', functio
     childrenCount: Number(document.getElementById('orphanage-children').value) || 0,
     foundedYear: Number(document.getElementById('orphanage-founded').value) || null,
     capacity: Number(document.getElementById('orphanage-capacity').value) || 0,
+    contactName: document.getElementById('orphanage-contact-name').value.trim(),
+    contactPhone: document.getElementById('orphanage-contact-phone').value.trim(),
+    contactEmail: document.getElementById('orphanage-contact-email').value.trim(),
     documents: documentFiles.map(function (file) { return file.name; }),
   };
 

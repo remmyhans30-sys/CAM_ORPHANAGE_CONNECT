@@ -67,6 +67,22 @@
               <input type="number" class="form-control" id="orphanage-capacity" name="capacity" min="0" step="1" placeholder="e.g. 40">
             </div>
 
+            <div class="mb-3">
+              <label for="orphanage-contact-name" class="form-label">Contact person</label>
+              <input type="text" class="form-control" id="orphanage-contact-name" name="contactName" placeholder="e.g. Director's full name" required>
+            </div>
+
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label for="orphanage-contact-phone" class="form-label">Contact phone</label>
+                <input type="tel" class="form-control" id="orphanage-contact-phone" name="contactPhone" placeholder="e.g. +237 6XX XXX XXX" required>
+              </div>
+              <div class="col-6 mb-3">
+                <label for="orphanage-contact-email" class="form-label">Contact email</label>
+                <input type="email" class="form-control" id="orphanage-contact-email" name="contactEmail" placeholder="e.g. contact@orphanage.org">
+              </div>
+            </div>
+
             <div class="mb-4">
               <label for="orphanage-documents" class="form-label">Verification documents</label>
               <input type="file" class="form-control" id="orphanage-documents" name="documents" accept=".pdf,.jpg,.jpeg,.png" multiple required>
