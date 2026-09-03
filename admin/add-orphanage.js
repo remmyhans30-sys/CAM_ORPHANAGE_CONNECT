@@ -11,6 +11,8 @@ document.getElementById('add-orphanage-form').addEventListener('submit', functio
     story: document.getElementById('orphanage-story').value.trim(),
     status: document.getElementById('orphanage-status').value,
     childrenCount: Number(document.getElementById('orphanage-children').value) || 0,
+    foundedYear: Number(document.getElementById('orphanage-founded').value) || null,
+    capacity: Number(document.getElementById('orphanage-capacity').value) || 0,
     documents: documentFiles.map(function (file) { return file.name; }),
   };
 

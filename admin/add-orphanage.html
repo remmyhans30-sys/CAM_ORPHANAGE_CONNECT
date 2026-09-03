@@ -51,9 +51,20 @@
               <input type="file" class="form-control" id="orphanage-photo" name="photo" accept="image/*">
             </div>
 
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label for="orphanage-children" class="form-label">Number of children</label>
+                <input type="number" class="form-control" id="orphanage-children" name="childrenCount" min="0" step="1" placeholder="e.g. 24">
+              </div>
+              <div class="col-6 mb-3">
+                <label for="orphanage-founded" class="form-label">Founding year</label>
+                <input type="number" class="form-control" id="orphanage-founded" name="foundedYear" min="1900" max="2026" step="1" placeholder="e.g. 2010">
+              </div>
+            </div>
+
             <div class="mb-3">
-              <label for="orphanage-children" class="form-label">Number of children</label>
-              <input type="number" class="form-control" id="orphanage-children" name="childrenCount" min="0" step="1" placeholder="e.g. 24">
+              <label for="orphanage-capacity" class="form-label">Capacity</label>
+              <input type="number" class="form-control" id="orphanage-capacity" name="capacity" min="0" step="1" placeholder="e.g. 40">
             </div>
 
             <div class="mb-4">
