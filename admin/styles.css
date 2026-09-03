@@ -163,3 +163,23 @@ h1, h2, h3, h4, h5, h6,
   gap: 0.4rem;
   margin-top: 0.75rem;
 }
+
+/* Finance view */
+.finance-need-row {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--section-bg);
+}
+
+.finance-need-row:last-child {
+  border-bottom: none;
+}
+
+.finance-progress {
+  height: 8px;
+  border-radius: 100px;
+  background-color: var(--section-bg);
+}
+
+.finance-progress .progress-bar {
+  background-color: var(--teal);
+}
