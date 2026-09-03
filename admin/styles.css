@@ -1,11 +1,12 @@
 :root {
-  --ink: #221A3D;
-  --dawn-purple: #2B2250;
-  --coral: #FF6F59;
-  --gold: #FFC857;
-  --teal: #1B998B;
-  --paper: #FFF8EC;
-  --section-bg: #F4ECDA;
+  --ink: #3A3352;
+  --dawn-purple: #544C7D;
+  --coral: #D98C7F;
+  --gold: #E4C58B;
+  --teal: #5FA79A;
+  --paper: #FAF7F2;
+  --paper-dim: #F0EBE1;
+  --line: rgba(58, 51, 82, 0.12);
 }
 
 body {
@@ -41,7 +42,7 @@ h1, h2, h3, h4, h5, h6,
 .card-admin {
   border-radius: 20px;
   border: none;
-  box-shadow: 0 12px 30px rgba(34, 26, 61, 0.12);
+  box-shadow: 0 12px 30px rgba(58, 51, 82, 0.12);
 }
 
 /* Login screen */
@@ -67,18 +68,18 @@ h1, h2, h3, h4, h5, h6,
 
 .admin-login-card .form-control {
   border-radius: 12px;
-  border: 1px solid #E0D9C8;
+  border: 1px solid var(--line);
   padding: 0.65rem 0.9rem;
 }
 
 .admin-login-card .form-control:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 0.2rem rgba(27, 153, 139, 0.15);
+  box-shadow: 0 0 0 0.2rem rgba(95, 167, 154, 0.15);
 }
 
 .admin-badge {
   display: inline-block;
-  background-color: var(--section-bg);
+  background-color: var(--paper-dim);
   color: var(--dawn-purple);
   font-size: 0.75rem;
   font-weight: 600;
@@ -100,17 +101,17 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .status-badge.status-verified {
-  background-color: rgba(27, 153, 139, 0.12);
+  background-color: rgba(95, 167, 154, 0.15);
   color: var(--teal);
 }
 
 .status-badge.status-pending {
-  background-color: rgba(255, 200, 87, 0.2);
+  background-color: rgba(228, 197, 139, 0.3);
   color: #8a6a10;
 }
 
 .status-badge.status-rejected {
-  background-color: rgba(255, 111, 89, 0.15);
+  background-color: rgba(217, 140, 127, 0.18);
   color: var(--coral);
 }
 
@@ -149,7 +150,7 @@ h1, h2, h3, h4, h5, h6,
   background-color: #fff;
   border-radius: 16px;
   padding: 1rem 1.1rem;
-  box-shadow: 0 6px 16px rgba(34, 26, 61, 0.08);
+  box-shadow: 0 6px 16px rgba(58, 51, 82, 0.08);
 }
 
 .queue-card h3 {
@@ -167,7 +168,7 @@ h1, h2, h3, h4, h5, h6,
 /* Finance view */
 .finance-need-row {
   padding: 0.85rem 0;
-  border-bottom: 1px solid var(--section-bg);
+  border-bottom: 1px solid var(--paper-dim);
 }
 
 .finance-need-row:last-child {
@@ -177,7 +178,7 @@ h1, h2, h3, h4, h5, h6,
 .finance-progress {
   height: 8px;
   border-radius: 100px;
-  background-color: var(--section-bg);
+  background-color: var(--paper-dim);
 }
 
 .finance-progress .progress-bar {
