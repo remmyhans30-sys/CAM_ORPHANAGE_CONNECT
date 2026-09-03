@@ -143,3 +143,23 @@ h1, h2, h3, h4, h5, h6,
   background-color: var(--coral);
   color: #fff;
 }
+
+/* Verification queue */
+.queue-card {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 6px 16px rgba(34, 26, 61, 0.08);
+}
+
+.queue-card h3 {
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+
+.queue-card .queue-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
