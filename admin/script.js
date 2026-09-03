@@ -12,5 +12,5 @@ document.getElementById('admin-login-form').addEventListener('submit', function 
   }
 
   errorBox.classList.add('d-none');
-  window.location.href = 'orphanages.html';
+  window.location.href = 'verification.html';
 });

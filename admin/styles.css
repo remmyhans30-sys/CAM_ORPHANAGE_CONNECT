@@ -145,24 +145,155 @@ h1, h2, h3, h4, h5, h6,
   color: #fff;
 }
 
-/* Verification queue */
-.queue-card {
+/* Verification profile cards */
+.profile-card {
   background-color: #fff;
-  border-radius: 16px;
-  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  overflow: hidden;
   box-shadow: 0 6px 16px rgba(58, 51, 82, 0.08);
+  height: 100%;
 }
 
-.queue-card h3 {
-  font-size: 1rem;
-  color: var(--ink);
-  margin-bottom: 0.25rem;
+.profile-cover {
+  height: 80px;
+  position: relative;
 }
 
-.queue-card .queue-actions {
+.profile-cover.p1 { background: linear-gradient(135deg, #D98C7F, #E4C58B); }
+.profile-cover.p2 { background: linear-gradient(135deg, #5FA79A, #544C7D); }
+.profile-cover.p3 { background: linear-gradient(135deg, #E4C58B, #5FA79A); }
+.profile-cover.p4 { background: linear-gradient(135deg, #544C7D, #D98C7F); }
+.profile-cover.p5 { background: linear-gradient(135deg, #a89fb0, #3A3352); }
+
+.profile-status-chip {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background-color: rgba(255, 255, 255, 0.88);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  border-radius: 100px;
+  padding: 0.2rem 0.7rem;
+}
+
+.profile-status-chip.status-verified { color: var(--teal); }
+.profile-status-chip.status-pending { color: #8a6a10; }
+.profile-status-chip.status-rejected { color: var(--coral); }
+
+.profile-body {
+  padding: 0 1.25rem 1.25rem;
+  text-align: center;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin: -36px auto 0.75rem;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: var(--dawn-purple);
+  color: #fff;
+  border: 3px solid #fff;
   display: flex;
-  gap: 0.4rem;
-  margin-top: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.verify-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #3897F0;
+  border: 2.5px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verify-badge svg {
+  width: 11px;
+  height: 11px;
+}
+
+.profile-name {
+  font-size: 1.05rem;
+  margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.verify-check-inline {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #3897F0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.verify-check-inline svg {
+  width: 9px;
+  height: 9px;
+}
+
+.profile-location {
+  color: var(--ink);
+  opacity: 0.65;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 0;
+  margin-bottom: 1rem;
+}
+
+.profile-stats .stat {
+  flex: 1;
+}
+
+.profile-stats .stat strong {
+  display: block;
+  font-family: 'Baloo 2', sans-serif;
+  color: var(--dawn-purple);
+  font-size: 0.95rem;
+}
+
+.profile-stats .stat span {
+  font-size: 0.7rem;
+  color: var(--ink);
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.profile-actions .btn {
+  flex: 1;
 }
 
 /* Finance view */
