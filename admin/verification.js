@@ -67,9 +67,8 @@ function render() {
       : '<p class="profile-docs profile-docs-missing">No verification documents uploaded</p>';
 
     const actions = isPending
-      ? '<button class="btn btn-admin-primary btn-sm approve-btn"' + (hasDocs ? '' : ' disabled title="Upload verification documents before approving"') + '>Approve</button>' +
-        '<button class="btn btn-admin-danger btn-sm reject-btn">Reject</button>'
-      : '<button class="btn btn-admin-outline btn-sm view-btn">View full profile</button>';
+      ? '<button class="btn btn-admin-primary btn-sm review-btn">Review &amp; decide</button>'
+      : '<button class="btn btn-admin-outline btn-sm review-btn">View full profile</button>';
 
     const coverAttrs = hasCoverPhoto
       ? ' style="background-image: url(\'' + encodeURI(orphanage.coverPhotoUrl) + '\')"'
@@ -108,28 +107,223 @@ function render() {
   });
 }
 
-document.getElementById('profile-grid').addEventListener('click', function (e) {
-  const col = e.target.closest('[data-id]');
-  if (!col) return;
-  const id = Number(col.dataset.id);
+function seedSampleData() {
+  const sampleOrphanages = [
+    {
+      id: 1,
+      name: "Hope Children's Home",
+      location: 'Buea, Southwest Region',
+      registrationNumber: 'MINAS/2022/00123',
+      story: 'A home for children in Buea providing shelter, education, and care since 2012.',
+      status: 'verified',
+      childrenCount: 32,
+      foundedYear: 2012,
+      capacity: 40,
+      contactName: 'Grace Ebong',
+      contactPhone: '+237 677 123 456',
+      contactEmail: 'contact@hopechildrenshome.org',
+      documents: ['registration-certificate.pdf', 'director-id.pdf'],
+      photoUrl: 'https://picsum.photos/seed/hope-avatar/200/200',
+      coverPhotoUrl: 'https://picsum.photos/seed/hope-cover/600/200',
+    },
+    {
+      id: 2,
+      name: "Foyer de l'Espérance",
+      location: 'Yaoundé, Centre Region',
+      registrationNumber: 'MINAS/2023/00456',
+      story: "Un foyer pour enfants à Yaoundé offrant un abri sûr et un accompagnement scolaire.",
+      status: 'pending',
+      childrenCount: 18,
+      foundedYear: 2019,
+      capacity: 25,
+      contactName: 'Jean-Paul Mbarga',
+      contactPhone: '+237 699 234 567',
+      contactEmail: 'contact@foyerdelesperance.org',
+      documents: [],
+    },
+    {
+      id: 3,
+      name: 'Grace Orphanage',
+      location: 'Bamenda, Northwest Region',
+      registrationNumber: 'MINAS/2021/00789',
+      story: 'Serving vulnerable children in Bamenda with housing, meals, and schooling support.',
+      status: 'verified',
+      childrenCount: 27,
+      foundedYear: 2015,
+      capacity: 35,
+      contactName: 'Comfort Ngwa',
+      contactPhone: '+237 675 345 678',
+      contactEmail: 'contact@graceorphanage.org',
+      documents: ['registration-certificate.pdf'],
+      photoUrl: 'https://picsum.photos/seed/grace-avatar/200/200',
+    },
+    {
+      id: 4,
+      name: 'Orphelinat Bethel',
+      location: 'Douala, Littoral Region',
+      registrationNumber: 'MINAS/2020/00234',
+      story: "Un orphelinat à Douala qui accueille des enfants depuis 2008.",
+      status: 'rejected',
+      childrenCount: 15,
+      foundedYear: 2008,
+      capacity: 20,
+      contactName: 'Marie Fotso',
+      contactPhone: '+237 655 456 789',
+      contactEmail: 'contact@orphelinatbethel.org',
+      documents: ['registration-certificate.pdf'],
+    },
+    {
+      id: 5,
+      name: 'Little Angels Home',
+      location: 'Limbe, Southwest Region',
+      registrationNumber: 'MINAS/2024/00567',
+      story: 'A newly registered home in Limbe caring for orphaned and abandoned children.',
+      status: 'pending',
+      childrenCount: 12,
+      foundedYear: 2023,
+      capacity: 20,
+      contactName: 'Peter Ekema',
+      contactPhone: '+237 680 567 890',
+      contactEmail: 'contact@littleangelshome.org',
+      documents: ['registration-certificate.pdf', 'proof-of-address.pdf'],
+      photoUrl: 'https://picsum.photos/seed/angels-avatar/200/200',
+      coverPhotoUrl: 'https://picsum.photos/seed/angels-cover/600/200',
+    },
+  ];
+
+  const sampleNeeds = [
+    { title: 'New dormitory beds', raised: 320000, goal: 500000, percent: 64, orphanageId: 1 },
+    { title: 'School fees for 10 children', raised: 150000, goal: 400000, percent: 38, orphanageId: 1 },
+    { title: "Fournitures scolaires", raised: 60000, goal: 200000, percent: 30, orphanageId: 2 },
+    { title: 'Kitchen renovation', raised: 480000, goal: 480000, percent: 100, orphanageId: 3 },
+    { title: 'Water borehole', raised: 90000, goal: 600000, percent: 15, orphanageId: 5 },
+  ];
+
+  localStorage.setItem('orphanages', JSON.stringify(sampleOrphanages));
+  localStorage.setItem('needs', JSON.stringify(sampleNeeds));
+  render();
+}
+
+function clearAllData() {
+  if (!confirm('Clear all orphanages and needs data? This cannot be undone.')) return;
+  localStorage.removeItem('orphanages');
+  localStorage.removeItem('needs');
+  render();
+}
+
+document.getElementById('seed-btn').addEventListener('click', seedSampleData);
+document.getElementById('clear-btn').addEventListener('click', clearAllData);
+
+const profileModalEl = document.getElementById('profile-modal');
+const profileModal = new bootstrap.Modal(profileModalEl);
+let activeOrphanageId = null;
+
+function buildModalBody(orphanage, orphanageNeeds, raised) {
+  const docs = orphanage.documents || [];
+  const docsList = docs.length
+    ? '<ul class="mb-0">' + docs.map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
+    : '<p class="profile-docs-missing mb-0">No verification documents uploaded</p>';
+
+  const needsList = orphanageNeeds.length
+    ? '<ul class="mb-0">' + orphanageNeeds.map(function (n) {
+        return '<li>' + escapeHtml(n.title) + ' &mdash; ' + formatFcfa(n.raised) + ' of ' + formatFcfa(n.goal) + '</li>';
+      }).join('') + '</ul>'
+    : '<p class="text-muted mb-0">No active needs.</p>';
+
+  return (
+    '<div class="row g-4">' +
+      '<div class="col-sm-4 text-center">' +
+        '<div class="avatar-wrap" style="margin: 0 auto 0.75rem;">' +
+          '<div class="avatar' + (orphanage.photoUrl ? ' has-photo' : '') + '" style="width:96px;height:96px;">' +
+            (orphanage.photoUrl ? '<img src="' + encodeURI(orphanage.photoUrl) + '" alt="">' : initials(orphanage.name)) +
+          '</div>' +
+          (orphanage.status === 'verified' ? '<span class="verify-badge" title="Verified">' + CHECK_SVG + '</span>' : '') +
+        '</div>' +
+        '<span class="status-badge status-' + orphanage.status + '">' + orphanage.status + '</span>' +
+      '</div>' +
+      '<div class="col-sm-8">' +
+        '<dl class="row mb-0 small">' +
+          '<dt class="col-5">Location</dt><dd class="col-7">' + escapeHtml(orphanage.location) + '</dd>' +
+          '<dt class="col-5">Registration #</dt><dd class="col-7">' + escapeHtml(orphanage.registrationNumber || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Founded</dt><dd class="col-7">' + (orphanage.foundedYear || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Capacity</dt><dd class="col-7">' + (orphanage.capacity || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Children</dt><dd class="col-7">' + (orphanage.childrenCount || 0) + '</dd>' +
+          '<dt class="col-5">Contact</dt><dd class="col-7">' + escapeHtml(orphanage.contactName || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Phone</dt><dd class="col-7">' + escapeHtml(orphanage.contactPhone || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Email</dt><dd class="col-7">' + escapeHtml(orphanage.contactEmail || '&mdash;') + '</dd>' +
+        '</dl>' +
+      '</div>' +
+      '<div class="col-12">' +
+        '<h3 class="h6">Story</h3>' +
+        '<p class="small">' + escapeHtml(orphanage.story || '&mdash;') + '</p>' +
+      '</div>' +
+      '<div class="col-sm-6">' +
+        '<h3 class="h6">Verification documents</h3>' +
+        docsList +
+      '</div>' +
+      '<div class="col-sm-6">' +
+        '<h3 class="h6">Active needs (' + formatFcfa(raised) + ' raised)</h3>' +
+        needsList +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function buildModalFooter(orphanage) {
+  if (orphanage.status !== 'pending') {
+    return '<button type="button" class="btn btn-admin-outline" data-bs-dismiss="modal">Close</button>';
+  }
+
+  const hasDocs = (orphanage.documents || []).length > 0;
+  return (
+    '<button type="button" class="btn btn-admin-danger modal-reject-btn">Reject</button>' +
+    '<button type="button" class="btn btn-admin-primary modal-approve-btn"' +
+      (hasDocs ? '' : ' disabled title="Upload verification documents before approving"') +
+      '>Approve</button>'
+  );
+}
+
+function openProfileModal(id) {
   const orphanages = loadOrphanages();
   const orphanage = orphanages.find(function (o) { return o.id === id; });
   if (!orphanage) return;
 
-  if (e.target.classList.contains('approve-btn')) {
+  const needs = loadNeeds();
+  const orphanageNeeds = needs.filter(function (n) { return String(n.orphanageId) === String(orphanage.id); });
+  const raised = orphanageNeeds.reduce(function (sum, n) { return sum + Number(n.raised || 0); }, 0);
+
+  activeOrphanageId = id;
+  document.getElementById('profile-modal-title').textContent = orphanage.name;
+  document.getElementById('profile-modal-body').innerHTML = buildModalBody(orphanage, orphanageNeeds, raised);
+  document.getElementById('profile-modal-footer').innerHTML = buildModalFooter(orphanage);
+  profileModal.show();
+}
+
+document.getElementById('profile-grid').addEventListener('click', function (e) {
+  const col = e.target.closest('[data-id]');
+  if (!col) return;
+  if (!e.target.classList.contains('review-btn')) return;
+  openProfileModal(Number(col.dataset.id));
+});
+
+document.getElementById('profile-modal-footer').addEventListener('click', function (e) {
+  if (activeOrphanageId === null) return;
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  if (e.target.classList.contains('modal-approve-btn')) {
     orphanage.status = 'verified';
     saveOrphanages(orphanages);
+    profileModal.hide();
     render();
   }
 
-  if (e.target.classList.contains('reject-btn')) {
+  if (e.target.classList.contains('modal-reject-btn')) {
     orphanage.status = 'rejected';
     saveOrphanages(orphanages);
+    profileModal.hide();
     render();
-  }
-
-  if (e.target.classList.contains('view-btn')) {
-    alert('Full profile view coming soon.');
   }
 });
 
