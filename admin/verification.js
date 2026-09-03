@@ -51,6 +51,8 @@ function render() {
     const orphanageNeeds = needs.filter(function (n) { return String(n.orphanageId) === String(orphanage.id); });
     const raised = orphanageNeeds.reduce(function (sum, n) { return sum + Number(n.raised || 0); }, 0);
     const coverClass = COVER_CLASSES[index % COVER_CLASSES.length];
+    const hasCoverPhoto = Boolean(orphanage.coverPhotoUrl);
+    const hasAvatarPhoto = Boolean(orphanage.photoUrl);
     const isVerified = orphanage.status === 'verified';
     const isPending = orphanage.status === 'pending';
     const docCount = (orphanage.documents || []).length;
@@ -69,14 +71,22 @@ function render() {
         '<button class="btn btn-admin-danger btn-sm reject-btn">Reject</button>'
       : '<button class="btn btn-admin-outline btn-sm view-btn">View full profile</button>';
 
+    const coverAttrs = hasCoverPhoto
+      ? ' style="background-image: url(\'' + encodeURI(orphanage.coverPhotoUrl) + '\')"'
+      : '';
+
+    const avatarInner = hasAvatarPhoto
+      ? '<img src="' + encodeURI(orphanage.photoUrl) + '" alt="">'
+      : initials(orphanage.name);
+
     col.innerHTML =
       '<div class="profile-card">' +
-        '<div class="profile-cover ' + coverClass + '">' +
+        '<div class="profile-cover' + (hasCoverPhoto ? ' has-photo' : ' ' + coverClass) + '"' + coverAttrs + '>' +
           '<span class="profile-status-chip status-' + orphanage.status + '">' + orphanage.status + '</span>' +
         '</div>' +
         '<div class="profile-body">' +
           '<div class="avatar-wrap">' +
-            '<div class="avatar">' + initials(orphanage.name) + '</div>' +
+            '<div class="avatar' + (hasAvatarPhoto ? ' has-photo' : '') + '">' + avatarInner + '</div>' +
             (isVerified ? '<span class="verify-badge" title="Verified">' + CHECK_SVG + '</span>' : '') +
           '</div>' +
           '<h3 class="profile-name">' +
