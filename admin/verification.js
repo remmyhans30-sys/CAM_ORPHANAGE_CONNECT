@@ -93,6 +93,7 @@ function render() {
             (isVerified ? '<span class="verify-check-inline" title="Verified">' + CHECK_SVG + '</span>' : '') +
           '</h3>' +
           '<p class="profile-location">' + escapeHtml(orphanage.location) + '</p>' +
+          (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '">&#9873; Flagged for review</p>' : '') +
           '<div class="profile-stats">' +
             '<div class="stat"><strong>' + (orphanage.childrenCount || 0) + '</strong><span>Children</span></div>' +
             '<div class="stat"><strong>' + orphanageNeeds.length + '</strong><span>Active needs</span></div>' +
@@ -269,6 +270,18 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
         '<h3 class="h6">Active needs (' + formatFcfa(raised) + ' raised)</h3>' +
         needsList +
       '</div>' +
+      '<div class="col-12">' +
+        '<h3 class="h6">Flag for review</h3>' +
+        '<div class="form-check mb-2">' +
+          '<input class="form-check-input" type="checkbox" id="modal-flag-checkbox"' + (orphanage.flagged ? ' checked' : '') + '>' +
+          '<label class="form-check-label small" for="modal-flag-checkbox">Flag this profile for further review</label>' +
+        '</div>' +
+        '<textarea class="form-control small" id="modal-flag-reason" rows="2" placeholder="Reason (e.g. inconsistent documents, unreachable contact)...">' + escapeHtml(orphanage.flagReason || '') + '</textarea>' +
+        '<div class="d-flex align-items-center gap-2 mt-2">' +
+          '<button type="button" class="btn btn-admin-outline btn-sm" id="save-flag-btn">Save flag status</button>' +
+          '<span class="small text-muted" id="flag-save-status"></span>' +
+        '</div>' +
+      '</div>' +
     '</div>'
   );
 }
@@ -323,6 +336,24 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   saveOrphanages(orphanages);
 
   const statusEl = document.getElementById('story-save-status');
+  statusEl.textContent = 'Saved.';
+  setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'save-flag-btn') return;
+  if (activeOrphanageId === null) return;
+
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  orphanage.flagged = document.getElementById('modal-flag-checkbox').checked;
+  orphanage.flagReason = document.getElementById('modal-flag-reason').value.trim();
+  saveOrphanages(orphanages);
+  render();
+
+  const statusEl = document.getElementById('flag-save-status');
   statusEl.textContent = 'Saved.';
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
 });
