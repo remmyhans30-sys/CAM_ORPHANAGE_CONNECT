@@ -37,6 +37,11 @@
             </div>
 
             <div class="mb-3">
+              <label for="orphanage-reg-number" class="form-label">Registration number</label>
+              <input type="text" class="form-control" id="orphanage-reg-number" name="registrationNumber" placeholder="e.g. MINAS/2023/00456" required>
+            </div>
+
+            <div class="mb-3">
               <label for="orphanage-story" class="form-label">Story / description</label>
               <textarea class="form-control" id="orphanage-story" name="story" rows="4" placeholder="Tell donors about this orphanage..." required></textarea>
             </div>
@@ -49,6 +54,12 @@
             <div class="mb-3">
               <label for="orphanage-children" class="form-label">Number of children</label>
               <input type="number" class="form-control" id="orphanage-children" name="childrenCount" min="0" step="1" placeholder="e.g. 24">
+            </div>
+
+            <div class="mb-4">
+              <label for="orphanage-documents" class="form-label">Verification documents</label>
+              <input type="file" class="form-control" id="orphanage-documents" name="documents" accept=".pdf,.jpg,.jpeg,.png" multiple required>
+              <div class="form-text">Registration certificate, government ID, or other proof of legitimacy. Required before an orphanage can be verified.</div>
             </div>
 
             <div class="mb-4">
