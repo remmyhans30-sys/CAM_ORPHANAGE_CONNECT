@@ -254,8 +254,12 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
         '</dl>' +
       '</div>' +
       '<div class="col-12">' +
-        '<h3 class="h6">Story</h3>' +
-        '<p class="small">' + escapeHtml(orphanage.story || '&mdash;') + '</p>' +
+        '<h3 class="h6">Story / description</h3>' +
+        '<textarea class="form-control small" id="modal-story-textarea" rows="6">' + escapeHtml(orphanage.story || '') + '</textarea>' +
+        '<div class="d-flex align-items-center gap-2 mt-2">' +
+          '<button type="button" class="btn btn-admin-outline btn-sm" id="save-story-btn">Save story</button>' +
+          '<span class="small text-muted" id="story-save-status"></span>' +
+        '</div>' +
       '</div>' +
       '<div class="col-sm-6">' +
         '<h3 class="h6">Verification documents</h3>' +
@@ -304,6 +308,23 @@ document.getElementById('profile-grid').addEventListener('click', function (e) {
   if (!col) return;
   if (!e.target.classList.contains('review-btn')) return;
   openProfileModal(Number(col.dataset.id));
+});
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  if (!e.target.classList.contains('save-story-btn') && e.target.id !== 'save-story-btn') return;
+  if (activeOrphanageId === null) return;
+
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  const textarea = document.getElementById('modal-story-textarea');
+  orphanage.story = textarea.value.trim();
+  saveOrphanages(orphanages);
+
+  const statusEl = document.getElementById('story-save-status');
+  statusEl.textContent = 'Saved.';
+  setTimeout(function () { statusEl.textContent = ''; }, 2000);
 });
 
 document.getElementById('profile-modal-footer').addEventListener('click', function (e) {
