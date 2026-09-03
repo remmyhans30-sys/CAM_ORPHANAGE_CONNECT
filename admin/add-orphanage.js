@@ -7,6 +7,7 @@ document.getElementById('add-orphanage-form').addEventListener('submit', functio
     location: document.getElementById('orphanage-location').value.trim(),
     story: document.getElementById('orphanage-story').value.trim(),
     status: document.getElementById('orphanage-status').value,
+    childrenCount: Number(document.getElementById('orphanage-children').value) || 0,
   };
 
   const orphanages = JSON.parse(localStorage.getItem('orphanages') || '[]');
