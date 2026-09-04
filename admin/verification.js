@@ -35,6 +35,45 @@ function statusLabel(status) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function computeDuplicateRisks(orphanages) {
+  const byPhone = {};
+  const byAccount = {};
+
+  orphanages.forEach(function (o) {
+    const phone = (o.contactPhone || '').trim();
+    if (phone) {
+      byPhone[phone] = byPhone[phone] || [];
+      byPhone[phone].push(o);
+    }
+    const account = (o.paymentAccountNumber || '').trim();
+    if (account) {
+      byAccount[account] = byAccount[account] || [];
+      byAccount[account].push(o);
+    }
+  });
+
+  const risks = {};
+  orphanages.forEach(function (o) {
+    const reasons = [];
+    const phone = (o.contactPhone || '').trim();
+    const account = (o.paymentAccountNumber || '').trim();
+
+    const phoneSharers = phone ? byPhone[phone].filter(function (other) { return other.id !== o.id; }) : [];
+    if (phoneSharers.length) {
+      reasons.push('Phone number also used by ' + phoneSharers.map(function (p) { return p.name; }).join(', '));
+    }
+
+    const accountSharers = account ? byAccount[account].filter(function (other) { return other.id !== o.id; }) : [];
+    if (accountSharers.length) {
+      reasons.push('Payment account also used by ' + accountSharers.map(function (p) { return p.name; }).join(', '));
+    }
+
+    if (reasons.length) risks[o.id] = reasons;
+  });
+
+  return risks;
+}
+
 function currentAdmin() {
   return localStorage.getItem('currentAdminEmail') || 'Unknown admin';
 }
@@ -64,6 +103,8 @@ function render() {
 
   grid.classList.remove('d-none');
   emptyState.classList.add('d-none');
+
+  const duplicateRisks = computeDuplicateRisks(orphanages);
 
   orphanages.forEach(function (orphanage, index) {
     const orphanageNeeds = needs.filter(function (n) { return String(n.orphanageId) === String(orphanage.id); });
@@ -114,6 +155,7 @@ function render() {
           (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '">&#9873; Flagged for review</p>' : '') +
           (orphanage.status === 'needs-info' && orphanage.infoRequestMessage ? '<p class="profile-info-badge" title="' + escapeHtml(orphanage.infoRequestMessage) + '">Awaiting requested info</p>' : '') +
           (orphanage.status === 'rejected' && orphanage.rejectionReason ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.rejectionReason) + '">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</p>' : '') +
+          (duplicateRisks[orphanage.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[orphanage.id].join(' | ')) + '">&#9888; Duplicate contact/account risk</p>' : '') +
           '<div class="profile-stats">' +
             '<div class="stat"><strong>' + (orphanage.childrenCount || 0) + '</strong><span>Children</span></div>' +
             '<div class="stat"><strong>' + orphanageNeeds.length + '</strong><span>Active needs</span></div>' +
@@ -228,7 +270,7 @@ function seedSampleData() {
       foundedYear: 2023,
       capacity: 20,
       contactName: 'Peter Ekema',
-      contactPhone: '+237 680 567 890',
+      contactPhone: '+237 655 456 789',
       contactEmail: 'contact@littleangelshome.org',
       documents: ['registration-certificate.pdf', 'proof-of-address.pdf'],
       photoUrl: 'https://picsum.photos/seed/angels-avatar/200/200',
@@ -267,7 +309,8 @@ const profileModalEl = document.getElementById('profile-modal');
 const profileModal = new bootstrap.Modal(profileModalEl);
 let activeOrphanageId = null;
 
-function buildModalBody(orphanage, orphanageNeeds, raised) {
+function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
+  risks = risks || [];
   const docs = orphanage.documents || [];
   const docsList = docs.length
     ? '<ul class="mb-0">' + docs.map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
@@ -350,6 +393,9 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
         : '') +
       (orphanage.status === 'rejected' && orphanage.rejectionReason
         ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</div></div>'
+        : '') +
+      (risks.length
+        ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger">&#9888; ' + risks.map(escapeHtml).join('<br>') + '</div></div>'
         : '') +
       '<div class="col-sm-8">' +
         '<dl class="row mb-0 small">' +
@@ -458,9 +504,11 @@ function openProfileModal(id) {
   const orphanageNeeds = needs.filter(function (n) { return String(n.orphanageId) === String(orphanage.id); });
   const raised = orphanageNeeds.reduce(function (sum, n) { return sum + Number(n.raised || 0); }, 0);
 
+  const risks = computeDuplicateRisks(orphanages)[id] || [];
+
   activeOrphanageId = id;
   document.getElementById('profile-modal-title').textContent = orphanage.name;
-  document.getElementById('profile-modal-body').innerHTML = buildModalBody(orphanage, orphanageNeeds, raised);
+  document.getElementById('profile-modal-body').innerHTML = buildModalBody(orphanage, orphanageNeeds, raised, risks);
   document.getElementById('profile-modal-footer').innerHTML = buildModalFooter(orphanage);
   profileModal.show();
 }
