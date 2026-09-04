@@ -212,7 +212,6 @@ function render() {
         '<div class="profile-body">' +
           '<div class="avatar-wrap">' +
             '<div class="avatar' + (hasAvatarPhoto ? ' has-photo' : '') + '">' + avatarInner + '</div>' +
-            (isVerified ? '<span class="verify-badge" title="Verified">' + CHECK_SVG + '</span>' : '') +
           '</div>' +
           '<h3 class="profile-name">' +
             '<span>' + escapeHtml(orphanage.name) + '</span>' +
@@ -400,6 +399,16 @@ const profileModalEl = document.getElementById('profile-modal');
 const profileModal = new bootstrap.Modal(profileModalEl);
 let activeOrphanageId = null;
 
+const photoLightbox = new bootstrap.Modal(document.getElementById('photo-lightbox'));
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  const trigger = e.target.closest('.photo-clickable');
+  if (!trigger) return;
+  document.getElementById('photo-lightbox-title').textContent = trigger.dataset.photoLabel || 'Photo';
+  document.getElementById('photo-lightbox-img').src = trigger.dataset.photoUrl;
+  photoLightbox.show();
+});
+
 function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
   risks = risks || [];
   const docs = orphanage.documents || [];
@@ -469,16 +478,33 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
       }).join('')
     : '<p class="text-muted small mb-0">No updates posted yet.</p>';
 
+  const modalCoverClass = COVER_CLASSES[(Number(orphanage.id) || 0) % COVER_CLASSES.length];
+  const modalHasCoverPhoto = Boolean(orphanage.coverPhotoUrl);
+  const modalHasAvatarPhoto = Boolean(orphanage.photoUrl);
+
   return (
     '<div class="row g-4">' +
-      '<div class="col-sm-4 text-center">' +
-        '<div class="avatar-wrap" style="margin: 0 auto 0.75rem;">' +
-          '<div class="avatar' + (orphanage.photoUrl ? ' has-photo' : '') + '" style="width:96px;height:96px;">' +
-            (orphanage.photoUrl ? '<img src="' + encodeURI(orphanage.photoUrl) + '" alt="">' : initials(orphanage.name)) +
+      '<div class="col-12">' +
+        '<div class="modal-cover-wrap">' +
+          '<div class="profile-cover modal-cover' + (modalHasCoverPhoto ? ' has-photo photo-clickable' : ' ' + modalCoverClass) + '"' +
+            (modalHasCoverPhoto ? ' style="background-image: url(\'' + encodeURI(orphanage.coverPhotoUrl) + '\')" data-photo-url="' + encodeURI(orphanage.coverPhotoUrl) + '" data-photo-label="Cover photo"' : '') +
+          '></div>' +
+          '<div class="avatar-wrap modal-avatar-wrap' + (modalHasAvatarPhoto ? ' has-photo photo-clickable' : '') +
+            '"' + (modalHasAvatarPhoto ? ' data-photo-url="' + encodeURI(orphanage.photoUrl) + '" data-photo-label="Profile photo"' : '') + '>' +
+            '<div class="avatar' + (modalHasAvatarPhoto ? ' has-photo' : '') + '">' +
+              (modalHasAvatarPhoto ? '<img src="' + encodeURI(orphanage.photoUrl) + '" alt="">' : initials(orphanage.name)) +
+            '</div>' +
           '</div>' +
-          (orphanage.status === 'verified' ? '<span class="verify-badge" title="Verified">' + CHECK_SVG + '</span>' : '') +
         '</div>' +
-        '<span class="status-badge status-' + orphanage.status + '">' + statusLabel(orphanage.status) + '</span>' +
+        '<div class="text-center mt-2">' +
+          '<h3 class="h6 mb-1 d-flex align-items-center justify-content-center gap-2">' +
+            '<span>' + escapeHtml(orphanage.name) + '</span>' +
+            (orphanage.status === 'verified' ? '<span class="verify-check-inline" title="Verified">' + CHECK_SVG + '</span>' : '') +
+          '</h3>' +
+          (orphanage.status !== 'verified'
+            ? '<span class="status-badge status-' + orphanage.status + '">' + statusLabel(orphanage.status) + '</span>'
+            : '') +
+        '</div>' +
       '</div>' +
       (orphanage.status === 'needs-info' && orphanage.infoRequestMessage
         ? '<div class="col-12"><div class="profile-info-note">Info requested: ' + escapeHtml(orphanage.infoRequestMessage) + '</div></div>'
@@ -498,7 +524,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
       (risks.length
         ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger">&#9888; ' + risks.map(escapeHtml).join('<br>') + '</div></div>'
         : '') +
-      '<div class="col-sm-8">' +
+      '<div class="col-12">' +
         '<dl class="row mb-0 small">' +
           '<dt class="col-5">Location</dt><dd class="col-7">' + escapeHtml(orphanage.location) + '</dd>' +
           '<dt class="col-5">Registration #</dt><dd class="col-7">' + escapeHtml(orphanage.registrationNumber || '&mdash;') + '</dd>' +
