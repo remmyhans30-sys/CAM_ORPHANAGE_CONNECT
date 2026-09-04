@@ -101,6 +101,15 @@ function logActivity(orphanage, status) {
   });
 }
 
+function logEvent(orphanage, action) {
+  orphanage.activityLog = orphanage.activityLog || [];
+  orphanage.activityLog.push({
+    reviewer: currentAdmin(),
+    action: action,
+    timestamp: new Date().toISOString(),
+  });
+}
+
 function matchesFilter(orphanage, filter) {
   if (filter === 'all') return true;
   if (filter === 'flagged') return Boolean(orphanage.flagged);
@@ -421,7 +430,8 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
     ? '<ul class="mb-0 small">' + activityLog.map(function (entry) {
         const when = new Date(entry.timestamp);
         const whenText = isNaN(when.getTime()) ? entry.timestamp : when.toLocaleString();
-        return '<li>' + escapeHtml(statusLabel(entry.tier)) + ' by ' + escapeHtml(entry.reviewer) + ' &mdash; ' + escapeHtml(whenText) + '</li>';
+        const label = entry.tier ? statusLabel(entry.tier) : entry.action;
+        return '<li>' + escapeHtml(label) + ' by ' + escapeHtml(entry.reviewer) + ' &mdash; ' + escapeHtml(whenText) + '</li>';
       }).join('') + '</ul>'
     : '<p class="text-muted small mb-0">No review activity yet.</p>';
 
@@ -613,6 +623,7 @@ document.getElementById('profile-modal-body').addEventListener('click', function
 
   const textarea = document.getElementById('modal-story-textarea');
   orphanage.story = textarea.value.trim();
+  logEvent(orphanage, 'Edited story/description');
   saveOrphanages(orphanages);
 
   const statusEl = document.getElementById('story-save-status');
@@ -630,6 +641,7 @@ document.getElementById('profile-modal-body').addEventListener('click', function
 
   orphanage.flagged = document.getElementById('modal-flag-checkbox').checked;
   orphanage.flagReason = document.getElementById('modal-flag-reason').value.trim();
+  logEvent(orphanage, orphanage.flagged ? 'Flagged for review' : 'Unflagged');
   saveOrphanages(orphanages);
   render();
 
@@ -647,6 +659,7 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   if (!orphanage) return;
 
   orphanage.paymentAccountConfirmed = document.getElementById('modal-payment-checkbox').checked;
+  logEvent(orphanage, orphanage.paymentAccountConfirmed ? 'Confirmed payment account matches organization' : 'Unconfirmed payment account');
   saveOrphanages(orphanages);
 
   const statusEl = document.getElementById('payment-save-status');
@@ -678,6 +691,7 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
   if (e.target.classList.contains('modal-approve-btn')) {
     orphanage.status = 'verified';
     logActivity(orphanage, 'verified');
+    logEvent(orphanage, '(Simulated) Notified applicant by email/SMS: application verified');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
@@ -693,6 +707,7 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
     orphanage.status = 'rejected';
     orphanage.rejectionReason = reason.trim();
     logActivity(orphanage, 'rejected');
+    logEvent(orphanage, '(Simulated) Notified applicant by email/SMS: application rejected');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
@@ -708,6 +723,7 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
     orphanage.status = 'needs-info';
     orphanage.infoRequestMessage = message.trim();
     logActivity(orphanage, 'needs-info');
+    logEvent(orphanage, '(Simulated) Notified applicant by email/SMS: more info requested');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
