@@ -30,6 +30,11 @@ function formatFcfa(amount) {
   return Number(amount || 0).toLocaleString('en-US') + ' FCFA';
 }
 
+function statusLabel(status) {
+  if (status === 'needs-info') return 'Needs info';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
 function render() {
   const orphanages = loadOrphanages();
   const needs = loadNeeds();
@@ -54,7 +59,7 @@ function render() {
     const hasCoverPhoto = Boolean(orphanage.coverPhotoUrl);
     const hasAvatarPhoto = Boolean(orphanage.photoUrl);
     const isVerified = orphanage.status === 'verified';
-    const isPending = orphanage.status === 'pending';
+    const isActionable = orphanage.status === 'pending' || orphanage.status === 'needs-info';
     const docCount = (orphanage.documents || []).length;
     const hasDocs = docCount > 0;
 
@@ -66,7 +71,7 @@ function render() {
       ? '<p class="profile-docs">' + docCount + ' document' + (docCount === 1 ? '' : 's') + ' uploaded</p>'
       : '<p class="profile-docs profile-docs-missing">No verification documents uploaded</p>';
 
-    const actions = isPending
+    const actions = isActionable
       ? '<button class="btn btn-admin-primary btn-sm review-btn">Review &amp; decide</button>'
       : '<button class="btn btn-admin-outline btn-sm review-btn">View full profile</button>';
 
@@ -81,7 +86,7 @@ function render() {
     col.innerHTML =
       '<div class="profile-card">' +
         '<div class="profile-cover' + (hasCoverPhoto ? ' has-photo' : ' ' + coverClass) + '"' + coverAttrs + '>' +
-          '<span class="profile-status-chip status-' + orphanage.status + '">' + orphanage.status + '</span>' +
+          '<span class="profile-status-chip status-' + orphanage.status + '">' + statusLabel(orphanage.status) + '</span>' +
         '</div>' +
         '<div class="profile-body">' +
           '<div class="avatar-wrap">' +
@@ -94,6 +99,7 @@ function render() {
           '</h3>' +
           '<p class="profile-location">' + escapeHtml(orphanage.location) + '</p>' +
           (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '">&#9873; Flagged for review</p>' : '') +
+          (orphanage.status === 'needs-info' && orphanage.infoRequestMessage ? '<p class="profile-info-badge" title="' + escapeHtml(orphanage.infoRequestMessage) + '">Awaiting requested info</p>' : '') +
           '<div class="profile-stats">' +
             '<div class="stat"><strong>' + (orphanage.childrenCount || 0) + '</strong><span>Children</span></div>' +
             '<div class="stat"><strong>' + orphanageNeeds.length + '</strong><span>Active needs</span></div>' +
@@ -294,8 +300,11 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
           '</div>' +
           (orphanage.status === 'verified' ? '<span class="verify-badge" title="Verified">' + CHECK_SVG + '</span>' : '') +
         '</div>' +
-        '<span class="status-badge status-' + orphanage.status + '">' + orphanage.status + '</span>' +
+        '<span class="status-badge status-' + orphanage.status + '">' + statusLabel(orphanage.status) + '</span>' +
       '</div>' +
+      (orphanage.status === 'needs-info' && orphanage.infoRequestMessage
+        ? '<div class="col-12"><div class="profile-info-note">Info requested: ' + escapeHtml(orphanage.infoRequestMessage) + '</div></div>'
+        : '') +
       '<div class="col-sm-8">' +
         '<dl class="row mb-0 small">' +
           '<dt class="col-5">Location</dt><dd class="col-7">' + escapeHtml(orphanage.location) + '</dd>' +
@@ -350,13 +359,14 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
 }
 
 function buildModalFooter(orphanage) {
-  if (orphanage.status !== 'pending') {
+  if (orphanage.status !== 'pending' && orphanage.status !== 'needs-info') {
     return '<button type="button" class="btn btn-admin-outline" data-bs-dismiss="modal">Close</button>';
   }
 
   const hasDocs = (orphanage.documents || []).length > 0;
   return (
     '<button type="button" class="btn btn-admin-danger modal-reject-btn">Reject</button>' +
+    '<button type="button" class="btn btn-admin-outline modal-request-info-btn">Request more info</button>' +
     '<button type="button" class="btn btn-admin-primary modal-approve-btn"' +
       (hasDocs ? '' : ' disabled title="Upload verification documents before approving"') +
       '>Approve</button>'
@@ -451,6 +461,20 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
 
   if (e.target.classList.contains('modal-reject-btn')) {
     orphanage.status = 'rejected';
+    saveOrphanages(orphanages);
+    profileModal.hide();
+    render();
+  }
+
+  if (e.target.classList.contains('modal-request-info-btn')) {
+    const message = prompt('What information or documents are missing? This will be shown to the orphanage.');
+    if (message === null) return;
+    if (!message.trim()) {
+      alert('Please describe what is missing.');
+      return;
+    }
+    orphanage.status = 'needs-info';
+    orphanage.infoRequestMessage = message.trim();
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
