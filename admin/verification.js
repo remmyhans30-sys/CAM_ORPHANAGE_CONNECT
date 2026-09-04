@@ -145,6 +145,10 @@ function seedSampleData() {
         { date: '2026-08-20', text: 'Thank you to everyone who donated toward our new dormitory beds — installation starts next week!', photoUrl: 'https://picsum.photos/seed/hope-post-1/400/250' },
         { date: '2026-07-05', text: 'Our children celebrated the end of the school term with a small graduation ceremony.' },
       ],
+      paymentProvider: 'MTN Mobile Money',
+      paymentAccountName: "Hope Children's Home",
+      paymentAccountNumber: '677 123 456',
+      paymentAccountConfirmed: true,
     },
     {
       id: 2,
@@ -212,6 +216,10 @@ function seedSampleData() {
       documents: ['registration-certificate.pdf', 'proof-of-address.pdf'],
       photoUrl: 'https://picsum.photos/seed/angels-avatar/200/200',
       coverPhotoUrl: 'https://picsum.photos/seed/angels-cover/600/200',
+      paymentProvider: 'Orange Money',
+      paymentAccountName: 'Peter Ekema',
+      paymentAccountNumber: '680 567 890',
+      paymentAccountConfirmed: false,
     },
   ];
 
@@ -264,6 +272,10 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
         );
       }).join('')
     : '<p class="text-muted mb-0">No needs posted yet.</p>';
+
+  const hasPaymentAccount = Boolean(orphanage.paymentAccountName || orphanage.paymentAccountNumber);
+  const nameMismatch = hasPaymentAccount && orphanage.paymentAccountName &&
+    orphanage.paymentAccountName.trim().toLowerCase() !== (orphanage.name || '').trim().toLowerCase();
 
   const gallery = orphanage.gallery || [];
   const galleryGrid = gallery.length
@@ -345,6 +357,27 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
       '<div class="col-sm-6">' +
         '<h3 class="h6">Needs history (' + formatFcfa(raised) + ' raised total)</h3>' +
         needsList +
+      '</div>' +
+      '<div class="col-12">' +
+        '<h3 class="h6">Payment account (MTN / Orange / Bank)</h3>' +
+        (hasPaymentAccount
+          ? '<dl class="row mb-2 small">' +
+              '<dt class="col-4">Provider</dt><dd class="col-8">' + escapeHtml(orphanage.paymentProvider || '&mdash;') + '</dd>' +
+              '<dt class="col-4">Account name</dt><dd class="col-8">' + escapeHtml(orphanage.paymentAccountName || '&mdash;') + '</dd>' +
+              '<dt class="col-4">Account number</dt><dd class="col-8">' + escapeHtml(orphanage.paymentAccountNumber || '&mdash;') + '</dd>' +
+            '</dl>' +
+            (nameMismatch
+              ? '<div class="profile-info-note profile-info-note-danger mb-2">Account name does not match the orphanage name &mdash; verify this is a registered organization account, not a personal one.</div>'
+              : '')
+          : '<p class="text-muted small mb-2">No payment account submitted yet.</p>') +
+        '<div class="form-check mb-2">' +
+          '<input class="form-check-input" type="checkbox" id="modal-payment-checkbox"' + (orphanage.paymentAccountConfirmed ? ' checked' : '') + (hasPaymentAccount ? '' : ' disabled') + '>' +
+          '<label class="form-check-label small" for="modal-payment-checkbox">I have confirmed this is a registered organization account, not a personal account</label>' +
+        '</div>' +
+        '<div class="d-flex align-items-center gap-2">' +
+          '<button type="button" class="btn btn-admin-outline btn-sm" id="save-payment-btn"' + (hasPaymentAccount ? '' : ' disabled') + '>Save confirmation</button>' +
+          '<span class="small text-muted" id="payment-save-status"></span>' +
+        '</div>' +
       '</div>' +
       '<div class="col-12">' +
         '<h3 class="h6">Flag for review</h3>' +
@@ -431,6 +464,22 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   render();
 
   const statusEl = document.getElementById('flag-save-status');
+  statusEl.textContent = 'Saved.';
+  setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'save-payment-btn') return;
+  if (activeOrphanageId === null) return;
+
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  orphanage.paymentAccountConfirmed = document.getElementById('modal-payment-checkbox').checked;
+  saveOrphanages(orphanages);
+
+  const statusEl = document.getElementById('payment-save-status');
   statusEl.textContent = 'Saved.';
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
 });
