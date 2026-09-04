@@ -126,6 +126,12 @@ function seedSampleData() {
       documents: ['registration-certificate.pdf', 'director-id.pdf'],
       photoUrl: 'https://picsum.photos/seed/hope-avatar/200/200',
       coverPhotoUrl: 'https://picsum.photos/seed/hope-cover/600/200',
+      gallery: [
+        'https://picsum.photos/seed/hope-gallery-1/300/300',
+        'https://picsum.photos/seed/hope-gallery-2/300/300',
+        'https://picsum.photos/seed/hope-gallery-3/300/300',
+        'https://picsum.photos/seed/hope-gallery-4/300/300',
+      ],
     },
     {
       id: 2,
@@ -231,6 +237,15 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
       }).join('') + '</ul>'
     : '<p class="text-muted mb-0">No active needs.</p>';
 
+  const gallery = orphanage.gallery || [];
+  const galleryGrid = gallery.length
+    ? '<div class="profile-gallery-grid">' +
+        gallery.map(function (url) {
+          return '<img src="' + encodeURI(url) + '" alt="" class="profile-gallery-thumb">';
+        }).join('') +
+      '</div>'
+    : '<p class="text-muted small mb-0">No gallery photos uploaded.</p>';
+
   return (
     '<div class="row g-4">' +
       '<div class="col-sm-4 text-center">' +
@@ -261,6 +276,10 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
           '<button type="button" class="btn btn-admin-outline btn-sm" id="save-story-btn">Save story</button>' +
           '<span class="small text-muted" id="story-save-status"></span>' +
         '</div>' +
+      '</div>' +
+      '<div class="col-12">' +
+        '<h3 class="h6">Photo gallery</h3>' +
+        galleryGrid +
       '</div>' +
       '<div class="col-sm-6">' +
         '<h3 class="h6">Verification documents</h3>' +

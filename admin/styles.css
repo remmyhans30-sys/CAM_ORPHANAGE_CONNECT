@@ -300,6 +300,19 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: 0.03em;
 }
 
+.profile-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.5rem;
+}
+
+.profile-gallery-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
 .profile-flag-badge {
   display: inline-block;
   background-color: rgba(217, 140, 127, 0.15);
