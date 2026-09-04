@@ -290,6 +290,10 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
       }).join('')
     : '<p class="text-muted mb-0">No needs posted yet.</p>';
 
+  const mapQuery = encodeURIComponent((orphanage.location || '') + ', Cameroon');
+  const mapEmbedUrl = 'https://www.google.com/maps?q=' + mapQuery + '&output=embed';
+  const mapLinkUrl = 'https://www.google.com/maps/search/?api=1&query=' + mapQuery;
+
   const activityLog = (orphanage.activityLog || []).slice().reverse();
   const activityLogList = activityLog.length
     ? '<ul class="mb-0 small">' + activityLog.map(function (entry) {
@@ -359,6 +363,11 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
           '<dt class="col-5">Phone</dt><dd class="col-7">' + escapeHtml(orphanage.contactPhone || '&mdash;') + '</dd>' +
           '<dt class="col-5">Email</dt><dd class="col-7">' + escapeHtml(orphanage.contactEmail || '&mdash;') + '</dd>' +
         '</dl>' +
+      '</div>' +
+      '<div class="col-12">' +
+        '<h3 class="h6">Location map</h3>' +
+        '<iframe class="profile-map-embed" src="' + mapEmbedUrl + '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map of ' + escapeHtml(orphanage.location || '') + '"></iframe>' +
+        '<a href="' + mapLinkUrl + '" target="_blank" rel="noopener" class="small d-inline-block mt-1">Open in Google Maps</a>' +
       '</div>' +
       '<div class="col-12">' +
         '<h3 class="h6">Story / description</h3>' +
