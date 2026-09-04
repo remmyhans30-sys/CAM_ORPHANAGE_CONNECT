@@ -98,6 +98,7 @@ function render() {
             '<div class="stat"><strong>' + (orphanage.childrenCount || 0) + '</strong><span>Children</span></div>' +
             '<div class="stat"><strong>' + orphanageNeeds.length + '</strong><span>Active needs</span></div>' +
             '<div class="stat"><strong>' + formatFcfa(raised) + '</strong><span>Raised</span></div>' +
+            '<div class="stat"><strong>' + (orphanage.followersCount || 0) + '</strong><span>Supporters</span></div>' +
           '</div>' +
           docsLine +
           '<div class="profile-actions">' + actions + '</div>' +
@@ -118,6 +119,7 @@ function seedSampleData() {
       story: 'A home for children in Buea providing shelter, education, and care since 2012.',
       status: 'verified',
       childrenCount: 32,
+      followersCount: 128,
       foundedYear: 2012,
       capacity: 40,
       contactName: 'Grace Ebong',
@@ -145,6 +147,7 @@ function seedSampleData() {
       story: "Un foyer pour enfants à Yaoundé offrant un abri sûr et un accompagnement scolaire.",
       status: 'pending',
       childrenCount: 18,
+      followersCount: 9,
       foundedYear: 2019,
       capacity: 25,
       contactName: 'Jean-Paul Mbarga',
@@ -160,6 +163,7 @@ function seedSampleData() {
       story: 'Serving vulnerable children in Bamenda with housing, meals, and schooling support.',
       status: 'verified',
       childrenCount: 27,
+      followersCount: 76,
       foundedYear: 2015,
       capacity: 35,
       contactName: 'Comfort Ngwa',
@@ -176,6 +180,7 @@ function seedSampleData() {
       story: "Un orphelinat à Douala qui accueille des enfants depuis 2008.",
       status: 'rejected',
       childrenCount: 15,
+      followersCount: 22,
       foundedYear: 2008,
       capacity: 20,
       contactName: 'Marie Fotso',
@@ -191,6 +196,7 @@ function seedSampleData() {
       story: 'A newly registered home in Limbe caring for orphaned and abandoned children.',
       status: 'pending',
       childrenCount: 12,
+      followersCount: 3,
       foundedYear: 2023,
       capacity: 20,
       contactName: 'Peter Ekema',
@@ -286,6 +292,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
           '<dt class="col-5">Founded</dt><dd class="col-7">' + (orphanage.foundedYear || '&mdash;') + '</dd>' +
           '<dt class="col-5">Capacity</dt><dd class="col-7">' + (orphanage.capacity || '&mdash;') + '</dd>' +
           '<dt class="col-5">Children</dt><dd class="col-7">' + (orphanage.childrenCount || 0) + '</dd>' +
+          '<dt class="col-5">Supporters</dt><dd class="col-7">' + (orphanage.followersCount || 0) + '</dd>' +
           '<dt class="col-5">Contact</dt><dd class="col-7">' + escapeHtml(orphanage.contactName || '&mdash;') + '</dd>' +
           '<dt class="col-5">Phone</dt><dd class="col-7">' + escapeHtml(orphanage.contactPhone || '&mdash;') + '</dd>' +
           '<dt class="col-5">Email</dt><dd class="col-7">' + escapeHtml(orphanage.contactEmail || '&mdash;') + '</dd>' +
