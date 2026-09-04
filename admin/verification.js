@@ -132,6 +132,10 @@ function seedSampleData() {
         'https://picsum.photos/seed/hope-gallery-3/300/300',
         'https://picsum.photos/seed/hope-gallery-4/300/300',
       ],
+      posts: [
+        { date: '2026-08-20', text: 'Thank you to everyone who donated toward our new dormitory beds — installation starts next week!', photoUrl: 'https://picsum.photos/seed/hope-post-1/400/250' },
+        { date: '2026-07-05', text: 'Our children celebrated the end of the school term with a small graduation ceremony.' },
+      ],
     },
     {
       id: 2,
@@ -246,6 +250,24 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
       '</div>'
     : '<p class="text-muted small mb-0">No gallery photos uploaded.</p>';
 
+  const posts = (orphanage.posts || [])
+    .map(function (post, idx) { return Object.assign({}, post, { _idx: idx }); })
+    .sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+  const postsList = posts.length
+    ? posts.map(function (post) {
+        return (
+          '<div class="profile-post">' +
+            '<div class="d-flex justify-content-between align-items-start">' +
+              '<span class="profile-post-date">' + escapeHtml(post.date || '') + '</span>' +
+              '<button type="button" class="btn btn-admin-danger btn-sm remove-post-btn" data-post-index="' + post._idx + '">Remove post</button>' +
+            '</div>' +
+            '<p class="small mb-1">' + escapeHtml(post.text || '') + '</p>' +
+            (post.photoUrl ? '<img src="' + encodeURI(post.photoUrl) + '" alt="" class="profile-post-photo">' : '') +
+          '</div>'
+        );
+      }).join('')
+    : '<p class="text-muted small mb-0">No updates posted yet.</p>';
+
   return (
     '<div class="row g-4">' +
       '<div class="col-sm-4 text-center">' +
@@ -280,6 +302,10 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
       '<div class="col-12">' +
         '<h3 class="h6">Photo gallery</h3>' +
         galleryGrid +
+      '</div>' +
+      '<div class="col-12">' +
+        '<h3 class="h6">Updates from orphanage</h3>' +
+        postsList +
       '</div>' +
       '<div class="col-sm-6">' +
         '<h3 class="h6">Verification documents</h3>' +
@@ -375,6 +401,21 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   const statusEl = document.getElementById('flag-save-status');
   statusEl.textContent = 'Saved.';
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  if (!e.target.classList.contains('remove-post-btn')) return;
+  if (activeOrphanageId === null) return;
+  if (!confirm('Remove this update? This cannot be undone.')) return;
+
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  const postIndex = Number(e.target.dataset.postIndex);
+  orphanage.posts = (orphanage.posts || []).filter(function (_, idx) { return idx !== postIndex; });
+  saveOrphanages(orphanages);
+  openProfileModal(activeOrphanageId);
 });
 
 document.getElementById('profile-modal-footer').addEventListener('click', function (e) {
