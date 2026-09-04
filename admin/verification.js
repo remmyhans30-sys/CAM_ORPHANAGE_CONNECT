@@ -35,6 +35,20 @@ function statusLabel(status) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+const STALE_PENDING_DAYS = 10;
+
+function daysPending(orphanage) {
+  if (!orphanage.submittedDate) return null;
+  const ms = Date.now() - new Date(orphanage.submittedDate).getTime();
+  return Math.floor(ms / 86400000);
+}
+
+function isUrgent(orphanage) {
+  if (orphanage.status !== 'pending' && orphanage.status !== 'needs-info') return false;
+  const days = daysPending(orphanage);
+  return days !== null && days >= STALE_PENDING_DAYS;
+}
+
 function computeDuplicateRisks(orphanages) {
   const byPhone = {};
   const byAccount = {};
@@ -112,6 +126,7 @@ function render() {
     const coverClass = COVER_CLASSES[index % COVER_CLASSES.length];
     const hasCoverPhoto = Boolean(orphanage.coverPhotoUrl);
     const hasAvatarPhoto = Boolean(orphanage.photoUrl);
+    const urgent = isUrgent(orphanage);
     const isVerified = orphanage.status === 'verified';
     const isActionable = orphanage.status === 'pending' || orphanage.status === 'needs-info';
     const docCount = (orphanage.documents || []).length;
@@ -152,6 +167,7 @@ function render() {
             (isVerified ? '<span class="verify-check-inline" title="Verified">' + CHECK_SVG + '</span>' : '') +
           '</h3>' +
           '<p class="profile-location">' + escapeHtml(orphanage.location) + '</p>' +
+          (urgent ? '<p class="profile-urgent-badge">&#9201; Urgent &mdash; pending ' + daysPending(orphanage) + ' days</p>' : '') +
           (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '">&#9873; Flagged for review</p>' : '') +
           (orphanage.status === 'needs-info' && orphanage.infoRequestMessage ? '<p class="profile-info-badge" title="' + escapeHtml(orphanage.infoRequestMessage) + '">Awaiting requested info</p>' : '') +
           (orphanage.status === 'rejected' && orphanage.rejectionReason ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.rejectionReason) + '">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</p>' : '') +
@@ -212,6 +228,7 @@ function seedSampleData() {
       registrationNumber: 'MINAS/2023/00456',
       story: "Un foyer pour enfants à Yaoundé offrant un abri sûr et un accompagnement scolaire.",
       status: 'pending',
+      submittedDate: '2026-08-10',
       childrenCount: 18,
       followersCount: 9,
       foundedYear: 2019,
@@ -265,6 +282,7 @@ function seedSampleData() {
       registrationNumber: 'MINAS/2024/00567',
       story: 'A newly registered home in Limbe caring for orphaned and abandoned children.',
       status: 'pending',
+      submittedDate: '2026-08-30',
       childrenCount: 12,
       followersCount: 3,
       foundedYear: 2023,
@@ -401,6 +419,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
         '<dl class="row mb-0 small">' +
           '<dt class="col-5">Location</dt><dd class="col-7">' + escapeHtml(orphanage.location) + '</dd>' +
           '<dt class="col-5">Registration #</dt><dd class="col-7">' + escapeHtml(orphanage.registrationNumber || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Submitted</dt><dd class="col-7">' + escapeHtml(orphanage.submittedDate || '&mdash;') + (daysPending(orphanage) !== null ? ' (' + daysPending(orphanage) + ' days ago)' : '') + '</dd>' +
           '<dt class="col-5">Founded</dt><dd class="col-7">' + (orphanage.foundedYear || '&mdash;') + '</dd>' +
           '<dt class="col-5">Capacity</dt><dd class="col-7">' + (orphanage.capacity || '&mdash;') + '</dd>' +
           '<dt class="col-5">Children</dt><dd class="col-7">' + (orphanage.childrenCount || 0) + '</dd>' +
