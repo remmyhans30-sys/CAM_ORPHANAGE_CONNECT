@@ -246,6 +246,7 @@ function seedSampleData() {
       contactName: 'Grace Ebong',
       contactPhone: '+237 677 123 456',
       contactEmail: 'contact@hopechildrenshome.org',
+      termsAgreed: true,
       documents: ['registration-certificate.pdf', 'director-id.pdf'],
       photoUrl: 'https://picsum.photos/seed/hope-avatar/200/200',
       coverPhotoUrl: 'https://picsum.photos/seed/hope-cover/600/200',
@@ -279,6 +280,7 @@ function seedSampleData() {
       contactName: 'Jean-Paul Mbarga',
       contactPhone: '+237 699 234 567',
       contactEmail: 'contact@foyerdelesperance.org',
+      termsAgreed: false,
       documents: [],
     },
     {
@@ -295,6 +297,7 @@ function seedSampleData() {
       contactName: 'Comfort Ngwa',
       contactPhone: '+237 675 345 678',
       contactEmail: 'contact@graceorphanage.org',
+      termsAgreed: true,
       documents: ['registration-certificate.pdf'],
       photoUrl: 'https://picsum.photos/seed/grace-avatar/200/200',
       activityLog: [
@@ -316,6 +319,7 @@ function seedSampleData() {
       contactName: 'Marie Fotso',
       contactPhone: '+237 655 456 789',
       contactEmail: 'contact@orphelinatbethel.org',
+      termsAgreed: true,
       documents: ['registration-certificate.pdf'],
     },
     {
@@ -333,6 +337,7 @@ function seedSampleData() {
       contactName: 'Peter Ekema',
       contactPhone: '+237 655 456 789',
       contactEmail: 'contact@littleangelshome.org',
+      termsAgreed: true,
       documents: ['registration-certificate.pdf', 'proof-of-address.pdf'],
       photoUrl: 'https://picsum.photos/seed/angels-avatar/200/200',
       coverPhotoUrl: 'https://picsum.photos/seed/angels-cover/600/200',
@@ -478,6 +483,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
           '<dt class="col-5">Contact</dt><dd class="col-7">' + escapeHtml(orphanage.contactName || '&mdash;') + '</dd>' +
           '<dt class="col-5">Phone</dt><dd class="col-7">' + escapeHtml(orphanage.contactPhone || '&mdash;') + '</dd>' +
           '<dt class="col-5">Email</dt><dd class="col-7">' + escapeHtml(orphanage.contactEmail || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Terms agreed</dt><dd class="col-7">' + (orphanage.termsAgreed ? 'Yes' : '<span class="text-danger">No / not recorded</span>') + '</dd>' +
         '</dl>' +
       '</div>' +
       '<div class="col-12">' +
