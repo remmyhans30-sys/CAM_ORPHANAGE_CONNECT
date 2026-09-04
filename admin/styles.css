@@ -373,6 +373,11 @@ h1, h2, h3, h4, h5, h6,
   font-size: 0.85rem;
 }
 
+.profile-info-note-danger {
+  background-color: rgba(217, 140, 127, 0.15);
+  color: var(--coral);
+}
+
 .profile-docs {
   font-size: 0.75rem;
   color: var(--ink);

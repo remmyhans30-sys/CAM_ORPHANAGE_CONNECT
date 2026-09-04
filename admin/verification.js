@@ -100,6 +100,7 @@ function render() {
           '<p class="profile-location">' + escapeHtml(orphanage.location) + '</p>' +
           (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '">&#9873; Flagged for review</p>' : '') +
           (orphanage.status === 'needs-info' && orphanage.infoRequestMessage ? '<p class="profile-info-badge" title="' + escapeHtml(orphanage.infoRequestMessage) + '">Awaiting requested info</p>' : '') +
+          (orphanage.status === 'rejected' && orphanage.rejectionReason ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.rejectionReason) + '">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</p>' : '') +
           '<div class="profile-stats">' +
             '<div class="stat"><strong>' + (orphanage.childrenCount || 0) + '</strong><span>Children</span></div>' +
             '<div class="stat"><strong>' + orphanageNeeds.length + '</strong><span>Active needs</span></div>' +
@@ -305,6 +306,9 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
       (orphanage.status === 'needs-info' && orphanage.infoRequestMessage
         ? '<div class="col-12"><div class="profile-info-note">Info requested: ' + escapeHtml(orphanage.infoRequestMessage) + '</div></div>'
         : '') +
+      (orphanage.status === 'rejected' && orphanage.rejectionReason
+        ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</div></div>'
+        : '') +
       '<div class="col-sm-8">' +
         '<dl class="row mb-0 small">' +
           '<dt class="col-5">Location</dt><dd class="col-7">' + escapeHtml(orphanage.location) + '</dd>' +
@@ -460,7 +464,14 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
   }
 
   if (e.target.classList.contains('modal-reject-btn')) {
+    const reason = prompt('Reason for rejecting this orphanage? This will be shown to them.');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Please provide a rejection reason.');
+      return;
+    }
     orphanage.status = 'rejected';
+    orphanage.rejectionReason = reason.trim();
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
