@@ -325,6 +325,9 @@ function seedSampleData() {
       story: "Un orphelinat à Douala qui accueille des enfants depuis 2008.",
       storyLanguage: 'fr',
       status: 'rejected',
+      rejectionReason: 'Registration certificate photo was blurry and could not be verified against government records.',
+      appealMessage: "We have re-scanned and re-submitted our registration certificate. Please review again — the original document is valid.",
+      appealDate: '2026-08-28',
       childrenCount: 15,
       followersCount: 22,
       foundedYear: 2008,
@@ -482,6 +485,15 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
         : '') +
       (orphanage.status === 'rejected' && orphanage.rejectionReason
         ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</div></div>'
+        : '') +
+      (orphanage.status === 'rejected' && orphanage.appealMessage
+        ? '<div class="col-12">' +
+            '<div class="profile-info-note">' +
+              '<strong>Appeal submitted' + (orphanage.appealDate ? ' (' + escapeHtml(orphanage.appealDate) + ')' : '') + ':</strong> ' +
+              escapeHtml(orphanage.appealMessage) +
+            '</div>' +
+            '<button type="button" class="btn btn-admin-outline btn-sm mt-2" id="reconsider-btn">Reconsider &mdash; move back to pending</button>' +
+          '</div>'
         : '') +
       (risks.length
         ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger">&#9888; ' + risks.map(escapeHtml).join('<br>') + '</div></div>'
@@ -680,6 +692,23 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   orphanage.posts = (orphanage.posts || []).filter(function (_, idx) { return idx !== postIndex; });
   saveOrphanages(orphanages);
   openProfileModal(activeOrphanageId);
+});
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'reconsider-btn') return;
+  if (activeOrphanageId === null) return;
+  if (!confirm('Move this orphanage back to pending for re-review?')) return;
+
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  orphanage.status = 'pending';
+  logActivity(orphanage, 'pending');
+  logEvent(orphanage, 'Reconsidered appeal, moved back to pending');
+  saveOrphanages(orphanages);
+  profileModal.hide();
+  render();
 });
 
 document.getElementById('profile-modal-footer').addEventListener('click', function (e) {
