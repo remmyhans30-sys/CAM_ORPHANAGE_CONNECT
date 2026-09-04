@@ -350,6 +350,29 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 10px;
 }
 
+.photo-clickable {
+  cursor: pointer;
+}
+
+.modal-cover-wrap {
+  position: relative;
+}
+
+.modal-cover {
+  border-radius: 16px;
+}
+
+.modal-avatar-wrap {
+  width: 96px;
+  height: 96px;
+  margin: -48px auto 0;
+}
+
+.modal-avatar-wrap .avatar {
+  width: 96px;
+  height: 96px;
+}
+
 .language-tag {
   display: inline-block;
   background-color: var(--paper-dim);
