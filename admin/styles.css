@@ -350,6 +350,21 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 10px;
 }
 
+.filter-tab {
+  border-radius: 100px;
+  border: 1px solid var(--dawn-purple);
+  color: var(--dawn-purple);
+  background: transparent;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+}
+
+.filter-tab.active {
+  background-color: var(--dawn-purple);
+  color: #fff;
+}
+
 .profile-urgent-badge {
   display: inline-block;
   background-color: var(--coral);

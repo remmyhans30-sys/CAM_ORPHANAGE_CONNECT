@@ -101,24 +101,67 @@ function logActivity(orphanage, status) {
   });
 }
 
+function matchesFilter(orphanage, filter) {
+  if (filter === 'all') return true;
+  if (filter === 'flagged') return Boolean(orphanage.flagged);
+  if (filter === 'urgent') return isUrgent(orphanage);
+  return orphanage.status === filter;
+}
+
+let currentFilter = localStorage.getItem('verificationFilter') || 'all';
+
+const FILTER_LABELS = {
+  all: 'All',
+  pending: 'Pending',
+  'needs-info': 'Needs info',
+  verified: 'Verified',
+  rejected: 'Rejected',
+  flagged: 'Flagged',
+  urgent: 'Urgent',
+};
+
+function updateFilterTabs(allOrphanages) {
+  document.querySelectorAll('.filter-tab').forEach(function (btn) {
+    const filter = btn.dataset.filter;
+    const count = allOrphanages.filter(function (o) { return matchesFilter(o, filter); }).length;
+    btn.textContent = FILTER_LABELS[filter] + ' (' + count + ')';
+    btn.classList.toggle('active', filter === currentFilter);
+  });
+}
+
 function render() {
-  const orphanages = loadOrphanages();
+  const allOrphanages = loadOrphanages();
   const needs = loadNeeds();
   const grid = document.getElementById('profile-grid');
   const emptyState = document.getElementById('empty-state');
+  const filterEmptyState = document.getElementById('filter-empty-state');
+  const filterTabs = document.getElementById('filter-tabs');
 
   grid.innerHTML = '';
 
-  if (orphanages.length === 0) {
+  if (allOrphanages.length === 0) {
     grid.classList.add('d-none');
+    filterEmptyState.classList.add('d-none');
+    filterTabs.classList.add('d-none');
     emptyState.classList.remove('d-none');
     return;
   }
 
-  grid.classList.remove('d-none');
+  filterTabs.classList.remove('d-none');
   emptyState.classList.add('d-none');
+  updateFilterTabs(allOrphanages);
 
-  const duplicateRisks = computeDuplicateRisks(orphanages);
+  const duplicateRisks = computeDuplicateRisks(allOrphanages);
+  const orphanages = allOrphanages.filter(function (o) { return matchesFilter(o, currentFilter); });
+
+  if (orphanages.length === 0) {
+    grid.classList.add('d-none');
+    filterEmptyState.classList.remove('d-none');
+    return;
+  }
+
+  grid.classList.remove('d-none');
+  filterEmptyState.classList.add('d-none');
 
   orphanages.forEach(function (orphanage, index) {
     const orphanageNeeds = needs.filter(function (n) { return String(n.orphanageId) === String(orphanage.id); });
@@ -322,6 +365,14 @@ function clearAllData() {
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+
+document.getElementById('filter-tabs').addEventListener('click', function (e) {
+  const btn = e.target.closest('.filter-tab');
+  if (!btn) return;
+  currentFilter = btn.dataset.filter;
+  localStorage.setItem('verificationFilter', currentFilter);
+  render();
+});
 
 const profileModalEl = document.getElementById('profile-modal');
 const profileModal = new bootstrap.Modal(profileModalEl);

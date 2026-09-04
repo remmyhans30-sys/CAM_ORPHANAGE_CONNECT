@@ -32,8 +32,22 @@
       "Load sample data" and "Clear all data" are dev-only tools for testing this page before real orphanage registrations exist &mdash; remove before launch.
     </p>
 
+    <div class="d-flex gap-2 flex-wrap mb-4" id="filter-tabs">
+      <button type="button" class="filter-tab" data-filter="all">All</button>
+      <button type="button" class="filter-tab" data-filter="pending">Pending</button>
+      <button type="button" class="filter-tab" data-filter="needs-info">Needs info</button>
+      <button type="button" class="filter-tab" data-filter="verified">Verified</button>
+      <button type="button" class="filter-tab" data-filter="rejected">Rejected</button>
+      <button type="button" class="filter-tab" data-filter="flagged">Flagged</button>
+      <button type="button" class="filter-tab" data-filter="urgent">Urgent</button>
+    </div>
+
     <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">
       No orphanages have registered yet. Use "Load sample data" above to preview this page.
+    </div>
+
+    <div id="filter-empty-state" class="card card-admin p-5 text-center text-muted d-none">
+      No orphanages match this filter.
     </div>
 
     <div class="row g-4" id="profile-grid"></div>
