@@ -24,6 +24,7 @@ document.getElementById('add-need-form').addEventListener('submit', function (e)
     goal: goal,
     percent: 0,
     orphanageId: orphanageId,
+    date: new Date().toISOString().slice(0, 10),
   };
 
   const needs = JSON.parse(localStorage.getItem('needs') || '[]');

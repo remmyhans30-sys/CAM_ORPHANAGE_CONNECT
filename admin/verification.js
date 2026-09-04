@@ -209,11 +209,11 @@ function seedSampleData() {
   ];
 
   const sampleNeeds = [
-    { title: 'New dormitory beds', raised: 320000, goal: 500000, percent: 64, orphanageId: 1 },
-    { title: 'School fees for 10 children', raised: 150000, goal: 400000, percent: 38, orphanageId: 1 },
-    { title: "Fournitures scolaires", raised: 60000, goal: 200000, percent: 30, orphanageId: 2 },
-    { title: 'Kitchen renovation', raised: 480000, goal: 480000, percent: 100, orphanageId: 3 },
-    { title: 'Water borehole', raised: 90000, goal: 600000, percent: 15, orphanageId: 5 },
+    { title: 'New dormitory beds', raised: 320000, goal: 500000, percent: 64, orphanageId: 1, date: '2026-08-10' },
+    { title: 'School fees for 10 children', raised: 150000, goal: 400000, percent: 38, orphanageId: 1, date: '2026-06-01' },
+    { title: 'Fournitures scolaires', raised: 60000, goal: 200000, percent: 30, orphanageId: 2, date: '2026-08-25' },
+    { title: 'Kitchen renovation', raised: 480000, goal: 480000, percent: 100, orphanageId: 3, date: '2026-05-14' },
+    { title: 'Water borehole', raised: 90000, goal: 600000, percent: 15, orphanageId: 5, date: '2026-08-30' },
   ];
 
   localStorage.setItem('orphanages', JSON.stringify(sampleOrphanages));
@@ -241,11 +241,22 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
     ? '<ul class="mb-0">' + docs.map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
     : '<p class="profile-docs-missing mb-0">No verification documents uploaded</p>';
 
-  const needsList = orphanageNeeds.length
-    ? '<ul class="mb-0">' + orphanageNeeds.map(function (n) {
-        return '<li>' + escapeHtml(n.title) + ' &mdash; ' + formatFcfa(n.raised) + ' of ' + formatFcfa(n.goal) + '</li>';
-      }).join('') + '</ul>'
-    : '<p class="text-muted mb-0">No active needs.</p>';
+  const sortedNeeds = orphanageNeeds.slice().sort(function (a, b) { return new Date(b.date || 0) - new Date(a.date || 0); });
+  const needsList = sortedNeeds.length
+    ? sortedNeeds.map(function (n) {
+        const pct = n.goal > 0 ? Math.min(100, Math.round((n.raised / n.goal) * 100)) : 0;
+        return (
+          '<div class="profile-post">' +
+            '<div class="d-flex justify-content-between align-items-start">' +
+              '<span class="profile-post-date">' + escapeHtml(n.date || 'Date unknown') + '</span>' +
+              '<span class="small text-muted">' + formatFcfa(n.raised) + ' of ' + formatFcfa(n.goal) + '</span>' +
+            '</div>' +
+            '<p class="small mb-1">' + escapeHtml(n.title) + '</p>' +
+            '<div class="progress finance-progress"><div class="progress-bar" style="width: ' + pct + '%"></div></div>' +
+          '</div>'
+        );
+      }).join('')
+    : '<p class="text-muted mb-0">No needs posted yet.</p>';
 
   const gallery = orphanage.gallery || [];
   const galleryGrid = gallery.length
@@ -319,7 +330,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
         docsList +
       '</div>' +
       '<div class="col-sm-6">' +
-        '<h3 class="h6">Active needs (' + formatFcfa(raised) + ' raised)</h3>' +
+        '<h3 class="h6">Needs history (' + formatFcfa(raised) + ' raised total)</h3>' +
         needsList +
       '</div>' +
       '<div class="col-12">' +
