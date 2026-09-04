@@ -350,6 +350,17 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 10px;
 }
 
+.language-tag {
+  display: inline-block;
+  background-color: var(--paper-dim);
+  color: var(--dawn-purple);
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.03em;
+}
+
 .filter-tab {
   border-radius: 100px;
   border: 1px solid var(--dawn-purple);

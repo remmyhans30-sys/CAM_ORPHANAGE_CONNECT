@@ -238,6 +238,7 @@ function seedSampleData() {
       location: 'Buea, Southwest Region',
       registrationNumber: 'MINAS/2022/00123',
       story: 'A home for children in Buea providing shelter, education, and care since 2012.',
+      storyLanguage: 'en',
       status: 'verified',
       childrenCount: 32,
       followersCount: 128,
@@ -271,6 +272,7 @@ function seedSampleData() {
       location: 'Yaoundé, Centre Region',
       registrationNumber: 'MINAS/2023/00456',
       story: "Un foyer pour enfants à Yaoundé offrant un abri sûr et un accompagnement scolaire.",
+      storyLanguage: 'fr',
       status: 'pending',
       submittedDate: '2026-08-10',
       childrenCount: 18,
@@ -289,6 +291,7 @@ function seedSampleData() {
       location: 'Bamenda, Northwest Region',
       registrationNumber: 'MINAS/2021/00789',
       story: 'Serving vulnerable children in Bamenda with housing, meals, and schooling support.',
+      storyLanguage: 'en',
       status: 'verified',
       childrenCount: 27,
       followersCount: 76,
@@ -311,6 +314,7 @@ function seedSampleData() {
       location: 'Douala, Littoral Region',
       registrationNumber: 'MINAS/2020/00234',
       story: "Un orphelinat à Douala qui accueille des enfants depuis 2008.",
+      storyLanguage: 'fr',
       status: 'rejected',
       childrenCount: 15,
       followersCount: 22,
@@ -328,6 +332,7 @@ function seedSampleData() {
       location: 'Limbe, Southwest Region',
       registrationNumber: 'MINAS/2024/00567',
       story: 'A newly registered home in Limbe caring for orphaned and abandoned children.',
+      storyLanguage: 'en',
       status: 'pending',
       submittedDate: '2026-08-30',
       childrenCount: 12,
@@ -492,7 +497,9 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
         '<a href="' + mapLinkUrl + '" target="_blank" rel="noopener" class="small d-inline-block mt-1">Open in Google Maps</a>' +
       '</div>' +
       '<div class="col-12">' +
-        '<h3 class="h6">Story / description</h3>' +
+        '<h3 class="h6 d-flex align-items-center gap-2">Story / description' +
+          (orphanage.storyLanguage ? '<span class="language-tag">' + escapeHtml(orphanage.storyLanguage.toUpperCase()) + '</span>' : '') +
+        '</h3>' +
         '<textarea class="form-control small" id="modal-story-textarea" rows="6">' + escapeHtml(orphanage.story || '') + '</textarea>' +
         '<div class="d-flex align-items-center gap-2 mt-2">' +
           '<button type="button" class="btn btn-admin-outline btn-sm" id="save-story-btn">Save story</button>' +
