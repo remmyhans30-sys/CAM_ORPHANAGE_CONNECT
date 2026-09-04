@@ -12,5 +12,6 @@ document.getElementById('admin-login-form').addEventListener('submit', function 
   }
 
   errorBox.classList.add('d-none');
+  localStorage.setItem('currentAdminEmail', email);
   window.location.href = 'verification.html';
 });

@@ -35,6 +35,19 @@ function statusLabel(status) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function currentAdmin() {
+  return localStorage.getItem('currentAdminEmail') || 'Unknown admin';
+}
+
+function logActivity(orphanage, status) {
+  orphanage.activityLog = orphanage.activityLog || [];
+  orphanage.activityLog.push({
+    reviewer: currentAdmin(),
+    tier: status,
+    timestamp: new Date().toISOString(),
+  });
+}
+
 function render() {
   const orphanages = loadOrphanages();
   const needs = loadNeeds();
@@ -182,6 +195,10 @@ function seedSampleData() {
       contactEmail: 'contact@graceorphanage.org',
       documents: ['registration-certificate.pdf'],
       photoUrl: 'https://picsum.photos/seed/grace-avatar/200/200',
+      activityLog: [
+        { reviewer: 'admin@camorphanage.org', tier: 'needs-info', timestamp: '2026-07-10T09:15:00.000Z' },
+        { reviewer: 'admin@camorphanage.org', tier: 'verified', timestamp: '2026-07-18T14:02:00.000Z' },
+      ],
     },
     {
       id: 4,
@@ -272,6 +289,15 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
         );
       }).join('')
     : '<p class="text-muted mb-0">No needs posted yet.</p>';
+
+  const activityLog = (orphanage.activityLog || []).slice().reverse();
+  const activityLogList = activityLog.length
+    ? '<ul class="mb-0 small">' + activityLog.map(function (entry) {
+        const when = new Date(entry.timestamp);
+        const whenText = isNaN(when.getTime()) ? entry.timestamp : when.toLocaleString();
+        return '<li>' + escapeHtml(statusLabel(entry.tier)) + ' by ' + escapeHtml(entry.reviewer) + ' &mdash; ' + escapeHtml(whenText) + '</li>';
+      }).join('') + '</ul>'
+    : '<p class="text-muted small mb-0">No review activity yet.</p>';
 
   const hasPaymentAccount = Boolean(orphanage.paymentAccountName || orphanage.paymentAccountNumber);
   const nameMismatch = hasPaymentAccount && orphanage.paymentAccountName &&
@@ -378,6 +404,10 @@ function buildModalBody(orphanage, orphanageNeeds, raised) {
           '<button type="button" class="btn btn-admin-outline btn-sm" id="save-payment-btn"' + (hasPaymentAccount ? '' : ' disabled') + '>Save confirmation</button>' +
           '<span class="small text-muted" id="payment-save-status"></span>' +
         '</div>' +
+      '</div>' +
+      '<div class="col-12">' +
+        '<h3 class="h6">Verification activity log</h3>' +
+        activityLogList +
       '</div>' +
       '<div class="col-12">' +
         '<h3 class="h6">Flag for review</h3>' +
@@ -507,6 +537,7 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
 
   if (e.target.classList.contains('modal-approve-btn')) {
     orphanage.status = 'verified';
+    logActivity(orphanage, 'verified');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
@@ -521,6 +552,7 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
     }
     orphanage.status = 'rejected';
     orphanage.rejectionReason = reason.trim();
+    logActivity(orphanage, 'rejected');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
@@ -535,6 +567,7 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
     }
     orphanage.status = 'needs-info';
     orphanage.infoRequestMessage = message.trim();
+    logActivity(orphanage, 'needs-info');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
