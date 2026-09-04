@@ -27,6 +27,10 @@ function monthsSince(dateStr) {
   return Math.max(0, months);
 }
 
+function formatFcfa(amount) {
+  return Number(amount || 0).toLocaleString('en-US') + ' FCFA';
+}
+
 function anniversaryText(joinDate) {
   const months = monthsSince(joinDate);
   if (months < 24) return months + ' month' + (months === 1 ? '' : 's') + ' as a donor';
@@ -34,12 +38,16 @@ function anniversaryText(joinDate) {
   return years + ' year' + (years === 1 ? '' : 's') + ' as a donor';
 }
 
+function anniversaryMarker(joinDate) {
+  return '\u{1F389} ' + anniversaryText(joinDate);
+}
+
 function renderHeaderCard(donor) {
   const card = document.getElementById('donor-header-card');
 
   card.innerHTML =
     '<div class="d-flex flex-wrap gap-4 align-items-start">' +
-      '<div class="avatar' + (donor.photoUrl ? ' has-photo' : '') + '" style="width:96px;height:96px; flex-shrink:0;">' +
+      '<div class="avatar donor-avatar' + (donor.photoUrl ? ' has-photo' : '') + '" style="width:96px;height:96px; flex-shrink:0;">' +
         (donor.photoUrl ? '<img src="' + encodeURI(donor.photoUrl) + '" alt="">' : initials(donor.name)) +
       '</div>' +
       '<div class="flex-grow-1">' +
@@ -48,7 +56,7 @@ function renderHeaderCard(donor) {
           (donor.vip ? '<span class="vip-tag">VIP</span>' : '') +
           '<span class="donor-status-badge status-' + donor.status + '">' + (donor.status === 'flagged' ? 'Flagged' : 'Active') + '</span>' +
         '</div>' +
-        '<p class="text-muted small mb-3">' + escapeHtml(anniversaryText(donor.joinDate)) + '</p>' +
+        '<p class="text-muted small mb-3">' + escapeHtml(anniversaryMarker(donor.joinDate)) + '</p>' +
         '<dl class="row mb-0 small">' +
           '<dt class="col-sm-3">Email</dt><dd class="col-sm-9">' + escapeHtml(donor.email || '&mdash;') + '</dd>' +
           '<dt class="col-sm-3">Joined</dt><dd class="col-sm-9">' + escapeHtml(donor.joinDate || '&mdash;') + '</dd>' +
@@ -58,6 +66,28 @@ function renderHeaderCard(donor) {
         '</dl>' +
       '</div>' +
     '</div>';
+}
+
+function renderStatsStrip(donor) {
+  const strip = document.getElementById('donor-stats-strip');
+  const stats = [
+    { label: 'Total given', value: formatFcfa(donor.totalGiven) },
+    { label: 'Donations made', value: donor.donationsCount || 0 },
+    { label: 'Homes followed', value: donor.homesFollowedCount || 0 },
+    { label: 'Active recurring gifts', value: donor.activeRecurringGifts || 0 },
+    { label: 'Chargebacks/disputes', value: donor.chargebacksCount || 0 },
+  ];
+
+  strip.innerHTML = stats.map(function (stat) {
+    return (
+      '<div class="col-6 col-md-4 col-lg">' +
+        '<div class="stat-tile">' +
+          '<strong>' + escapeHtml(String(stat.value)) + '</strong>' +
+          '<span>' + escapeHtml(stat.label) + '</span>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
 }
 
 function render() {
@@ -74,6 +104,7 @@ function render() {
   emptyState.classList.add('d-none');
   content.classList.remove('d-none');
   renderHeaderCard(donor);
+  renderStatsStrip(donor);
 }
 
 function seedSampleData() {
@@ -88,6 +119,11 @@ function seedSampleData() {
     lastActive: '2026-09-01',
     vip: true,
     status: 'active',
+    totalGiven: 850000,
+    donationsCount: 14,
+    homesFollowedCount: 3,
+    activeRecurringGifts: 2,
+    chargebacksCount: 0,
   };
 
   saveDonor(sampleDonor);

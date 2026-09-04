@@ -374,6 +374,10 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* Donor profile */
+.donor-avatar {
+  background: linear-gradient(135deg, var(--dawn-purple), var(--teal));
+}
+
 .vip-tag {
   display: inline-block;
   background-color: var(--gold);
@@ -401,6 +405,30 @@ h1, h2, h3, h4, h5, h6,
 .donor-status-badge.status-flagged {
   background-color: rgba(217, 140, 127, 0.18);
   color: var(--coral);
+}
+
+.stat-tile {
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(58, 51, 82, 0.08);
+  padding: 1rem 1.1rem;
+  text-align: center;
+  height: 100%;
+}
+
+.stat-tile strong {
+  display: block;
+  font-family: 'Baloo 2', sans-serif;
+  color: var(--dawn-purple);
+  font-size: 1.1rem;
+}
+
+.stat-tile span {
+  font-size: 0.7rem;
+  color: var(--ink);
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .language-tag {
