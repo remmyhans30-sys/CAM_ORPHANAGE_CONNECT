@@ -64,6 +64,10 @@ function renderHeaderCard(donor) {
           '<dt class="col-sm-3">Preferred payment</dt><dd class="col-sm-9">' + escapeHtml(donor.preferredPayment || '&mdash;') + ' (' + escapeHtml(donor.preferredCurrency || '&mdash;') + ')</dd>' +
           '<dt class="col-sm-3">Last active</dt><dd class="col-sm-9">' + escapeHtml(donor.lastActive || '&mdash;') + '</dd>' +
         '</dl>' +
+        '<div class="d-flex gap-2 mt-3">' +
+          '<button type="button" class="btn btn-admin-primary btn-sm" id="message-donor-btn">Message donor</button>' +
+          '<button type="button" class="btn btn-admin-danger btn-sm" id="flag-account-btn">' + (donor.status === 'flagged' ? 'Unflag account' : 'Flag account') + '</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
 }
@@ -339,6 +343,36 @@ function clearAllData() {
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+
+document.getElementById('donor-header-card').addEventListener('click', function (e) {
+  const donor = loadDonor();
+  if (!donor) return;
+
+  if (e.target.id === 'message-donor-btn') {
+    const message = prompt('Message to send to ' + donor.name + ':');
+    if (message === null) return;
+    if (!message.trim()) return;
+    alert('(Simulated) Message sent to ' + donor.name + ': "' + message.trim() + '"');
+  }
+
+  if (e.target.id === 'flag-account-btn') {
+    if (donor.status === 'flagged') {
+      donor.status = 'active';
+      donor.flagReason = '';
+    } else {
+      const reason = prompt('Reason for flagging this donor account?');
+      if (reason === null) return;
+      if (!reason.trim()) {
+        alert('Please provide a reason.');
+        return;
+      }
+      donor.status = 'flagged';
+      donor.flagReason = reason.trim();
+    }
+    saveDonor(donor);
+    render();
+  }
+});
 
 document.getElementById('save-notes-btn').addEventListener('click', function () {
   const donor = loadDonor();
