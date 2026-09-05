@@ -113,6 +113,27 @@ function renderDonationHistory(donor) {
   }).join('');
 }
 
+function renderPasswordResets(donor) {
+  const tbody = document.getElementById('password-resets-tbody');
+  const resets = donor.passwordResets || [];
+
+  if (resets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="text-muted small">No password reset requests.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = resets.map(function (r) {
+    const isCompleted = r.status === 'completed';
+    return (
+      '<tr>' +
+        '<td>' + escapeHtml(r.date) + '</td>' +
+        '<td>' + escapeHtml(r.method) + '</td>' +
+        '<td><span class="donor-status-badge status-' + (isCompleted ? 'active' : 'flagged') + '">' + escapeHtml(isCompleted ? 'Completed' : 'Link expired, not used') + '</span></td>' +
+      '</tr>'
+    );
+  }).join('');
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -129,6 +150,7 @@ function render() {
   renderHeaderCard(donor);
   renderStatsStrip(donor);
   renderDonationHistory(donor);
+  renderPasswordResets(donor);
 }
 
 function seedSampleData() {
@@ -153,6 +175,10 @@ function seedSampleData() {
       { date: '2026-07-20', orphanage: 'Grace Orphanage', need: 'Kitchen renovation', amount: 100000, method: 'MTN Mobile Money', status: 'completed' },
       { date: '2026-06-10', orphanage: "Hope Children's Home", need: 'School fees for 10 children', amount: 45000, method: 'Bank transfer', status: 'refunded' },
       { date: '2026-05-02', orphanage: "Foyer de l'Espérance", need: 'Fournitures scolaires', amount: 30000, method: 'MTN Mobile Money', status: 'completed' },
+    ],
+    passwordResets: [
+      { date: '2026-07-02', method: 'Email link', status: 'completed' },
+      { date: '2026-04-18', method: 'Email link', status: 'expired' },
     ],
   };
 
