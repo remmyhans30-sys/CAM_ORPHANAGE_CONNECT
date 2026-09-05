@@ -178,6 +178,27 @@ function renderSupportTickets(donor) {
   }).join('');
 }
 
+function renderReferrals(donor) {
+  const panel = document.getElementById('referrals-panel');
+  const referrals = donor.referralsMade || [];
+  const activeCount = referrals.filter(function (r) { return r.active; }).length;
+
+  const referredByLine = donor.referredBy
+    ? '<p class="mb-2"><strong>Referred by:</strong> ' + escapeHtml(donor.referredBy) + '</p>'
+    : '<p class="mb-2 text-muted">Not referred by anyone &mdash; joined directly.</p>';
+
+  const referralsList = referrals.length
+    ? '<ul class="mb-0 small">' + referrals.map(function (r) {
+        return '<li>' + escapeHtml(r.name) + (r.active ? ' <span class="text-muted">(active donor)</span>' : ' <span class="text-muted">(inactive)</span>') + '</li>';
+      }).join('') + '</ul>'
+    : '<p class="text-muted small mb-0">Hasn\'t referred anyone yet.</p>';
+
+  panel.innerHTML =
+    referredByLine +
+    '<p class="mb-2"><strong>Referred ' + referrals.length + ' donor' + (referrals.length === 1 ? '' : 's') + '</strong> (' + activeCount + ' became active)</p>' +
+    referralsList;
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -197,6 +218,7 @@ function render() {
   renderPasswordResets(donor);
   renderFailedPayments(donor);
   renderSupportTickets(donor);
+  renderReferrals(donor);
 }
 
 function seedSampleData() {
@@ -233,6 +255,11 @@ function seedSampleData() {
     supportTickets: [
       { date: '2026-08-16', issue: "Donation didn't show as completed", status: 'resolved' },
       { date: '2026-09-02', issue: 'Asking how to update payment method', status: 'open' },
+    ],
+    referredBy: 'Amina Njoya',
+    referralsMade: [
+      { name: 'Chidi Okafor', active: true },
+      { name: 'Fatou Bello', active: false },
     ],
   };
 
