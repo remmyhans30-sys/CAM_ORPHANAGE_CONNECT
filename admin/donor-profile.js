@@ -231,6 +231,24 @@ function renderGroupsJoined(donor) {
   }).join('') + '</div>';
 }
 
+function renderTrustAlertBox(donor) {
+  const box = document.getElementById('trust-alert-box');
+  const failedCount = (donor.failedPayments || []).length;
+  const successCount = donor.donationsCount || 0;
+  const totalAttempts = successCount + failedCount;
+  const rate = totalAttempts > 0 ? Math.round((failedCount / totalAttempts) * 100) : 0;
+  const hasChargebacks = (donor.chargebacksCount || 0) > 0;
+
+  const isFlagged = hasChargebacks || rate >= 20;
+
+  const summary = 'Payment failure rate: ' + rate + '% (' + failedCount + ' of ' + totalAttempts + ' attempts).';
+  const message = isFlagged
+    ? 'Trust flag: ' + summary + (hasChargebacks ? ' ' + donor.chargebacksCount + ' chargeback(s)/dispute(s) on record.' : '')
+    : 'No trust flags on this account. ' + summary;
+
+  box.innerHTML = '<div class="profile-info-note' + (isFlagged ? ' profile-info-note-danger' : '') + '">' + escapeHtml(message) + '</div>';
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -253,6 +271,7 @@ function render() {
   renderReferrals(donor);
   renderHomesFollowed(donor);
   renderGroupsJoined(donor);
+  renderTrustAlertBox(donor);
 }
 
 function seedSampleData() {
