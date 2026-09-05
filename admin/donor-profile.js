@@ -249,6 +249,10 @@ function renderTrustAlertBox(donor) {
   box.innerHTML = '<div class="profile-info-note' + (isFlagged ? ' profile-info-note-danger' : '') + '">' + escapeHtml(message) + '</div>';
 }
 
+function renderAdminNotes(donor) {
+  document.getElementById('admin-notes-textarea').value = donor.adminNotes || '';
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -272,6 +276,7 @@ function render() {
   renderHomesFollowed(donor);
   renderGroupsJoined(donor);
   renderTrustAlertBox(donor);
+  renderAdminNotes(donor);
 }
 
 function seedSampleData() {
@@ -334,5 +339,17 @@ function clearAllData() {
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+
+document.getElementById('save-notes-btn').addEventListener('click', function () {
+  const donor = loadDonor();
+  if (!donor) return;
+
+  donor.adminNotes = document.getElementById('admin-notes-textarea').value.trim();
+  saveDonor(donor);
+
+  const statusEl = document.getElementById('notes-save-status');
+  statusEl.textContent = 'Saved.';
+  setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
 
 render();
