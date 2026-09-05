@@ -1,4 +1,11 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+(function () {
+  const role = localStorage.getItem('currentAdminRole') || 'Super Admin';
+  if (role !== 'Super Admin' && role !== 'Administrator') {
+    alert('Your role (' + role + ') does not have access to Users & Roles.');
+    window.location.href = 'dashboard.html';
+  }
+})();
 
 function loadUsers() {
   const users = JSON.parse(localStorage.getItem('users') || 'null');

@@ -46,8 +46,9 @@ function renderTopbar() {
   document.getElementById('bell-badge').textContent = bellTotal || '';
 
   const email = localStorage.getItem('currentAdminEmail');
-  document.getElementById('admin-email-label').textContent = email || 'Admin';
-  document.getElementById('admin-avatar').textContent = initials(email || 'Admin');
+  const displayName = localStorage.getItem('currentAdminDisplayName');
+  document.getElementById('admin-email-label').textContent = displayName || email || 'Admin';
+  document.getElementById('admin-avatar').textContent = initials(displayName || email || 'Admin');
 }
 
 function applyRolePermissions() {
@@ -57,6 +58,12 @@ function applyRolePermissions() {
     if (financeLink) financeLink.style.display = 'none';
     const donationsLink = document.getElementById('donations-nav-link');
     if (donationsLink) donationsLink.style.display = 'none';
+  }
+  if (role !== 'Super Admin' && role !== 'Administrator') {
+    const usersLink = document.getElementById('users-nav-link');
+    if (usersLink) usersLink.style.display = 'none';
+    const settingsLink = document.getElementById('settings-nav-link');
+    if (settingsLink) settingsLink.style.display = 'none';
   }
 }
 
