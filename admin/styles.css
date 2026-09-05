@@ -375,7 +375,59 @@ h1, h2, h3, h4, h5, h6,
 
 /* Donor profile */
 .donor-avatar {
-  background: linear-gradient(135deg, var(--dawn-purple), var(--teal));
+  background: linear-gradient(135deg, var(--coral), var(--gold));
+}
+
+.fail-tag {
+  display: inline-block;
+  background-color: #FDF0EC;
+  color: #9c4d3d;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.7rem;
+}
+
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+
+.ticket-row:last-child {
+  border-bottom: none;
+}
+
+.ticket-status {
+  display: inline-block;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.7rem;
+  flex-shrink: 0;
+}
+
+.ticket-status.resolved {
+  background-color: var(--teal);
+  color: #fff;
+}
+
+.ticket-status.open {
+  background-color: var(--gold);
+  color: var(--dawn-purple);
+}
+
+.flag-alert {
+  background-color: #FDF0EC;
+  border: 1px solid var(--coral);
+  color: #9c4d3d;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
 }
 
 .vip-tag {

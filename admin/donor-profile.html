@@ -91,35 +91,43 @@
         </div>
       </div>
 
-      <div class="card card-admin p-4 p-md-5 mb-4">
-        <h2 class="h6 mb-3">Support tickets</h2>
-        <div id="support-tickets-list"></div>
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <div class="card card-admin p-4 p-md-5 h-100">
+            <h2 class="h6 mb-3">Support tickets</h2>
+            <div id="support-tickets-list"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-admin p-4 p-md-5 h-100">
+            <h2 class="h6 mb-3">Referrals</h2>
+            <div id="referrals-panel"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="card card-admin p-4 p-md-5 mb-4">
-        <h2 class="h6 mb-3">Referrals</h2>
-        <div id="referrals-panel"></div>
-      </div>
-
-      <div class="card card-admin p-4 p-md-5 mb-4">
-        <h2 class="h6 mb-3">Homes followed</h2>
-        <div id="homes-followed-list"></div>
-      </div>
-
-      <div class="card card-admin p-4 p-md-5 mb-4">
-        <h2 class="h6 mb-3">Groups joined</h2>
-        <div id="groups-joined-list"></div>
-      </div>
-
-      <div id="trust-alert-box" class="mb-4"></div>
-
-      <div class="card card-admin p-4 p-md-5 mb-4">
-        <h2 class="h6 mb-1">Admin notes</h2>
-        <p class="text-muted small mb-3">Private &mdash; never shown to the donor.</p>
-        <textarea class="form-control small" id="admin-notes-textarea" rows="4"></textarea>
-        <div class="d-flex align-items-center gap-2 mt-2">
-          <button type="button" class="btn btn-admin-outline btn-sm" id="save-notes-btn">Save notes</button>
-          <span class="small text-muted" id="notes-save-status"></span>
+      <div class="row g-4 mb-4">
+        <div class="col-md-6 d-flex flex-column gap-4">
+          <div class="card card-admin p-4 p-md-5">
+            <h2 class="h6 mb-3">Homes followed / supporter tiers</h2>
+            <div id="homes-followed-list"></div>
+          </div>
+          <div class="card card-admin p-4 p-md-5">
+            <h2 class="h6 mb-3">Groups joined</h2>
+            <div id="groups-joined-list"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-admin p-4 p-md-5">
+            <div id="trust-alert-box" class="mb-3"></div>
+            <h2 class="h6 mb-1">Admin notes</h2>
+            <p class="text-muted small mb-3">Private &mdash; never shown to the donor.</p>
+            <textarea class="form-control small" id="admin-notes-textarea" rows="3" placeholder="Add a private note about this donor..."></textarea>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <button type="button" class="btn btn-admin-outline btn-sm" id="save-notes-btn">Save note</button>
+              <span class="small text-muted" id="notes-save-status"></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

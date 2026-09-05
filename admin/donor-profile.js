@@ -46,28 +46,30 @@ function renderHeaderCard(donor) {
   const card = document.getElementById('donor-header-card');
 
   card.innerHTML =
-    '<div class="d-flex flex-wrap gap-4 align-items-start">' +
-      '<div class="avatar donor-avatar' + (donor.photoUrl ? ' has-photo' : '') + '" style="width:96px;height:96px; flex-shrink:0;">' +
-        (donor.photoUrl ? '<img src="' + encodeURI(donor.photoUrl) + '" alt="">' : initials(donor.name)) +
+    '<div class="d-flex flex-wrap justify-content-between align-items-center gap-3">' +
+      '<div class="d-flex flex-wrap gap-3 align-items-center">' +
+        '<div class="avatar donor-avatar' + (donor.photoUrl ? ' has-photo' : '') + '" style="width:64px;height:64px;font-size:22px; flex-shrink:0;">' +
+          (donor.photoUrl ? '<img src="' + encodeURI(donor.photoUrl) + '" alt="">' : initials(donor.name)) +
+        '</div>' +
+        '<div>' +
+          '<div class="d-flex align-items-center gap-2 flex-wrap mb-1">' +
+            '<h2 class="h5 mb-0">' + escapeHtml(donor.name) + '</h2>' +
+            '<span class="donor-status-badge status-' + donor.status + '">' + (donor.status === 'flagged' ? 'Flagged' : 'Active') + '</span>' +
+            (donor.vip ? '<span class="vip-tag">&#9733; VIP donor</span>' : '') +
+          '</div>' +
+          '<p class="text-muted small mb-1">' + escapeHtml(donor.email || '&mdash;') + '</p>' +
+          '<div class="d-flex flex-wrap gap-3 small text-muted">' +
+            '<span>Joined ' + escapeHtml(donor.joinDate || '&mdash;') + '</span>' +
+            '<span>' + escapeHtml(donor.location || '&mdash;') + '</span>' +
+            '<span>Preferred: ' + escapeHtml(donor.preferredCurrency || '&mdash;') + ' / ' + escapeHtml(donor.preferredPayment || '&mdash;') + '</span>' +
+            '<span>Last active: ' + escapeHtml(donor.lastActive || '&mdash;') + '</span>' +
+            '<span>' + escapeHtml(anniversaryMarker(donor.joinDate)) + '</span>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="flex-grow-1">' +
-        '<div class="d-flex align-items-center gap-2 flex-wrap mb-1">' +
-          '<h2 class="h4 mb-0">' + escapeHtml(donor.name) + '</h2>' +
-          (donor.vip ? '<span class="vip-tag">VIP</span>' : '') +
-          '<span class="donor-status-badge status-' + donor.status + '">' + (donor.status === 'flagged' ? 'Flagged' : 'Active') + '</span>' +
-        '</div>' +
-        '<p class="text-muted small mb-3">' + escapeHtml(anniversaryMarker(donor.joinDate)) + '</p>' +
-        '<dl class="row mb-0 small">' +
-          '<dt class="col-sm-3">Email</dt><dd class="col-sm-9">' + escapeHtml(donor.email || '&mdash;') + '</dd>' +
-          '<dt class="col-sm-3">Joined</dt><dd class="col-sm-9">' + escapeHtml(donor.joinDate || '&mdash;') + '</dd>' +
-          '<dt class="col-sm-3">Location</dt><dd class="col-sm-9">' + escapeHtml(donor.location || '&mdash;') + '</dd>' +
-          '<dt class="col-sm-3">Preferred payment</dt><dd class="col-sm-9">' + escapeHtml(donor.preferredPayment || '&mdash;') + ' (' + escapeHtml(donor.preferredCurrency || '&mdash;') + ')</dd>' +
-          '<dt class="col-sm-3">Last active</dt><dd class="col-sm-9">' + escapeHtml(donor.lastActive || '&mdash;') + '</dd>' +
-        '</dl>' +
-        '<div class="d-flex gap-2 mt-3">' +
-          '<button type="button" class="btn btn-admin-primary btn-sm" id="message-donor-btn">Message donor</button>' +
-          '<button type="button" class="btn btn-admin-danger btn-sm" id="flag-account-btn">' + (donor.status === 'flagged' ? 'Unflag account' : 'Flag account') + '</button>' +
-        '</div>' +
+      '<div class="d-flex gap-2 align-self-start">' +
+        '<button type="button" class="btn btn-admin-primary btn-sm" id="message-donor-btn">Message donor</button>' +
+        '<button type="button" class="btn btn-admin-danger btn-sm" id="flag-account-btn">' + (donor.status === 'flagged' ? 'Unflag account' : 'Flag account') + '</button>' +
       '</div>' +
     '</div>';
 }
@@ -75,10 +77,10 @@ function renderHeaderCard(donor) {
 function renderStatsStrip(donor) {
   const strip = document.getElementById('donor-stats-strip');
   const stats = [
-    { label: 'Total given', value: formatFcfa(donor.totalGiven) },
+    { label: 'Total given (lifetime)', value: formatFcfa(donor.totalGiven) },
     { label: 'Donations made', value: donor.donationsCount || 0 },
     { label: 'Homes followed', value: donor.homesFollowedCount || 0 },
-    { label: 'Active recurring gifts', value: donor.activeRecurringGifts || 0 },
+    { label: (donor.activeRecurringGifts === 1 ? 'Recurring gift active' : 'Recurring gifts active'), value: donor.activeRecurringGifts || 0 },
     { label: 'Chargebacks/disputes', value: donor.chargebacksCount || 0 },
   ];
 
@@ -111,7 +113,7 @@ function renderDonationHistory(donor) {
         '<td>' + escapeHtml(d.need) + '</td>' +
         '<td>' + formatFcfa(d.amount) + '</td>' +
         '<td>' + escapeHtml(d.method) + '</td>' +
-        '<td><span class="donor-status-badge status-' + (d.status === 'completed' ? 'active' : 'flagged') + '">' + escapeHtml(d.status.charAt(0).toUpperCase() + d.status.slice(1)) + '</span></td>' +
+        '<td><span class="tier-tag tier-friend">' + escapeHtml(d.status.charAt(0).toUpperCase() + d.status.slice(1)) + '</span></td>' +
       '</tr>'
     );
   }).join('');
@@ -132,7 +134,7 @@ function renderPasswordResets(donor) {
       '<tr>' +
         '<td>' + escapeHtml(r.date) + '</td>' +
         '<td>' + escapeHtml(r.method) + '</td>' +
-        '<td><span class="donor-status-badge status-' + (isCompleted ? 'active' : 'flagged') + '">' + escapeHtml(isCompleted ? 'Completed' : 'Link expired, not used') + '</span></td>' +
+        '<td>' + (isCompleted ? '<span class="tier-tag tier-friend">Completed</span>' : '<span class="fail-tag">Link expired, not used</span>') + '</td>' +
       '</tr>'
     );
   }).join('');
@@ -153,7 +155,7 @@ function renderFailedPayments(donor) {
         '<td>' + escapeHtml(f.date) + '</td>' +
         '<td>' + formatFcfa(f.amount) + '</td>' +
         '<td>' + escapeHtml(f.method) + '</td>' +
-        '<td>' + escapeHtml(f.reason) + '</td>' +
+        '<td><span class="fail-tag">' + escapeHtml(f.reason) + '</span></td>' +
       '</tr>'
     );
   }).join('');
@@ -171,12 +173,9 @@ function renderSupportTickets(donor) {
   list.innerHTML = tickets.map(function (t) {
     const isOpen = t.status === 'open';
     return (
-      '<div class="d-flex justify-content-between align-items-start gap-3 py-2 border-bottom">' +
-        '<div>' +
-          '<p class="mb-0">' + escapeHtml(t.issue) + '</p>' +
-          '<span class="text-muted small">' + escapeHtml(t.date) + '</span>' +
-        '</div>' +
-        '<span class="donor-status-badge status-' + (isOpen ? 'flagged' : 'active') + '">' + escapeHtml(isOpen ? 'Open' : 'Resolved') + '</span>' +
+      '<div class="ticket-row">' +
+        '<span>&ldquo;' + escapeHtml(t.issue) + '&rdquo;</span>' +
+        '<span class="ticket-status ' + (isOpen ? 'open' : 'resolved') + '">' + escapeHtml(isOpen ? 'Open' : 'Resolved') + '</span>' +
       '</div>'
     );
   }).join('');
@@ -188,19 +187,13 @@ function renderReferrals(donor) {
   const activeCount = referrals.filter(function (r) { return r.active; }).length;
 
   const referredByLine = donor.referredBy
-    ? '<p class="mb-2"><strong>Referred by:</strong> ' + escapeHtml(donor.referredBy) + '</p>'
-    : '<p class="mb-2 text-muted">Not referred by anyone &mdash; joined directly.</p>';
+    ? '<p class="small text-muted mb-2">Referred by: <strong class="text-body">' + escapeHtml(donor.referredBy) + '</strong> (existing donor)</p>'
+    : '<p class="small text-muted mb-2">Not referred by anyone &mdash; joined directly.</p>';
 
-  const referralsList = referrals.length
-    ? '<ul class="mb-0 small">' + referrals.map(function (r) {
-        return '<li>' + escapeHtml(r.name) + (r.active ? ' <span class="text-muted">(active donor)</span>' : ' <span class="text-muted">(inactive)</span>') + '</li>';
-      }).join('') + '</ul>'
-    : '<p class="text-muted small mb-0">Hasn\'t referred anyone yet.</p>';
+  const referralsLine = '<p class="small text-muted mb-0">Has referred: <strong class="text-body">' +
+    referrals.length + ' people</strong> &mdash; ' + activeCount + ' became an active donor</p>';
 
-  panel.innerHTML =
-    referredByLine +
-    '<p class="mb-2"><strong>Referred ' + referrals.length + ' donor' + (referrals.length === 1 ? '' : 's') + '</strong> (' + activeCount + ' became active)</p>' +
-    referralsList;
+  panel.innerHTML = referredByLine + referralsLine;
 }
 
 function renderHomesFollowed(donor) {
@@ -212,13 +205,9 @@ function renderHomesFollowed(donor) {
     return;
   }
 
-  list.innerHTML = '<div class="d-flex flex-wrap gap-2">' + homes.map(function (h) {
-    return (
-      '<span class="tier-tag tier-' + h.tier.toLowerCase() + '">' +
-        escapeHtml(h.name) + ' &middot; ' + escapeHtml(h.tier) +
-      '</span>'
-    );
-  }).join('') + '</div>';
+  list.innerHTML = homes.map(function (h) {
+    return '<div><span class="tier-tag tier-friend">' + escapeHtml(h.name) + ' &mdash; ' + escapeHtml(h.tier) + '</span></div>';
+  }).join('');
 }
 
 function renderGroupsJoined(donor) {
@@ -230,9 +219,9 @@ function renderGroupsJoined(donor) {
     return;
   }
 
-  list.innerHTML = '<div class="d-flex flex-wrap gap-2">' + groups.map(function (g) {
-    return '<span class="tier-tag tier-friend">' + escapeHtml(g) + '</span>';
-  }).join('') + '</div>';
+  list.innerHTML = groups.map(function (g) {
+    return '<div><span class="tier-tag tier-friend">' + escapeHtml(g) + '</span></div>';
+  }).join('');
 }
 
 function renderTrustAlertBox(donor) {
@@ -250,7 +239,7 @@ function renderTrustAlertBox(donor) {
     ? 'Trust flag: ' + summary + (hasChargebacks ? ' ' + donor.chargebacksCount + ' chargeback(s)/dispute(s) on record.' : '')
     : 'No trust flags on this account. ' + summary;
 
-  box.innerHTML = '<div class="profile-info-note' + (isFlagged ? ' profile-info-note-danger' : '') + '">' + escapeHtml(message) + '</div>';
+  box.innerHTML = '<div class="flag-alert">&#9888; ' + escapeHtml(message) + '</div>';
 }
 
 function renderAdminNotes(donor) {
