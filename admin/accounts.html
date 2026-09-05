@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Partner Organizations - CAM Orphanage Connect Admin</title>
+  <title>All Accounts - CAM Orphanage Connect Admin</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,44 +17,42 @@
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
       <div>
         <a href="index.html" class="text-decoration-none d-block mb-2" style="color: var(--dawn-purple);">&larr; Back to admin login</a>
-        <span class="admin-badge">Partner Organizations</span>
-        <h1 class="h3 mb-1">Partner Organizations</h1>
-        <p class="text-muted mb-0">Companies, NGOs, and diaspora associations that sponsor orphanages or refer placement cases.</p>
+        <span class="admin-badge">All Accounts</span>
+        <h1 class="h3 mb-1">All Accounts</h1>
+        <p class="text-muted mb-0">Orphanages, donors, and partner organizations in one place.</p>
       </div>
       <div class="d-flex gap-2 align-self-start">
         <a href="dashboard.html" class="btn btn-admin-outline">Dashboard</a>
         <a href="reports.html" class="btn btn-admin-outline">Reports</a>
         <a href="messages.html" class="btn btn-admin-outline">Inbox</a>
-        <button id="seed-btn" class="btn btn-admin-outline" type="button">Load sample data</button>
-        <button id="clear-btn" class="btn btn-admin-danger" type="button">Clear all data</button>
       </div>
     </div>
 
-    <p class="text-muted small mb-4" style="opacity:0.7;">
-      "Load sample data" and "Clear all data" are dev-only tools for testing this page before real partner accounts exist &mdash; remove before launch.
-    </p>
+    <div class="d-flex gap-2 flex-wrap mb-4" id="account-tabs">
+      <button type="button" class="filter-tab active" data-tab="orphanages">Orphanages <span class="tab-count" id="count-orphanages">0</span></button>
+      <button type="button" class="filter-tab" data-tab="donors">Donors <span class="tab-count" id="count-donors">0</span></button>
+      <button type="button" class="filter-tab" data-tab="partners">Partner Orgs <span class="tab-count" id="count-partners">0</span></button>
+    </div>
 
-    <div class="mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      <input type="text" class="form-control" id="search-input" placeholder="Search by name..." style="max-width: 320px;">
       <select class="form-select" id="status-filter" style="max-width: 220px;">
-        <option value="all">All (excluding rejected)</option>
+        <option value="all">All statuses</option>
         <option value="verified">Verified</option>
         <option value="pending">Pending</option>
-        <option value="needs-info">Needs info</option>
         <option value="rejected">Rejected</option>
+        <option value="flagged">Flagged</option>
+        <option value="active">Active</option>
       </select>
     </div>
 
     <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">
-      No partner organizations have registered yet. Use "Load sample data" above to preview this page.
+      No results found.
     </div>
 
-    <div id="filter-empty-state" class="card card-admin p-5 text-center text-muted d-none">
-      No partner organizations match this filter.
-    </div>
-
-    <div class="row g-4" id="partners-grid"></div>
+    <div class="d-flex flex-column gap-3" id="accounts-list"></div>
   </div>
 
-  <script src="partners.js"></script>
+  <script src="accounts.js"></script>
 </body>
 </html>

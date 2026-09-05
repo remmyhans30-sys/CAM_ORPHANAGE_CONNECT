@@ -1,3 +1,5 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+
 function loadPartners() {
   return JSON.parse(localStorage.getItem('partners') || '[]');
 }
@@ -24,21 +26,53 @@ function statusLabel(status) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function matchesStatusFilter(status, filter) {
+  if (filter === 'all') return status !== 'rejected';
+  return status === filter;
+}
+
+const STALE_PENDING_DAYS = 10;
+
+function daysPending(partner) {
+  if (!partner.submittedDate) return null;
+  const ms = Date.now() - new Date(partner.submittedDate).getTime();
+  return Math.floor(ms / 86400000);
+}
+
+function isUrgent(partner) {
+  if (partner.verificationStatus !== 'pending' && partner.verificationStatus !== 'needs-info') return false;
+  const days = daysPending(partner);
+  return days !== null && days >= STALE_PENDING_DAYS;
+}
+
 function render() {
-  const partners = loadPartners();
+  const allPartners = loadPartners();
   const grid = document.getElementById('partners-grid');
   const emptyState = document.getElementById('empty-state');
+  const filterEmptyState = document.getElementById('filter-empty-state');
 
   grid.innerHTML = '';
 
-  if (partners.length === 0) {
+  if (allPartners.length === 0) {
     grid.classList.add('d-none');
+    filterEmptyState.classList.add('d-none');
     emptyState.classList.remove('d-none');
     return;
   }
 
-  grid.classList.remove('d-none');
   emptyState.classList.add('d-none');
+
+  const statusFilter = document.getElementById('status-filter').value;
+  const partners = allPartners.filter(function (p) { return matchesStatusFilter(p.verificationStatus, statusFilter); });
+
+  if (partners.length === 0) {
+    grid.classList.add('d-none');
+    filterEmptyState.classList.remove('d-none');
+    return;
+  }
+
+  grid.classList.remove('d-none');
+  filterEmptyState.classList.add('d-none');
 
   partners.forEach(function (partner) {
     const col = document.createElement('div');
@@ -58,6 +92,7 @@ function render() {
         '<div class="d-flex flex-wrap gap-2 mb-3">' +
           '<span class="tier-tag tier-friend">' + escapeHtml(partner.orgType) + '</span>' +
           '<span class="tier-tag ' + (partner.tier === 'Verified Referrer' ? 'tier-sustainer' : 'tier-champion') + '">' + escapeHtml(partner.tier) + '</span>' +
+          (isUrgent(partner) ? '<span class="profile-urgent-badge">&#9201; Urgent</span>' : '') +
         '</div>' +
         '<p class="text-muted small mb-3">' + escapeHtml(partner.contactName || '') + (partner.country ? ' &middot; ' + escapeHtml(partner.country) : '') + '</p>' +
         '<a href="partner-profile.html?id=' + encodeURIComponent(partner.id) + '" class="btn btn-admin-primary btn-sm mt-auto">Review profile</a>' +
@@ -75,6 +110,7 @@ function seedSampleData() {
       contactName: 'Emmanuel Fotso',
       email: 'contact@bafoussamdiaspora.org',
       country: 'France',
+      submittedDate: '2025-10-20',
       verificationStatus: 'verified',
       orgType: 'Diaspora Association',
       tier: 'Sponsor',
@@ -104,6 +140,7 @@ function seedSampleData() {
       contactName: 'Rose Ateba',
       email: 'partnerships@doualabusiness.org',
       country: 'Cameroon',
+      submittedDate: '2026-08-10',
       verificationStatus: 'pending',
       orgType: 'Corporate',
       tier: 'Sponsor',
@@ -129,6 +166,7 @@ function seedSampleData() {
       contactName: 'Samuel Ngu',
       email: 'contact@globalchildaid.org',
       country: 'United Kingdom',
+      submittedDate: '2024-08-25',
       verificationStatus: 'verified',
       orgType: 'NGO',
       tier: 'Verified Referrer',
@@ -171,6 +209,51 @@ function seedSampleData() {
         { reviewer: 'admin@camorphanage.org', action: 'Upgraded to Verified Referrer', timestamp: '2024-09-12T11:00:00.000Z' },
       ],
     },
+    {
+      id: 4,
+      name: 'Bafoussam Community Fund',
+      contactName: 'Emmanuel F.',
+      email: 'contact@bafoussamdiaspora.org',
+      country: 'France',
+      submittedDate: '2026-09-01',
+      verificationStatus: 'pending',
+      orgType: 'Diaspora Association',
+      tier: 'Sponsor',
+      status: 'active',
+      totalContributed: 0,
+      placementReferralsCount: 0,
+      orphanagesSponsored: [],
+      pledge: null,
+      sponsoredByBlurb: '',
+      documents: [],
+      sanctionsScreened: false,
+      activityLog: [],
+    },
+    {
+      id: 5,
+      name: 'Yaoundé Traders Union',
+      contactName: 'Paul Biya Jr.',
+      email: 'contact@yaoundetraders.org',
+      country: 'Cameroon',
+      submittedDate: '2026-07-15',
+      verificationStatus: 'rejected',
+      rejectionReason: 'Registration certificate did not match the organization name provided.',
+      appealMessage: 'We have corrected the registration paperwork and re-submitted it under the correct legal name. Please review again.',
+      appealDate: '2026-08-30',
+      orgType: 'Corporate',
+      tier: 'Sponsor',
+      status: 'active',
+      totalContributed: 0,
+      placementReferralsCount: 0,
+      orphanagesSponsored: [],
+      pledge: null,
+      sponsoredByBlurb: '',
+      documents: ['registration-certificate-corrected.pdf'],
+      sanctionsScreened: false,
+      activityLog: [
+        { reviewer: 'admin@camorphanage.org', action: 'Rejected', timestamp: '2026-07-20T12:00:00.000Z' },
+      ],
+    },
   ];
 
   savePartners(samplePartners);
@@ -185,5 +268,6 @@ function clearAllData() {
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+document.getElementById('status-filter').addEventListener('change', render);
 
 render();

@@ -14,11 +14,19 @@
 </head>
 <body>
   <div class="container py-5">
-    <div class="mb-4">
-      <a href="verification.html" class="text-decoration-none d-block mb-2" style="color: var(--dawn-purple);">&larr; Back to orphanages</a>
-      <span class="admin-badge">Finance</span>
-      <h1 class="h3 mb-1">Donations by Orphanage</h1>
-      <p class="text-muted mb-0">Track funds raised against each need's goal.</p>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+      <div>
+        <a href="verification.html" class="text-decoration-none d-block mb-2" style="color: var(--dawn-purple);">&larr; Back to orphanages</a>
+        <span class="admin-badge">Finance</span>
+        <h1 class="h3 mb-1">Donations by Orphanage</h1>
+        <p class="text-muted mb-0">Track funds raised against each need's goal.</p>
+      </div>
+      <div class="d-flex gap-2 align-self-start">
+        <a href="dashboard.html" class="btn btn-admin-outline">Dashboard</a>
+        <a href="reports.html" class="btn btn-admin-outline">Reports</a>
+        <a href="messages.html" class="btn btn-admin-outline">Inbox</a>
+        <button type="button" class="btn btn-admin-primary" id="export-csv-btn">Export CSV</button>
+      </div>
     </div>
 
     <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">

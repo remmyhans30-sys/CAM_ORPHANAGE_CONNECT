@@ -1,3 +1,5 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+
 function getPartnerId() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');
@@ -19,6 +21,30 @@ function savePartner(partner) {
   localStorage.setItem('partners', JSON.stringify(partners));
 }
 
+function openOrCreateMessageThread(accountType, accountId, senderName) {
+  const messages = JSON.parse(localStorage.getItem('messages') || '[]');
+  let thread = messages.find(function (m) { return m.accountType === accountType && String(m.accountId) === String(accountId); });
+
+  if (!thread) {
+    thread = {
+      id: Date.now(),
+      senderName: senderName,
+      accountType: accountType,
+      accountId: accountId,
+      subject: 'Conversation with ' + senderName,
+      body: '',
+      timestamp: new Date().toISOString(),
+      read: true,
+      fromAdmin: true,
+      replies: [],
+    };
+    messages.push(thread);
+    localStorage.setItem('messages', JSON.stringify(messages));
+  }
+
+  window.location.href = 'messages.html?id=' + thread.id;
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
@@ -34,6 +60,20 @@ function initials(name) {
 
 function formatFcfa(amount) {
   return Number(amount || 0).toLocaleString('en-US') + ' FCFA';
+}
+
+const STALE_PENDING_DAYS = 10;
+
+function daysPending(partner) {
+  if (!partner.submittedDate) return null;
+  const ms = Date.now() - new Date(partner.submittedDate).getTime();
+  return Math.floor(ms / 86400000);
+}
+
+function isUrgent(partner) {
+  if (partner.verificationStatus !== 'pending' && partner.verificationStatus !== 'needs-info') return false;
+  const days = daysPending(partner);
+  return days !== null && days >= STALE_PENDING_DAYS;
 }
 
 function statusLabel(status) {
@@ -56,6 +96,7 @@ function renderHeaderCard(partner) {
             '<span class="status-badge status-' + partner.verificationStatus + '">' + escapeHtml(statusLabel(partner.verificationStatus)) + '</span>' +
             '<span class="tier-tag tier-friend">' + escapeHtml(partner.orgType) + '</span>' +
             '<span class="tier-tag ' + (partner.tier === 'Verified Referrer' ? 'tier-sustainer' : 'tier-champion') + '">' + escapeHtml(partner.tier) + '</span>' +
+            (isUrgent(partner) ? '<span class="profile-urgent-badge">&#9201; Urgent &mdash; pending ' + daysPending(partner) + ' days</span>' : '') +
           '</div>' +
           '<div class="d-flex flex-wrap gap-3 small text-muted">' +
             '<span>Contact: ' + escapeHtml(partner.contactName || '&mdash;') + '</span>' +
@@ -203,6 +244,28 @@ function renderSponsoredByPreview(partner) {
     '</div>';
 }
 
+function computeDuplicateRisk(partner) {
+  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
+  const email = (partner.email || '').trim().toLowerCase();
+  if (!email) return null;
+
+  const sharers = partners.filter(function (p) {
+    return p.id !== partner.id && (p.email || '').trim().toLowerCase() === email;
+  });
+
+  if (sharers.length === 0) return null;
+  return 'Email also used by ' + sharers.map(function (p) { return p.name; }).join(', ');
+}
+
+function renderDuplicateRisk(partner) {
+  const box = document.getElementById('duplicate-risk-box');
+  const risk = computeDuplicateRisk(partner);
+
+  box.innerHTML = risk
+    ? '<div class="profile-info-note profile-info-note-danger">&#9888; ' + escapeHtml(risk) + '</div>'
+    : '';
+}
+
 function currentAdmin() {
   return localStorage.getItem('currentAdminEmail') || 'Unknown admin';
 }
@@ -245,6 +308,10 @@ function renderVerificationDocuments(partner) {
       : '') +
     (partner.verificationStatus === 'rejected' && partner.rejectionReason
       ? '<div class="profile-info-note profile-info-note-danger mb-3">Rejected: ' + escapeHtml(partner.rejectionReason) + '</div>'
+      : '') +
+    (partner.verificationStatus === 'rejected' && partner.appealMessage
+      ? '<div class="profile-info-note mb-3"><strong>Appeal submitted' + (partner.appealDate ? ' (' + escapeHtml(partner.appealDate) + ')' : '') + ':</strong> ' + escapeHtml(partner.appealMessage) + '</div>' +
+        '<button type="button" class="btn btn-admin-outline btn-sm mb-3" id="reconsider-org-btn">Reconsider &mdash; move back to pending</button>'
       : '');
 
   const decisionButtons = isActionable
@@ -296,6 +363,7 @@ function render() {
   emptyState.classList.add('d-none');
   content.classList.remove('d-none');
   renderHeaderCard(partner);
+  renderDuplicateRisk(partner);
   renderOnboardingChecklist(partner);
   renderStatsStrip(partner);
   renderOrphanagesSponsored(partner);
@@ -312,10 +380,7 @@ document.getElementById('partner-header-card').addEventListener('click', functio
   if (!partner) return;
 
   if (e.target.id === 'message-org-btn') {
-    const message = prompt('Message to send to ' + partner.name + ':');
-    if (message === null) return;
-    if (!message.trim()) return;
-    alert('(Simulated) Message sent to ' + partner.name + ': "' + message.trim() + '"');
+    openOrCreateMessageThread('partner', partner.id, partner.name);
   }
 
   if (e.target.id === 'flag-account-btn') {
@@ -429,6 +494,14 @@ document.getElementById('verification-documents-panel').addEventListener('click'
     const upgrading = partner.tier === 'Sponsor';
     partner.tier = upgrading ? 'Verified Referrer' : 'Sponsor';
     logActivity(partner, upgrading ? 'Upgraded to Verified Referrer' : 'Downgraded to Sponsor');
+    savePartner(partner);
+    render();
+  }
+
+  if (e.target.id === 'reconsider-org-btn') {
+    if (!confirm('Move this organization back to pending for re-review?')) return;
+    partner.verificationStatus = 'pending';
+    logActivity(partner, 'Reconsidered appeal, moved back to pending');
     savePartner(partner);
     render();
   }

@@ -1,3 +1,5 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+
 function getDonorId() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');
@@ -19,6 +21,30 @@ function saveDonor(donor) {
   localStorage.setItem('donors', JSON.stringify(donors));
 }
 
+function openOrCreateMessageThread(accountType, accountId, senderName) {
+  const messages = JSON.parse(localStorage.getItem('messages') || '[]');
+  let thread = messages.find(function (m) { return m.accountType === accountType && String(m.accountId) === String(accountId); });
+
+  if (!thread) {
+    thread = {
+      id: Date.now(),
+      senderName: senderName,
+      accountType: accountType,
+      accountId: accountId,
+      subject: 'Conversation with ' + senderName,
+      body: '',
+      timestamp: new Date().toISOString(),
+      read: true,
+      fromAdmin: true,
+      replies: [],
+    };
+    messages.push(thread);
+    localStorage.setItem('messages', JSON.stringify(messages));
+  }
+
+  window.location.href = 'messages.html?id=' + thread.id;
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
@@ -38,6 +64,41 @@ function monthsSince(dateStr) {
   let months = (now.getFullYear() - then.getFullYear()) * 12 + (now.getMonth() - then.getMonth());
   if (now.getDate() < then.getDate()) months--;
   return Math.max(0, months);
+}
+
+function computeDuplicateRisk(donor) {
+  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  const email = (donor.email || '').trim().toLowerCase();
+  if (!email) return null;
+
+  const sharers = donors.filter(function (d) {
+    return d.id !== donor.id && (d.email || '').trim().toLowerCase() === email;
+  });
+
+  if (sharers.length === 0) return null;
+  return 'Email also used by ' + sharers.map(function (d) { return d.name; }).join(', ');
+}
+
+function renderDuplicateRisk(donor) {
+  const box = document.getElementById('duplicate-risk-box');
+  const risk = computeDuplicateRisk(donor);
+
+  box.innerHTML = risk
+    ? '<div class="profile-info-note profile-info-note-danger">&#9888; ' + escapeHtml(risk) + '</div>'
+    : '';
+}
+
+function currentAdmin() {
+  return localStorage.getItem('currentAdminEmail') || 'Unknown admin';
+}
+
+function logActivity(donor, action) {
+  donor.activityLog = donor.activityLog || [];
+  donor.activityLog.push({
+    reviewer: currentAdmin(),
+    action: action,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 function formatFcfa(amount) {
@@ -259,6 +320,22 @@ function renderAdminNotes(donor) {
   document.getElementById('admin-notes-textarea').value = donor.adminNotes || '';
 }
 
+function renderActivityLog(donor) {
+  const panel = document.getElementById('activity-log-panel');
+  const log = (donor.activityLog || []).slice().reverse();
+
+  if (log.length === 0) {
+    panel.innerHTML = '<p class="text-muted small mb-0">No activity recorded yet.</p>';
+    return;
+  }
+
+  panel.innerHTML = '<ul class="mb-0 small">' + log.map(function (entry) {
+    const when = new Date(entry.timestamp);
+    const whenText = isNaN(when.getTime()) ? entry.timestamp : when.toLocaleString();
+    return '<li>' + escapeHtml(entry.action) + ' by ' + escapeHtml(entry.reviewer) + ' &mdash; ' + escapeHtml(whenText) + '</li>';
+  }).join('') + '</ul>';
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -273,6 +350,7 @@ function render() {
   emptyState.classList.add('d-none');
   content.classList.remove('d-none');
   renderHeaderCard(donor);
+  renderDuplicateRisk(donor);
   renderStatsStrip(donor);
   renderDonationHistory(donor);
   renderPasswordResets(donor);
@@ -283,6 +361,7 @@ function render() {
   renderGroupsJoined(donor);
   renderTrustAlertBox(donor);
   renderAdminNotes(donor);
+  renderActivityLog(donor);
 }
 
 document.getElementById('donor-header-card').addEventListener('click', function (e) {
@@ -290,10 +369,7 @@ document.getElementById('donor-header-card').addEventListener('click', function 
   if (!donor) return;
 
   if (e.target.id === 'message-donor-btn') {
-    const message = prompt('Message to send to ' + donor.name + ':');
-    if (message === null) return;
-    if (!message.trim()) return;
-    alert('(Simulated) Message sent to ' + donor.name + ': "' + message.trim() + '"');
+    openOrCreateMessageThread('donor', donor.id, donor.name);
   }
 
   if (e.target.id === 'flag-account-btn') {
@@ -310,6 +386,7 @@ document.getElementById('donor-header-card').addEventListener('click', function 
       donor.status = 'flagged';
       donor.flagReason = reason.trim();
     }
+    logActivity(donor, donor.status === 'flagged' ? 'Flagged account' : 'Unflagged account');
     saveDonor(donor);
     render();
   }
@@ -320,7 +397,9 @@ document.getElementById('save-notes-btn').addEventListener('click', function () 
   if (!donor) return;
 
   donor.adminNotes = document.getElementById('admin-notes-textarea').value.trim();
+  logActivity(donor, 'Updated admin notes');
   saveDonor(donor);
+  render();
 
   const statusEl = document.getElementById('notes-save-status');
   statusEl.textContent = 'Saved.';

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users & Roles - CAM Orphanage Connect Admin</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container py-5">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+      <div>
+        <a href="dashboard.html" class="text-decoration-none d-block mb-2" style="color: var(--dawn-purple);">&larr; Back to dashboard</a>
+        <span class="admin-badge">Users & Roles</span>
+        <h1 class="h3 mb-1">Users & Roles</h1>
+        <p class="text-muted mb-0">Admin accounts and what they're allowed to access. Log in with a user's email to see their role take effect.</p>
+      </div>
+      <button type="button" class="btn btn-admin-primary align-self-start" id="add-user-btn">+ Add user</button>
+    </div>
+
+    <div class="card card-admin p-4 p-md-5">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="text-muted small mt-3" style="opacity:0.7;">
+      Example enforcement: a Content Manager cannot see the "Finance" link in the sidebar or open finance.html directly. Other roles currently have full access &mdash; this is a starting point, not a complete permissions matrix.
+    </p>
+  </div>
+
+  <div class="modal fade" id="user-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header">
+          <h2 class="h5 mb-0" id="user-modal-title">Add User</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="user-form" novalidate>
+            <input type="hidden" id="user-id">
+            <div class="mb-3">
+              <label class="form-label" for="user-name">Name</label>
+              <input type="text" class="form-control" id="user-name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="user-email">Email</label>
+              <input type="email" class="form-control" id="user-email" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="user-role">Role</label>
+              <select class="form-select" id="user-role">
+                <option>Super Admin</option>
+                <option>Administrator</option>
+                <option>Program Manager</option>
+                <option>Finance Manager</option>
+                <option>Content Manager</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-admin-primary w-100">Save user</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="users.js"></script>
+</body>
+</html>

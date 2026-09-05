@@ -1,3 +1,5 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+
 function loadDonors() {
   return JSON.parse(localStorage.getItem('donors') || '[]');
 }
@@ -139,6 +141,9 @@ function seedSampleData() {
       referralsMade: [],
       homesFollowed: [{ name: 'Grace Orphanage', tier: 'Friend' }],
       groupsJoined: [],
+      activityLog: [
+        { reviewer: 'admin@camorphanage.org', action: 'Flagged account', timestamp: '2026-08-07T10:00:00.000Z' },
+      ],
     },
     {
       id: 3,
@@ -165,6 +170,31 @@ function seedSampleData() {
       referredBy: '',
       referralsMade: [],
       homesFollowed: [{ name: 'Grace Orphanage', tier: 'Friend' }],
+      groupsJoined: [],
+    },
+    {
+      id: 4,
+      name: 'Ngozi A.',
+      email: 'ngozi.adeyemi@example.com',
+      joinDate: '2026-08-25',
+      location: 'Yaoundé, Cameroon',
+      preferredPayment: 'Card',
+      preferredCurrency: 'FCFA',
+      lastActive: '2026-08-28',
+      vip: false,
+      status: 'active',
+      totalGiven: 5000,
+      donationsCount: 1,
+      homesFollowedCount: 0,
+      activeRecurringGifts: 0,
+      chargebacksCount: 0,
+      donations: [],
+      passwordResets: [],
+      failedPayments: [],
+      supportTickets: [],
+      referredBy: '',
+      referralsMade: [],
+      homesFollowed: [],
       groupsJoined: [],
     },
   ];

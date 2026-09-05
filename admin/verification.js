@@ -1,3 +1,5 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+
 const COVER_CLASSES = ['p1', 'p2', 'p3', 'p4', 'p5'];
 const CHECK_SVG = '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -11,6 +13,30 @@ function saveOrphanages(orphanages) {
 
 function loadNeeds() {
   return JSON.parse(localStorage.getItem('needs') || '[]');
+}
+
+function openOrCreateMessageThread(accountType, accountId, senderName) {
+  const messages = JSON.parse(localStorage.getItem('messages') || '[]');
+  let thread = messages.find(function (m) { return m.accountType === accountType && String(m.accountId) === String(accountId); });
+
+  if (!thread) {
+    thread = {
+      id: Date.now(),
+      senderName: senderName,
+      accountType: accountType,
+      accountId: accountId,
+      subject: 'Conversation with ' + senderName,
+      body: '',
+      timestamp: new Date().toISOString(),
+      read: true,
+      fromAdmin: true,
+      replies: [],
+    };
+    messages.push(thread);
+    localStorage.setItem('messages', JSON.stringify(messages));
+  }
+
+  window.location.href = 'messages.html?id=' + thread.id;
 }
 
 function escapeHtml(str) {
@@ -111,7 +137,7 @@ function logEvent(orphanage, action) {
 }
 
 function matchesFilter(orphanage, filter) {
-  if (filter === 'all') return true;
+  if (filter === 'all') return orphanage.status !== 'rejected';
   if (filter === 'flagged') return Boolean(orphanage.flagged);
   if (filter === 'urgent') return isUrgent(orphanage);
   return orphanage.status === filter;
@@ -627,12 +653,15 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
 }
 
 function buildModalFooter(orphanage) {
+  const messageBtn = '<button type="button" class="btn btn-admin-outline me-auto" id="message-orphanage-btn">Message orphanage</button>';
+
   if (orphanage.status !== 'pending' && orphanage.status !== 'needs-info') {
-    return '<button type="button" class="btn btn-admin-outline" data-bs-dismiss="modal">Close</button>';
+    return messageBtn + '<button type="button" class="btn btn-admin-outline" data-bs-dismiss="modal">Close</button>';
   }
 
   const hasDocs = (orphanage.documents || []).length > 0;
   return (
+    messageBtn +
     '<button type="button" class="btn btn-admin-danger modal-reject-btn">Reject</button>' +
     '<button type="button" class="btn btn-admin-outline modal-request-info-btn">Request more info</button>' +
     '<button type="button" class="btn btn-admin-primary modal-approve-btn"' +
@@ -776,6 +805,11 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
   const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
   if (!orphanage) return;
 
+  if (e.target.id === 'message-orphanage-btn') {
+    openOrCreateMessageThread('orphanage', orphanage.id, orphanage.name);
+    return;
+  }
+
   if (e.target.classList.contains('modal-approve-btn')) {
     orphanage.status = 'verified';
     logActivity(orphanage, 'verified');
@@ -819,3 +853,8 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
 });
 
 render();
+
+const deepLinkId = new URLSearchParams(window.location.search).get('id');
+if (deepLinkId !== null) {
+  openProfileModal(Number(deepLinkId));
+}

@@ -1,3 +1,9 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+if (localStorage.getItem('currentAdminRole') === 'Content Manager') {
+  alert('Your role (Content Manager) does not have access to Finance.');
+  window.location.href = 'dashboard.html';
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
@@ -56,3 +62,42 @@ if (needs.length === 0) {
     emptyState.classList.remove('d-none');
   }
 }
+
+function csvField(value) {
+  const str = String(value === undefined || value === null ? '' : value);
+  if (/[",\n]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map(function (row) { return row.map(csvField).join(','); }).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-csv-btn').addEventListener('click', function () {
+  const rows = [['Orphanage', 'Need', 'Raised', 'Goal', 'Percent']];
+
+  needs.forEach(function (need) {
+    const orphanage = orphanages.find(function (o) { return String(o.id) === String(need.orphanageId); });
+    const percent = need.goal > 0 ? Math.round((need.raised / need.goal) * 100) : 0;
+    rows.push([
+      orphanage ? orphanage.name : 'Unknown',
+      need.title,
+      need.raised || 0,
+      need.goal || 0,
+      percent + '%',
+    ]);
+  });
+
+  downloadCsv('donations-by-orphanage.csv', rows);
+});

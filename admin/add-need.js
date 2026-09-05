@@ -1,3 +1,5 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+
 const orphanageSelect = document.getElementById('need-orphanage');
 const orphanages = JSON.parse(localStorage.getItem('orphanages') || '[]');
 
