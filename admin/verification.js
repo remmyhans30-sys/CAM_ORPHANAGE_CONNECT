@@ -536,6 +536,27 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
             : '') +
         '</div>' +
       '</div>' +
+      '<div class="col-12">' +
+        '<div class="d-flex justify-content-between align-items-center mb-2">' +
+          '<h3 class="h6 mb-0">Edit basic details</h3>' +
+          '<span class="small text-muted" id="basic-info-save-status"></span>' +
+        '</div>' +
+        '<div class="row g-2 mb-2">' +
+          '<div class="col-md-6">' +
+            '<label class="form-label small mb-1" for="modal-name-input">Name</label>' +
+            '<input type="text" class="form-control form-control-sm" id="modal-name-input" value="' + escapeHtml(orphanage.name) + '">' +
+          '</div>' +
+          '<div class="col-md-6">' +
+            '<label class="form-label small mb-1" for="modal-location-input">Location</label>' +
+            '<input type="text" class="form-control form-control-sm" id="modal-location-input" value="' + escapeHtml(orphanage.location) + '">' +
+          '</div>' +
+        '</div>' +
+        '<div class="mb-2">' +
+          '<label class="form-label small mb-1" for="modal-photo-input">Replace profile photo</label>' +
+          '<input type="file" accept="image/*" class="form-control form-control-sm" id="modal-photo-input">' +
+        '</div>' +
+        '<button type="button" class="btn btn-admin-outline btn-sm" id="save-basic-info-btn">Save details</button>' +
+      '</div>' +
       (orphanage.status === 'needs-info' && orphanage.infoRequestMessage
         ? '<div class="col-12"><div class="profile-info-note">Info requested: ' + escapeHtml(orphanage.infoRequestMessage) + '</div></div>'
         : '') +
@@ -658,14 +679,16 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
 
 function buildModalFooter(orphanage) {
   const messageBtn = '<button type="button" class="btn btn-admin-outline me-auto" id="message-orphanage-btn">Message orphanage</button>';
+  const deleteBtn = '<button type="button" class="btn btn-admin-danger" id="delete-orphanage-btn">Delete orphanage</button>';
 
   if (orphanage.status !== 'pending' && orphanage.status !== 'needs-info') {
-    return messageBtn + '<button type="button" class="btn btn-admin-outline" data-bs-dismiss="modal">Close</button>';
+    return messageBtn + deleteBtn + '<button type="button" class="btn btn-admin-outline" data-bs-dismiss="modal">Close</button>';
   }
 
   const hasDocs = (orphanage.documents || []).length > 0;
   return (
     messageBtn +
+    deleteBtn +
     '<button type="button" class="btn btn-admin-danger modal-reject-btn">Reject</button>' +
     '<button type="button" class="btn btn-admin-outline modal-request-info-btn">Request more info</button>' +
     '<button type="button" class="btn btn-admin-primary modal-approve-btn"' +
@@ -715,6 +738,45 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   const statusEl = document.getElementById('story-save-status');
   statusEl.textContent = 'Saved.';
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'save-basic-info-btn') return;
+  if (activeOrphanageId === null) return;
+
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  const name = document.getElementById('modal-name-input').value.trim();
+  const location = document.getElementById('modal-location-input').value.trim();
+  const photoInput = document.getElementById('modal-photo-input');
+  const photoFile = photoInput.files[0];
+
+  function finishSave() {
+    orphanage.name = name;
+    orphanage.location = location;
+    logEvent(orphanage, 'Edited basic details');
+    saveOrphanages(orphanages);
+    render();
+    openProfileModal(activeOrphanageId);
+    const statusEl = document.getElementById('basic-info-save-status');
+    if (statusEl) {
+      statusEl.textContent = 'Saved.';
+      setTimeout(function () { statusEl.textContent = ''; }, 2000);
+    }
+  }
+
+  if (photoFile) {
+    const reader = new FileReader();
+    reader.onload = function () {
+      orphanage.photoUrl = reader.result;
+      finishSave();
+    };
+    reader.readAsDataURL(photoFile);
+  } else {
+    finishSave();
+  }
 });
 
 document.getElementById('profile-modal-body').addEventListener('click', function (e) {
@@ -811,6 +873,21 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
 
   if (e.target.id === 'message-orphanage-btn') {
     openOrCreateMessageThread('orphanage', orphanage.id, orphanage.name);
+    return;
+  }
+
+  if (e.target.id === 'delete-orphanage-btn') {
+    if (!confirm('Permanently delete "' + orphanage.name + '"? This will also remove its needs. This cannot be undone.')) return;
+
+    const remainingOrphanages = orphanages.filter(function (o) { return o.id !== orphanage.id; });
+    saveOrphanages(remainingOrphanages);
+
+    const needs = loadNeeds();
+    const remainingNeeds = needs.filter(function (n) { return String(n.orphanageId) !== String(orphanage.id); });
+    localStorage.setItem('needs', JSON.stringify(remainingNeeds));
+
+    profileModal.hide();
+    render();
     return;
   }
 

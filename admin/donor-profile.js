@@ -324,6 +324,12 @@ function renderAdminNotes(donor) {
   document.getElementById('admin-notes-textarea').value = donor.adminNotes || '';
 }
 
+function renderEditForm(donor) {
+  document.getElementById('edit-name-input').value = donor.name || '';
+  document.getElementById('edit-email-input').value = donor.email || '';
+  document.getElementById('edit-location-input').value = donor.location || '';
+}
+
 function renderActivityLog(donor) {
   const panel = document.getElementById('activity-log-panel');
   const log = (donor.activityLog || []).slice().reverse();
@@ -366,6 +372,7 @@ function render() {
   renderTrustAlertBox(donor);
   renderAdminNotes(donor);
   renderActivityLog(donor);
+  renderEditForm(donor);
 }
 
 document.getElementById('donor-header-card').addEventListener('click', function (e) {
@@ -394,6 +401,32 @@ document.getElementById('donor-header-card').addEventListener('click', function 
     saveDonor(donor);
     render();
   }
+});
+
+document.getElementById('save-edit-btn').addEventListener('click', function () {
+  const donor = loadDonor();
+  if (!donor) return;
+
+  donor.name = document.getElementById('edit-name-input').value.trim();
+  donor.email = document.getElementById('edit-email-input').value.trim();
+  donor.location = document.getElementById('edit-location-input').value.trim();
+  logActivity(donor, 'Edited basic details');
+  saveDonor(donor);
+  render();
+
+  const statusEl = document.getElementById('edit-save-status');
+  statusEl.textContent = 'Saved.';
+  setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('delete-donor-btn').addEventListener('click', function () {
+  const donor = loadDonor();
+  if (!donor) return;
+  if (!confirm('Permanently delete "' + donor.name + '"? This cannot be undone.')) return;
+
+  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  localStorage.setItem('donors', JSON.stringify(donors.filter(function (d) { return d.id !== donor.id; })));
+  window.location.href = 'donors.html';
 });
 
 document.getElementById('save-notes-btn').addEventListener('click', function () {

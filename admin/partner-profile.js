@@ -353,6 +353,12 @@ function renderAdminNotes(partner) {
   document.getElementById('admin-notes-textarea').value = partner.adminNotes || '';
 }
 
+function renderEditForm(partner) {
+  document.getElementById('edit-name-input').value = partner.name || '';
+  document.getElementById('edit-email-input').value = partner.email || '';
+  document.getElementById('edit-country-input').value = partner.country || '';
+}
+
 function render() {
   const partner = loadPartner();
   const emptyState = document.getElementById('empty-state');
@@ -377,6 +383,7 @@ function render() {
   renderVerificationDocuments(partner);
   renderActivityLog(partner);
   renderAdminNotes(partner);
+  renderEditForm(partner);
 }
 
 document.getElementById('partner-header-card').addEventListener('click', function (e) {
@@ -521,6 +528,32 @@ document.getElementById('save-notes-btn').addEventListener('click', function () 
   const statusEl = document.getElementById('notes-save-status');
   statusEl.textContent = 'Saved.';
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('save-edit-btn').addEventListener('click', function () {
+  const partner = loadPartner();
+  if (!partner) return;
+
+  partner.name = document.getElementById('edit-name-input').value.trim();
+  partner.email = document.getElementById('edit-email-input').value.trim();
+  partner.country = document.getElementById('edit-country-input').value.trim();
+  logActivity(partner, 'Edited basic details');
+  savePartner(partner);
+  render();
+
+  const statusEl = document.getElementById('edit-save-status');
+  statusEl.textContent = 'Saved.';
+  setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('delete-partner-btn').addEventListener('click', function () {
+  const partner = loadPartner();
+  if (!partner) return;
+  if (!confirm('Permanently delete "' + partner.name + '"? This cannot be undone.')) return;
+
+  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
+  localStorage.setItem('partners', JSON.stringify(partners.filter(function (p) { return p.id !== partner.id; })));
+  window.location.href = 'partners.html';
 });
 
 render();

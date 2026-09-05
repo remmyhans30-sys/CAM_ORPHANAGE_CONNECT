@@ -6,6 +6,7 @@ function loadPartners() { return JSON.parse(localStorage.getItem('partners') || 
 function loadMessages() { return JSON.parse(localStorage.getItem('messages') || '[]'); }
 function loadReports() { return JSON.parse(localStorage.getItem('reports') || '[]'); }
 function loadPrograms() { return JSON.parse(localStorage.getItem('programs') || '[]'); }
+function loadNeeds() { return JSON.parse(localStorage.getItem('needs') || '[]'); }
 
 function initials(name) {
   const words = (name || '').trim().split(/\s+/).filter(Boolean);
@@ -36,7 +37,10 @@ function statusLabel(status) {
 function renderTopbar() {
   const messages = loadMessages();
   const reports = loadReports();
-  const unreadMessages = messages.filter(function (m) { return !m.read; }).length;
+  const notif = JSON.parse(localStorage.getItem('notifSettings') || '{}');
+  const messageAlertsOn = notif.messages !== false;
+
+  const unreadMessages = messageAlertsOn ? messages.filter(function (m) { return !m.read; }).length : 0;
   const openReports = reports.filter(function (r) { return r.status !== 'resolved'; }).length;
 
   document.getElementById('messages-badge').textContent = unreadMessages || '';
@@ -311,6 +315,14 @@ function runGlobalSearch(query) {
   loadMessages().forEach(function (m) {
     if ((m.senderName || '').toLowerCase().includes(q) || (m.subject || '').toLowerCase().includes(q)) {
       matches.push({ icon: 'bi-chat-dots', label: m.subject, sub: 'Message from ' + m.senderName, href: 'messages.html?id=' + m.id });
+    }
+  });
+
+  const orphanages = loadOrphanages();
+  loadNeeds().forEach(function (n) {
+    if ((n.title || '').toLowerCase().includes(q)) {
+      const orphanage = orphanages.find(function (o) { return String(o.id) === String(n.orphanageId); });
+      matches.push({ icon: 'bi-clipboard-plus', label: n.title, sub: 'Need — ' + (orphanage ? orphanage.name : 'Unknown orphanage'), href: 'needs.html' });
     }
   });
 
