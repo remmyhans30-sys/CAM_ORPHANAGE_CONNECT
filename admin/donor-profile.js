@@ -134,6 +134,27 @@ function renderPasswordResets(donor) {
   }).join('');
 }
 
+function renderFailedPayments(donor) {
+  const tbody = document.getElementById('failed-payments-tbody');
+  const failures = donor.failedPayments || [];
+
+  if (failures.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-muted small">No failed payment attempts.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = failures.map(function (f) {
+    return (
+      '<tr>' +
+        '<td>' + escapeHtml(f.date) + '</td>' +
+        '<td>' + formatFcfa(f.amount) + '</td>' +
+        '<td>' + escapeHtml(f.method) + '</td>' +
+        '<td>' + escapeHtml(f.reason) + '</td>' +
+      '</tr>'
+    );
+  }).join('');
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -151,6 +172,7 @@ function render() {
   renderStatsStrip(donor);
   renderDonationHistory(donor);
   renderPasswordResets(donor);
+  renderFailedPayments(donor);
 }
 
 function seedSampleData() {
@@ -179,6 +201,10 @@ function seedSampleData() {
     passwordResets: [
       { date: '2026-07-02', method: 'Email link', status: 'completed' },
       { date: '2026-04-18', method: 'Email link', status: 'expired' },
+    ],
+    failedPayments: [
+      { date: '2026-08-01', amount: 60000, method: 'MTN Mobile Money', reason: 'Insufficient funds' },
+      { date: '2026-06-09', amount: 45000, method: 'Bank transfer', reason: 'Card declined' },
     ],
   };
 
