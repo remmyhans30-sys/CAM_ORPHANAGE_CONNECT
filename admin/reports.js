@@ -222,4 +222,97 @@ function clearAllData() {
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
 
+function formatFcfa(amount) {
+  const currency = JSON.parse(localStorage.getItem('orgSettings') || '{}').currency || 'FCFA';
+  const num = Number(amount || 0).toLocaleString('en-US');
+  if (currency === 'USD') return '$' + num;
+  if (currency === 'EUR') return '€' + num;
+  return num + ' FCFA';
+}
+
+let generatedReportRows = [];
+
+function generateDonationsReport() {
+  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  const rows = [];
+
+  donors.forEach(function (d) {
+    (d.donations || []).forEach(function (don) {
+      rows.push({ donor: d.name, amount: don.amount, need: don.need, method: don.method, date: don.date, status: don.status });
+    });
+  });
+
+  const totalAmount = rows.reduce(function (sum, r) { return sum + Number(r.amount || 0); }, 0);
+  const completed = rows.filter(function (r) { return r.status === 'completed'; }).length;
+  const refunded = rows.filter(function (r) { return r.status === 'refunded'; }).length;
+
+  generatedReportRows = [['Donor', 'Amount', 'Need', 'Method', 'Date', 'Status']].concat(
+    rows.map(function (r) { return [r.donor, r.amount, r.need || '', r.method || '', r.date || '', r.status || '']; })
+  );
+
+  document.getElementById('generated-report-output').innerHTML =
+    '<h3 class="h6">Donations Report</h3>' +
+    '<p class="small text-muted">Generated ' + new Date().toLocaleString() + '</p>' +
+    '<p class="mb-3"><strong>' + rows.length + '</strong> donations totaling <strong>' + formatFcfa(totalAmount) + '</strong> &mdash; ' + completed + ' completed, ' + refunded + ' refunded.</p>' +
+    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Donor</th><th>Amount</th><th>Need</th><th>Method</th><th>Date</th><th>Status</th></tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td>' + escapeHtml(r.donor) + '</td><td>' + formatFcfa(r.amount) + '</td><td>' + escapeHtml(r.need || '') + '</td><td>' + escapeHtml(r.method || '') + '</td><td>' + escapeHtml(r.date || '') + '</td><td>' + escapeHtml(r.status || '') + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div>';
+}
+
+function generateProgramsReport() {
+  const programs = JSON.parse(localStorage.getItem('programs') || '[]');
+  const totalGoal = programs.reduce(function (sum, p) { return sum + Number(p.fundingGoal || 0); }, 0);
+  const totalRaised = programs.reduce(function (sum, p) { return sum + Number(p.amountRaised || 0); }, 0);
+  const active = programs.filter(function (p) { return p.status === 'active'; }).length;
+  const completed = programs.filter(function (p) { return p.status === 'completed'; }).length;
+
+  generatedReportRows = [['Program', 'Category', 'Status', 'Funding Goal', 'Amount Raised']].concat(
+    programs.map(function (p) { return [p.name, p.category, p.status, p.fundingGoal || 0, p.amountRaised || 0]; })
+  );
+
+  document.getElementById('generated-report-output').innerHTML =
+    '<h3 class="h6">Programs Report</h3>' +
+    '<p class="small text-muted">Generated ' + new Date().toLocaleString() + '</p>' +
+    '<p class="mb-3"><strong>' + programs.length + '</strong> programs (' + active + ' active, ' + completed + ' completed) &mdash; ' + formatFcfa(totalRaised) + ' raised of ' + formatFcfa(totalGoal) + ' goal.</p>' +
+    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Program</th><th>Category</th><th>Status</th><th>Funding Goal</th><th>Amount Raised</th></tr></thead><tbody>' +
+    programs.map(function (p) {
+      return '<tr><td>' + escapeHtml(p.name) + '</td><td>' + escapeHtml(p.category) + '</td><td>' + escapeHtml(p.status) + '</td><td>' + formatFcfa(p.fundingGoal) + '</td><td>' + formatFcfa(p.amountRaised) + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div>';
+}
+
+document.getElementById('generate-report-btn').addEventListener('click', function () {
+  const type = document.getElementById('report-type-select').value;
+  if (type === 'donations') generateDonationsReport();
+  else generateProgramsReport();
+
+  document.getElementById('print-report-btn').classList.remove('d-none');
+  document.getElementById('export-report-btn').classList.remove('d-none');
+});
+
+document.getElementById('print-report-btn').addEventListener('click', function () {
+  window.print();
+});
+
+function csvField(value) {
+  const str = String(value === undefined || value === null ? '' : value);
+  if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+  return str;
+}
+
+document.getElementById('export-report-btn').addEventListener('click', function () {
+  const csv = generatedReportRows.map(function (row) { return row.map(csvField).join(','); }).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = document.getElementById('report-type-select').value + '-report.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+});
+
 render();

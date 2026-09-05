@@ -14,7 +14,7 @@
 </head>
 <body>
   <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4 no-print">
       <div>
         <a href="dashboard.html" class="text-decoration-none d-block mb-2" style="color: var(--dawn-purple);">&larr; Back to dashboard</a>
         <span class="admin-badge">Reports</span>
@@ -29,15 +29,33 @@
       </div>
     </div>
 
-    <p class="text-muted small mb-4" style="opacity:0.7;">
+    <p class="text-muted small mb-4 no-print" style="opacity:0.7;">
       "Load sample data" and "Clear all data" are dev-only tools for testing this page before real reports exist &mdash; remove before launch.
     </p>
 
-    <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">
-      No reports yet. Use "Load sample data" above to preview this page.
+    <div class="no-print">
+      <h2 class="h5 mb-3">Account Reports</h2>
+
+      <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">
+        No reports yet. Use "Load sample data" above to preview this page.
+      </div>
+
+      <div class="d-flex flex-column gap-2 mb-5" id="reports-list"></div>
     </div>
 
-    <div class="d-flex flex-column gap-2" id="reports-list"></div>
+    <h2 class="h5 mb-3">Generate Reports</h2>
+    <div class="card card-admin p-4 p-md-5">
+      <div class="d-flex flex-wrap gap-2 mb-3 no-print">
+        <select class="form-select" id="report-type-select" style="max-width: 220px;">
+          <option value="donations">Donations Report</option>
+          <option value="programs">Programs Report</option>
+        </select>
+        <button type="button" class="btn btn-admin-primary" id="generate-report-btn">Generate</button>
+        <button type="button" class="btn btn-admin-outline d-none" id="print-report-btn">Print</button>
+        <button type="button" class="btn btn-admin-outline d-none" id="export-report-btn">Export CSV</button>
+      </div>
+      <div id="generated-report-output"></div>
+    </div>
   </div>
 
   <div class="modal fade" id="report-modal" tabindex="-1" aria-hidden="true">

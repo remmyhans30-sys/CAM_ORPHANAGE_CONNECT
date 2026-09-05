@@ -941,3 +941,9 @@ h1, h2, h3, h4, h5, h6,
 .finance-progress .progress-bar {
   background-color: var(--teal);
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

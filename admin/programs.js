@@ -10,7 +10,11 @@ function escapeHtml(str) {
 }
 
 function formatFcfa(amount) {
-  return Number(amount || 0).toLocaleString('en-US') + ' FCFA';
+  const currency = JSON.parse(localStorage.getItem('orgSettings') || '{}').currency || 'FCFA';
+  const num = Number(amount || 0).toLocaleString('en-US');
+  if (currency === 'USD') return '$' + num;
+  if (currency === 'EUR') return '€' + num;
+  return num + ' FCFA';
 }
 
 function statusBadgeClass(status) {
