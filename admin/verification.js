@@ -559,6 +559,21 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
         galleryGrid +
       '</div>' +
       '<div class="col-12">' +
+        '<h3 class="h6">Child privacy &amp; content controls</h3>' +
+        '<div class="form-check mb-2">' +
+          '<input class="form-check-input" type="checkbox" id="modal-blur-faces-checkbox"' + (orphanage.blurFaces === false ? '' : ' checked') + '>' +
+          '<label class="form-check-label small" for="modal-blur-faces-checkbox">Blur children\'s faces in public gallery photos</label>' +
+        '</div>' +
+        '<div class="form-check mb-2">' +
+          '<input class="form-check-input" type="checkbox" id="modal-show-names-checkbox"' + (orphanage.showFullNames ? ' checked' : '') + '>' +
+          '<label class="form-check-label small" for="modal-show-names-checkbox">Show children\'s full names publicly (default: first names only)</label>' +
+        '</div>' +
+        '<div class="d-flex align-items-center gap-2">' +
+          '<button type="button" class="btn btn-admin-outline btn-sm" id="save-privacy-btn">Save privacy settings</button>' +
+          '<span class="small text-muted" id="privacy-save-status"></span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="col-12">' +
         '<h3 class="h6">Updates from orphanage</h3>' +
         postsList +
       '</div>' +
@@ -684,6 +699,24 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   render();
 
   const statusEl = document.getElementById('flag-save-status');
+  statusEl.textContent = 'Saved.';
+  setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'save-privacy-btn') return;
+  if (activeOrphanageId === null) return;
+
+  const orphanages = loadOrphanages();
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return;
+
+  orphanage.blurFaces = document.getElementById('modal-blur-faces-checkbox').checked;
+  orphanage.showFullNames = document.getElementById('modal-show-names-checkbox').checked;
+  logEvent(orphanage, 'Updated child privacy settings (blur faces: ' + (orphanage.blurFaces ? 'on' : 'off') + ', full names: ' + (orphanage.showFullNames ? 'on' : 'off') + ')');
+  saveOrphanages(orphanages);
+
+  const statusEl = document.getElementById('privacy-save-status');
   statusEl.textContent = 'Saved.';
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
 });
