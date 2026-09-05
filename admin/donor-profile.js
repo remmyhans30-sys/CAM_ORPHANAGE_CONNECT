@@ -155,6 +155,29 @@ function renderFailedPayments(donor) {
   }).join('');
 }
 
+function renderSupportTickets(donor) {
+  const list = document.getElementById('support-tickets-list');
+  const tickets = donor.supportTickets || [];
+
+  if (tickets.length === 0) {
+    list.innerHTML = '<p class="text-muted small mb-0">No support tickets on record.</p>';
+    return;
+  }
+
+  list.innerHTML = tickets.map(function (t) {
+    const isOpen = t.status === 'open';
+    return (
+      '<div class="d-flex justify-content-between align-items-start gap-3 py-2 border-bottom">' +
+        '<div>' +
+          '<p class="mb-0">' + escapeHtml(t.issue) + '</p>' +
+          '<span class="text-muted small">' + escapeHtml(t.date) + '</span>' +
+        '</div>' +
+        '<span class="donor-status-badge status-' + (isOpen ? 'flagged' : 'active') + '">' + escapeHtml(isOpen ? 'Open' : 'Resolved') + '</span>' +
+      '</div>'
+    );
+  }).join('');
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -173,6 +196,7 @@ function render() {
   renderDonationHistory(donor);
   renderPasswordResets(donor);
   renderFailedPayments(donor);
+  renderSupportTickets(donor);
 }
 
 function seedSampleData() {
@@ -205,6 +229,10 @@ function seedSampleData() {
     failedPayments: [
       { date: '2026-08-01', amount: 60000, method: 'MTN Mobile Money', reason: 'Insufficient funds' },
       { date: '2026-06-09', amount: 45000, method: 'Bank transfer', reason: 'Card declined' },
+    ],
+    supportTickets: [
+      { date: '2026-08-16', issue: "Donation didn't show as completed", status: 'resolved' },
+      { date: '2026-09-02', issue: 'Asking how to update payment method', status: 'open' },
     ],
   };
 
