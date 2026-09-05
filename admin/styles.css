@@ -431,6 +431,29 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: 0.03em;
 }
 
+.tier-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 0.3rem 0.9rem;
+}
+
+.tier-tag.tier-friend {
+  background-color: var(--paper-dim);
+  color: var(--dawn-purple);
+}
+
+.tier-tag.tier-sustainer {
+  background-color: rgba(95, 167, 154, 0.15);
+  color: var(--teal);
+}
+
+.tier-tag.tier-champion {
+  background-color: rgba(228, 197, 139, 0.3);
+  color: #8a6a10;
+}
+
 .language-tag {
   display: inline-block;
   background-color: var(--paper-dim);

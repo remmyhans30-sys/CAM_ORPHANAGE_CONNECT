@@ -199,6 +199,24 @@ function renderReferrals(donor) {
     referralsList;
 }
 
+function renderHomesFollowed(donor) {
+  const list = document.getElementById('homes-followed-list');
+  const homes = donor.homesFollowed || [];
+
+  if (homes.length === 0) {
+    list.innerHTML = '<p class="text-muted small mb-0">Not following any orphanages yet.</p>';
+    return;
+  }
+
+  list.innerHTML = '<div class="d-flex flex-wrap gap-2">' + homes.map(function (h) {
+    return (
+      '<span class="tier-tag tier-' + h.tier.toLowerCase() + '">' +
+        escapeHtml(h.name) + ' &middot; ' + escapeHtml(h.tier) +
+      '</span>'
+    );
+  }).join('') + '</div>';
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -219,6 +237,7 @@ function render() {
   renderFailedPayments(donor);
   renderSupportTickets(donor);
   renderReferrals(donor);
+  renderHomesFollowed(donor);
 }
 
 function seedSampleData() {
@@ -260,6 +279,11 @@ function seedSampleData() {
     referralsMade: [
       { name: 'Chidi Okafor', active: true },
       { name: 'Fatou Bello', active: false },
+    ],
+    homesFollowed: [
+      { name: "Hope Children's Home", tier: 'Champion' },
+      { name: 'Grace Orphanage', tier: 'Sustainer' },
+      { name: "Foyer de l'Espérance", tier: 'Friend' },
     ],
   };
 
