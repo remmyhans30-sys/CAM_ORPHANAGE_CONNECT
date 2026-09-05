@@ -90,6 +90,29 @@ function renderStatsStrip(donor) {
   }).join('');
 }
 
+function renderDonationHistory(donor) {
+  const tbody = document.getElementById('donation-history-tbody');
+  const donations = donor.donations || [];
+
+  if (donations.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted small">No donations recorded yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = donations.map(function (d) {
+    return (
+      '<tr>' +
+        '<td>' + escapeHtml(d.date) + '</td>' +
+        '<td>' + escapeHtml(d.orphanage) + '</td>' +
+        '<td>' + escapeHtml(d.need) + '</td>' +
+        '<td>' + formatFcfa(d.amount) + '</td>' +
+        '<td>' + escapeHtml(d.method) + '</td>' +
+        '<td><span class="donor-status-badge status-' + (d.status === 'completed' ? 'active' : 'flagged') + '">' + escapeHtml(d.status.charAt(0).toUpperCase() + d.status.slice(1)) + '</span></td>' +
+      '</tr>'
+    );
+  }).join('');
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -105,6 +128,7 @@ function render() {
   content.classList.remove('d-none');
   renderHeaderCard(donor);
   renderStatsStrip(donor);
+  renderDonationHistory(donor);
 }
 
 function seedSampleData() {
@@ -124,6 +148,12 @@ function seedSampleData() {
     homesFollowedCount: 3,
     activeRecurringGifts: 2,
     chargebacksCount: 0,
+    donations: [
+      { date: '2026-08-15', orphanage: "Hope Children's Home", need: 'New dormitory beds', amount: 60000, method: 'MTN Mobile Money', status: 'completed' },
+      { date: '2026-07-20', orphanage: 'Grace Orphanage', need: 'Kitchen renovation', amount: 100000, method: 'MTN Mobile Money', status: 'completed' },
+      { date: '2026-06-10', orphanage: "Hope Children's Home", need: 'School fees for 10 children', amount: 45000, method: 'Bank transfer', status: 'refunded' },
+      { date: '2026-05-02', orphanage: "Foyer de l'Espérance", need: 'Fournitures scolaires', amount: 30000, method: 'MTN Mobile Money', status: 'completed' },
+    ],
   };
 
   saveDonor(sampleDonor);
