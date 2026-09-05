@@ -217,6 +217,20 @@ function renderHomesFollowed(donor) {
   }).join('') + '</div>';
 }
 
+function renderGroupsJoined(donor) {
+  const list = document.getElementById('groups-joined-list');
+  const groups = donor.groupsJoined || [];
+
+  if (groups.length === 0) {
+    list.innerHTML = '<p class="text-muted small mb-0">Not part of any giving circles or associations.</p>';
+    return;
+  }
+
+  list.innerHTML = '<div class="d-flex flex-wrap gap-2">' + groups.map(function (g) {
+    return '<span class="tier-tag tier-friend">' + escapeHtml(g) + '</span>';
+  }).join('') + '</div>';
+}
+
 function render() {
   const donor = loadDonor();
   const emptyState = document.getElementById('empty-state');
@@ -238,6 +252,7 @@ function render() {
   renderSupportTickets(donor);
   renderReferrals(donor);
   renderHomesFollowed(donor);
+  renderGroupsJoined(donor);
 }
 
 function seedSampleData() {
@@ -285,6 +300,7 @@ function seedSampleData() {
       { name: 'Grace Orphanage', tier: 'Sustainer' },
       { name: "Foyer de l'Espérance", tier: 'Friend' },
     ],
+    groupsJoined: ['Cameroon Diaspora Paris', 'Douala Alumni Giving Circle'],
   };
 
   saveDonor(sampleDonor);
