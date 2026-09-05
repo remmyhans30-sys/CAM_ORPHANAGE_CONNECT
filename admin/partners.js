@@ -92,6 +92,7 @@ function seedSampleData() {
       },
       sponsoredByBlurb: 'Proud to support the children of Hope Children\'s Home alongside our diaspora community in France.',
       documents: ['association-registration.pdf', 'board-member-id.pdf'],
+      sanctionsScreened: true,
       activityLog: [
         { reviewer: 'admin@camorphanage.org', action: 'Marked as verified', timestamp: '2025-11-05T10:00:00.000Z' },
         { reviewer: 'admin@camorphanage.org', action: 'Approved public "Sponsored by" wording', timestamp: '2025-11-06T09:30:00.000Z' },
@@ -117,6 +118,7 @@ function seedSampleData() {
       },
       sponsoredByBlurb: 'Douala Business Alliance is proud to sponsor local children in our community.',
       documents: ['company-registration.pdf', 'tax-clearance-certificate.pdf'],
+      sanctionsScreened: false,
       activityLog: [
         { reviewer: 'system', action: 'Organization submitted registration for review', timestamp: '2026-09-02T14:20:00.000Z' },
       ],
@@ -139,6 +141,31 @@ function seedSampleData() {
       pledge: null,
       sponsoredByBlurb: 'Global Child Aid NGO helps fund emergency care placements across the region.',
       documents: ['ngo-registration.pdf', 'safeguarding-policy.pdf', 'director-id.pdf'],
+      sanctionsScreened: true,
+      placementCases: [
+        {
+          submittedDate: '2026-08-20',
+          socialWorkerName: 'Grace Mballa',
+          socialWorkerPhone: '+237 691 234 567',
+          reasonForReferral: 'Child abandoned after both parents deceased; no extended family able to care for her.',
+          placementType: 'Residential care',
+          educationalStatus: 'Not currently in school',
+          livingEnvironmentNotes: 'Previously in an informal neighbor arrangement; unstable and unsupervised.',
+          anticipatedDischargeDate: '',
+          status: 'pending',
+        },
+        {
+          submittedDate: '2026-06-02',
+          socialWorkerName: 'Paul Etoundi',
+          socialWorkerPhone: '+237 677 890 123',
+          reasonForReferral: 'Removed from home due to neglect; father incarcerated, mother unable to provide care.',
+          placementType: 'Residential care',
+          educationalStatus: 'Regular education, primary level',
+          livingEnvironmentNotes: 'Significant instability over past 2 years, multiple relocations.',
+          anticipatedDischargeDate: '2027-06-01',
+          status: 'reviewed',
+        },
+      ],
       activityLog: [
         { reviewer: 'admin@camorphanage.org', action: 'Marked as verified', timestamp: '2024-09-01T08:00:00.000Z' },
         { reviewer: 'admin@camorphanage.org', action: 'Upgraded to Verified Referrer', timestamp: '2024-09-12T11:00:00.000Z' },

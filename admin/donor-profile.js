@@ -1,9 +1,22 @@
+function getDonorId() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  return id !== null ? Number(id) : null;
+}
+
 function loadDonor() {
-  return JSON.parse(localStorage.getItem('donor') || 'null');
+  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  const id = getDonorId();
+  if (id === null) return donors[0] || null;
+  return donors.find(function (d) { return d.id === id; }) || null;
 }
 
 function saveDonor(donor) {
-  localStorage.setItem('donor', JSON.stringify(donor));
+  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  const idx = donors.findIndex(function (d) { return d.id === donor.id; });
+  if (idx === -1) return;
+  donors[idx] = donor;
+  localStorage.setItem('donors', JSON.stringify(donors));
 }
 
 function escapeHtml(str) {
@@ -271,67 +284,6 @@ function render() {
   renderTrustAlertBox(donor);
   renderAdminNotes(donor);
 }
-
-function seedSampleData() {
-  const sampleDonor = {
-    id: 1,
-    name: 'Ngozi Adeyemi',
-    email: 'ngozi.adeyemi@example.com',
-    joinDate: '2026-02-14',
-    location: 'Douala, Cameroon',
-    preferredPayment: 'MTN Mobile Money',
-    preferredCurrency: 'FCFA',
-    lastActive: '2026-09-01',
-    vip: true,
-    status: 'active',
-    totalGiven: 850000,
-    donationsCount: 14,
-    homesFollowedCount: 3,
-    activeRecurringGifts: 2,
-    chargebacksCount: 0,
-    donations: [
-      { date: '2026-08-15', orphanage: "Hope Children's Home", need: 'New dormitory beds', amount: 60000, method: 'MTN Mobile Money', status: 'completed' },
-      { date: '2026-07-20', orphanage: 'Grace Orphanage', need: 'Kitchen renovation', amount: 100000, method: 'MTN Mobile Money', status: 'completed' },
-      { date: '2026-06-10', orphanage: "Hope Children's Home", need: 'School fees for 10 children', amount: 45000, method: 'Bank transfer', status: 'refunded' },
-      { date: '2026-05-02', orphanage: "Foyer de l'Espérance", need: 'Fournitures scolaires', amount: 30000, method: 'MTN Mobile Money', status: 'completed' },
-    ],
-    passwordResets: [
-      { date: '2026-07-02', method: 'Email link', status: 'completed' },
-      { date: '2026-04-18', method: 'Email link', status: 'expired' },
-    ],
-    failedPayments: [
-      { date: '2026-08-01', amount: 60000, method: 'MTN Mobile Money', reason: 'Insufficient funds' },
-      { date: '2026-06-09', amount: 45000, method: 'Bank transfer', reason: 'Card declined' },
-    ],
-    supportTickets: [
-      { date: '2026-08-16', issue: "Donation didn't show as completed", status: 'resolved' },
-      { date: '2026-09-02', issue: 'Asking how to update payment method', status: 'open' },
-    ],
-    referredBy: 'Amina Njoya',
-    referralsMade: [
-      { name: 'Chidi Okafor', active: true },
-      { name: 'Fatou Bello', active: false },
-    ],
-    homesFollowed: [
-      { name: "Hope Children's Home", tier: 'Champion' },
-      { name: 'Grace Orphanage', tier: 'Sustainer' },
-      { name: "Foyer de l'Espérance", tier: 'Friend' },
-    ],
-    groupsJoined: ['Cameroon Diaspora Paris', 'Douala Alumni Giving Circle'],
-  };
-
-  saveDonor(sampleDonor);
-  render();
-}
-
-function clearAllData() {
-  if (!confirm('Clear donor data? This cannot be undone.')) return;
-  localStorage.removeItem('donor');
-  render();
-}
-
-document.getElementById('seed-btn').addEventListener('click', seedSampleData);
-document.getElementById('clear-btn').addEventListener('click', clearAllData);
 
 document.getElementById('donor-header-card').addEventListener('click', function (e) {
   const donor = loadDonor();

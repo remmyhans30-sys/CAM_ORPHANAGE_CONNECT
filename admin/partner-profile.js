@@ -71,6 +71,25 @@ function renderHeaderCard(partner) {
     '</div>';
 }
 
+function renderOnboardingChecklist(partner) {
+  const panel = document.getElementById('onboarding-checklist');
+  const items = [
+    { label: 'Documents submitted', done: (partner.documents || []).length > 0 },
+    { label: 'Verified', done: partner.verificationStatus === 'verified' },
+    { label: 'Pledge configured', done: Boolean(partner.pledge) },
+    { label: 'Public wording approved', done: Boolean(partner.wordingApproved) },
+  ];
+
+  panel.innerHTML = items.map(function (item) {
+    return (
+      '<div class="d-flex align-items-center gap-2 mb-1">' +
+        '<span>' + (item.done ? '&#9989;' : '&#9744;') + '</span>' +
+        '<span class="small' + (item.done ? '' : ' text-muted') + '">' + escapeHtml(item.label) + '</span>' +
+      '</div>'
+    );
+  }).join('');
+}
+
 function renderStatsStrip(partner) {
   const strip = document.getElementById('partner-stats-strip');
   const stats = [
@@ -141,7 +160,35 @@ function renderPlacementReferrals(partner) {
     return;
   }
 
-  panel.innerHTML = '<p class="text-muted small mb-0">Submitted placement cases will appear here.</p>';
+  const cases = partner.placementCases || [];
+
+  if (cases.length === 0) {
+    panel.innerHTML = '<p class="text-muted small mb-0">No placement cases submitted yet.</p>';
+    return;
+  }
+
+  panel.innerHTML = cases.map(function (c, i) {
+    const isReviewed = c.status === 'reviewed';
+    return (
+      '<div class="profile-post">' +
+        '<div class="d-flex justify-content-between align-items-start mb-1">' +
+          '<span class="profile-post-date">Submitted ' + escapeHtml(c.submittedDate || '') + '</span>' +
+          '<div class="d-flex align-items-center gap-2">' +
+            '<span class="donor-status-badge status-' + (isReviewed ? 'active' : 'flagged') + '">' + (isReviewed ? 'Reviewed' : 'Pending review') + '</span>' +
+            (isReviewed ? '' : '<button type="button" class="btn btn-admin-outline btn-sm mark-case-reviewed-btn" data-case-index="' + i + '">Mark reviewed</button>') +
+          '</div>' +
+        '</div>' +
+        '<dl class="row mb-0 small">' +
+          '<dt class="col-4">Referring social worker</dt><dd class="col-8">' + escapeHtml(c.socialWorkerName || '&mdash;') + ' (' + escapeHtml(c.socialWorkerPhone || '&mdash;') + ')</dd>' +
+          '<dt class="col-4">Reason for referral</dt><dd class="col-8">' + escapeHtml(c.reasonForReferral || '&mdash;') + '</dd>' +
+          '<dt class="col-4">Placement type</dt><dd class="col-8">' + escapeHtml(c.placementType || '&mdash;') + '</dd>' +
+          '<dt class="col-4">Educational status</dt><dd class="col-8">' + escapeHtml(c.educationalStatus || '&mdash;') + '</dd>' +
+          '<dt class="col-4">Living environment</dt><dd class="col-8">' + escapeHtml(c.livingEnvironmentNotes || '&mdash;') + '</dd>' +
+          '<dt class="col-4">Anticipated discharge</dt><dd class="col-8">' + escapeHtml(c.anticipatedDischargeDate || '&mdash;') + '</dd>' +
+        '</dl>' +
+      '</div>'
+    );
+  }).join('');
 }
 
 function renderSponsoredByPreview(partner) {
@@ -181,9 +228,16 @@ function renderVerificationDocuments(partner) {
     ? requiredNote + '<ul class="mb-3 small">' + docs.map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
     : requiredNote + '<p class="profile-docs-missing small mb-3">No verification documents uploaded yet.</p>';
 
+  const sanctionsCheck =
+    '<div class="form-check mb-3">' +
+      '<input class="form-check-input" type="checkbox" id="sanctions-screened-checkbox"' + (partner.sanctionsScreened ? ' checked' : '') + '>' +
+      '<label class="form-check-label small" for="sanctions-screened-checkbox">Confirmed this organization and its named officers have been screened against sanctions/watchlists (OFAC, UN)</label>' +
+    '</div>';
+
   const isActionable = partner.verificationStatus === 'pending' || partner.verificationStatus === 'needs-info';
   const isVerified = partner.verificationStatus === 'verified';
   const isSponsor = partner.tier === 'Sponsor';
+  const canVerify = hasDocs && partner.sanctionsScreened;
 
   const decisionNote =
     (partner.verificationStatus === 'needs-info' && partner.infoRequestMessage
@@ -196,7 +250,7 @@ function renderVerificationDocuments(partner) {
   const decisionButtons = isActionable
     ? '<button type="button" class="btn btn-admin-danger btn-sm" id="reject-org-btn">Reject</button>' +
       '<button type="button" class="btn btn-admin-outline btn-sm" id="request-info-btn">Request more info</button>' +
-      '<button type="button" class="btn btn-admin-primary btn-sm" id="mark-verified-btn"' + (hasDocs ? '' : ' disabled title="Upload verification documents first"') + '>Mark as verified</button>'
+      '<button type="button" class="btn btn-admin-primary btn-sm" id="mark-verified-btn"' + (canVerify ? '' : ' disabled title="Upload documents and confirm sanctions screening first"') + '>Mark as verified</button>'
     : '';
 
   const tierBtn = !isVerified
@@ -205,7 +259,7 @@ function renderVerificationDocuments(partner) {
         ? '<button type="button" class="btn btn-admin-outline btn-sm" id="tier-toggle-btn"' + (hasDocs ? '' : ' disabled title="Upload verification documents first"') + '>Upgrade to Verified Referrer</button>'
         : '<button type="button" class="btn btn-admin-outline btn-sm" id="tier-toggle-btn">Downgrade to Sponsor</button>');
 
-  panel.innerHTML = decisionNote + docsList + '<div class="d-flex flex-wrap gap-2">' + decisionButtons + tierBtn + '</div>';
+  panel.innerHTML = decisionNote + docsList + sanctionsCheck + '<div class="d-flex flex-wrap gap-2">' + decisionButtons + tierBtn + '</div>';
 }
 
 function renderActivityLog(partner) {
@@ -242,6 +296,7 @@ function render() {
   emptyState.classList.add('d-none');
   content.classList.remove('d-none');
   renderHeaderCard(partner);
+  renderOnboardingChecklist(partner);
   renderStatsStrip(partner);
   renderOrphanagesSponsored(partner);
   renderMatchingPledge(partner);
@@ -283,6 +338,21 @@ document.getElementById('partner-header-card').addEventListener('click', functio
   }
 });
 
+document.getElementById('placement-referrals-panel').addEventListener('click', function (e) {
+  if (!e.target.classList.contains('mark-case-reviewed-btn')) return;
+  const partner = loadPartner();
+  if (!partner) return;
+
+  const caseIndex = Number(e.target.dataset.caseIndex);
+  const cases = partner.placementCases || [];
+  if (!cases[caseIndex]) return;
+
+  cases[caseIndex].status = 'reviewed';
+  logActivity(partner, 'Reviewed placement case for ' + (cases[caseIndex].socialWorkerName || 'unnamed referral'));
+  savePartner(partner);
+  render();
+});
+
 document.getElementById('sponsored-by-preview').addEventListener('click', function (e) {
   const partner = loadPartner();
   if (!partner) return;
@@ -309,6 +379,14 @@ document.getElementById('sponsored-by-preview').addEventListener('click', functi
 document.getElementById('verification-documents-panel').addEventListener('click', function (e) {
   const partner = loadPartner();
   if (!partner) return;
+
+  if (e.target.id === 'sanctions-screened-checkbox') {
+    partner.sanctionsScreened = e.target.checked;
+    logActivity(partner, e.target.checked ? 'Confirmed sanctions/watchlist screening' : 'Unconfirmed sanctions/watchlist screening');
+    savePartner(partner);
+    render();
+    return;
+  }
 
   if (e.target.id === 'mark-verified-btn') {
     partner.verificationStatus = 'verified';
