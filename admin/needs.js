@@ -195,7 +195,6 @@ document.getElementById('needs-grid').addEventListener('click', function (e) {
     document.getElementById('need-orphanage-select').value = n.orphanageId || '';
     document.getElementById('need-goal').value = n.goal || '';
     document.getElementById('need-raised').value = n.raised || '';
-    document.getElementById('need-date').value = n.date || '';
     document.getElementById('need-modal-title').textContent = 'Edit Need';
     needModal.show();
   }

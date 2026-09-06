@@ -553,6 +553,11 @@ document.getElementById('delete-partner-btn').addEventListener('click', function
 
   const partners = JSON.parse(localStorage.getItem('partners') || '[]');
   localStorage.setItem('partners', JSON.stringify(partners.filter(function (p) { return p.id !== partner.id; })));
+
+  const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+  deletionLog.push({ accountName: partner.name, accountType: 'partner', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
+  localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
+
   window.location.href = 'partners.html';
 });
 

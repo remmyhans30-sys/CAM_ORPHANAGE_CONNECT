@@ -22,20 +22,41 @@ function initials(name) {
 }
 
 function render() {
-  const donors = loadDonors();
+  const allDonors = loadDonors();
   const grid = document.getElementById('donors-grid');
   const emptyState = document.getElementById('empty-state');
+  const filterEmptyState = document.getElementById('filter-empty-state');
 
   grid.innerHTML = '';
 
-  if (donors.length === 0) {
+  if (allDonors.length === 0) {
     grid.classList.add('d-none');
+    filterEmptyState.classList.add('d-none');
     emptyState.classList.remove('d-none');
     return;
   }
 
-  grid.classList.remove('d-none');
   emptyState.classList.add('d-none');
+
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
+  const statusFilter = document.getElementById('status-filter').value;
+
+  const donors = allDonors.filter(function (donor) {
+    const matchesSearch = !search ||
+      (donor.name || '').toLowerCase().includes(search) ||
+      (donor.email || '').toLowerCase().includes(search);
+    const matchesStatus = statusFilter === 'all' || donor.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (donors.length === 0) {
+    grid.classList.add('d-none');
+    filterEmptyState.classList.remove('d-none');
+    return;
+  }
+
+  grid.classList.remove('d-none');
+  filterEmptyState.classList.add('d-none');
 
   donors.forEach(function (donor) {
     const col = document.createElement('div');
@@ -211,5 +232,7 @@ function clearAllData() {
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+document.getElementById('search-input').addEventListener('input', render);
+document.getElementById('status-filter').addEventListener('change', render);
 
 render();

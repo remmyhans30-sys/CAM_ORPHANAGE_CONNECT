@@ -22,6 +22,14 @@ function saveUsers(users) {
   localStorage.setItem('users', JSON.stringify(users));
 }
 
+function hasAdminAccess(role) {
+  return role === 'Super Admin' || role === 'Administrator';
+}
+
+function countOtherAdmins(users, excludeId) {
+  return users.filter(function (u) { return hasAdminAccess(u.role) && u.id !== excludeId; }).length;
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
@@ -69,8 +77,14 @@ document.getElementById('users-tbody').addEventListener('click', function (e) {
   }
 
   if (e.target.classList.contains('delete-user-btn')) {
+    const id = Number(e.target.dataset.id);
+    const user = users.find(function (u) { return u.id === id; });
+    if (user && hasAdminAccess(user.role) && countOtherAdmins(users, id) === 0) {
+      alert('Cannot delete the last Super Admin/Administrator account — this would lock everyone out of Users & Roles and Settings.');
+      return;
+    }
     if (!confirm('Delete this user?')) return;
-    saveUsers(users.filter(function (u) { return u.id !== Number(e.target.dataset.id); }));
+    saveUsers(users.filter(function (u) { return u.id !== id; }));
     render();
   }
 });
@@ -87,7 +101,13 @@ document.getElementById('user-form').addEventListener('submit', function (e) {
 
   if (id) {
     const user = users.find(function (u) { return u.id === Number(id); });
-    if (user) Object.assign(user, data);
+    if (user) {
+      if (hasAdminAccess(user.role) && !hasAdminAccess(data.role) && countOtherAdmins(users, user.id) === 0) {
+        alert('Cannot change this role — it is the last Super Admin/Administrator account and would lock everyone out of Users & Roles and Settings.');
+        return;
+      }
+      Object.assign(user, data);
+    }
   } else {
     data.id = Date.now();
     users.push(data);

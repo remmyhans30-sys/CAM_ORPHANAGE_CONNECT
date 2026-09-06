@@ -54,20 +54,42 @@ function previewText(msg) {
 }
 
 function render() {
-  const messages = loadMessages().slice().sort(function (a, b) { return new Date(lastActivityTimestamp(b)) - new Date(lastActivityTimestamp(a)); });
+  const allMessages = loadMessages().slice().sort(function (a, b) { return new Date(lastActivityTimestamp(b)) - new Date(lastActivityTimestamp(a)); });
   const list = document.getElementById('messages-list');
   const emptyState = document.getElementById('empty-state');
+  const filterEmptyState = document.getElementById('filter-empty-state');
 
   list.innerHTML = '';
 
-  if (messages.length === 0) {
+  if (allMessages.length === 0) {
     list.classList.add('d-none');
+    filterEmptyState.classList.add('d-none');
     emptyState.classList.remove('d-none');
     return;
   }
 
-  list.classList.remove('d-none');
   emptyState.classList.add('d-none');
+
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
+  const readFilter = document.getElementById('read-filter').value;
+
+  const messages = allMessages.filter(function (msg) {
+    const matchesSearch = !search ||
+      (msg.senderName || '').toLowerCase().includes(search) ||
+      (msg.subject || '').toLowerCase().includes(search) ||
+      previewText(msg).toLowerCase().includes(search);
+    const matchesRead = readFilter === 'all' || !msg.read;
+    return matchesSearch && matchesRead;
+  });
+
+  if (messages.length === 0) {
+    list.classList.add('d-none');
+    filterEmptyState.classList.remove('d-none');
+    return;
+  }
+
+  list.classList.remove('d-none');
+  filterEmptyState.classList.add('d-none');
 
   list.innerHTML = messages.map(function (msg) {
     const when = new Date(lastActivityTimestamp(msg));
@@ -237,6 +259,8 @@ function clearAllData() {
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+document.getElementById('search-input').addEventListener('input', render);
+document.getElementById('read-filter').addEventListener('change', render);
 
 render();
 

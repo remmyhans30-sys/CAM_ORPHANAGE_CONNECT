@@ -283,9 +283,40 @@ function generateProgramsReport() {
     '</tbody></table></div>';
 }
 
+function generateNeedsReport() {
+  const orphanages = JSON.parse(localStorage.getItem('orphanages') || '[]');
+  const needs = JSON.parse(localStorage.getItem('needs') || '[]');
+
+  const totalGoal = needs.reduce(function (sum, n) { return sum + Number(n.goal || 0); }, 0);
+  const totalRaised = needs.reduce(function (sum, n) { return sum + Number(n.raised || 0); }, 0);
+  const open = needs.filter(function (n) { return Number(n.raised || 0) < Number(n.goal || 0); }).length;
+  const funded = needs.length - open;
+
+  const rows = needs.map(function (n) {
+    const orphanage = orphanages.find(function (o) { return String(o.id) === String(n.orphanageId); });
+    const percent = n.goal > 0 ? Math.min(100, Math.round((n.raised / n.goal) * 100)) : 0;
+    return { title: n.title, orphanage: orphanage ? orphanage.name : 'Unknown', raised: n.raised || 0, goal: n.goal || 0, percent: percent };
+  });
+
+  generatedReportRows = [['Need', 'Orphanage', 'Amount Raised', 'Goal', 'Percent Funded']].concat(
+    rows.map(function (r) { return [r.title, r.orphanage, r.raised, r.goal, r.percent + '%']; })
+  );
+
+  document.getElementById('generated-report-output').innerHTML =
+    '<h3 class="h6">Needs Report</h3>' +
+    '<p class="small text-muted">Generated ' + new Date().toLocaleString() + '</p>' +
+    '<p class="mb-3"><strong>' + needs.length + '</strong> needs (' + open + ' open, ' + funded + ' funded) &mdash; ' + formatFcfa(totalRaised) + ' raised of ' + formatFcfa(totalGoal) + ' goal.</p>' +
+    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Need</th><th>Orphanage</th><th>Amount Raised</th><th>Goal</th><th>Percent Funded</th></tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td>' + escapeHtml(r.title) + '</td><td>' + escapeHtml(r.orphanage) + '</td><td>' + formatFcfa(r.raised) + '</td><td>' + formatFcfa(r.goal) + '</td><td>' + r.percent + '%</td></tr>';
+    }).join('') +
+    '</tbody></table></div>';
+}
+
 document.getElementById('generate-report-btn').addEventListener('click', function () {
   const type = document.getElementById('report-type-select').value;
   if (type === 'donations') generateDonationsReport();
+  else if (type === 'needs') generateNeedsReport();
   else generateProgramsReport();
 
   document.getElementById('print-report-btn').classList.remove('d-none');

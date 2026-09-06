@@ -61,6 +61,17 @@ function collectEntries() {
     });
   });
 
+  const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+  deletionLog.forEach(function (d) {
+    entries.push({
+      accountName: d.accountName,
+      accountType: d.accountType,
+      action: 'Deleted account',
+      reviewer: d.reviewer,
+      timestamp: d.timestamp,
+    });
+  });
+
   return entries;
 }
 

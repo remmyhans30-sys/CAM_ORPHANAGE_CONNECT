@@ -757,7 +757,14 @@ document.getElementById('profile-modal-body').addEventListener('click', function
     orphanage.name = name;
     orphanage.location = location;
     logEvent(orphanage, 'Edited basic details');
-    saveOrphanages(orphanages);
+
+    try {
+      saveOrphanages(orphanages);
+    } catch (err) {
+      alert('Could not save: the photo is too large for browser storage. Please choose a smaller image.');
+      return;
+    }
+
     render();
     openProfileModal(activeOrphanageId);
     const statusEl = document.getElementById('basic-info-save-status');
@@ -885,6 +892,10 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
     const needs = loadNeeds();
     const remainingNeeds = needs.filter(function (n) { return String(n.orphanageId) !== String(orphanage.id); });
     localStorage.setItem('needs', JSON.stringify(remainingNeeds));
+
+    const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+    deletionLog.push({ accountName: orphanage.name, accountType: 'orphanage', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
+    localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
 
     profileModal.hide();
     render();

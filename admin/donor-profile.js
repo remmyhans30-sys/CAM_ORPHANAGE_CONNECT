@@ -426,6 +426,11 @@ document.getElementById('delete-donor-btn').addEventListener('click', function (
 
   const donors = JSON.parse(localStorage.getItem('donors') || '[]');
   localStorage.setItem('donors', JSON.stringify(donors.filter(function (d) { return d.id !== donor.id; })));
+
+  const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+  deletionLog.push({ accountName: donor.name, accountType: 'donor', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
+  localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
+
   window.location.href = 'donors.html';
 });
 

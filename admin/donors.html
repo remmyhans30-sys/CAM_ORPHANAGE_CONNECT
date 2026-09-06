@@ -34,8 +34,21 @@
       "Load sample data" and "Clear all data" are dev-only tools for testing this page before real donor accounts exist &mdash; remove before launch.
     </p>
 
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      <input type="text" class="form-control" id="search-input" placeholder="Search donors by name or email..." style="max-width: 280px;">
+      <select class="form-select" id="status-filter" style="max-width: 180px;">
+        <option value="all">All statuses</option>
+        <option value="active">Active</option>
+        <option value="flagged">Flagged</option>
+      </select>
+    </div>
+
     <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">
       No donors have registered yet. Use "Load sample data" above to preview this page.
+    </div>
+
+    <div id="filter-empty-state" class="card card-admin p-5 text-center text-muted d-none">
+      No donors match this filter.
     </div>
 
     <div class="row g-4" id="donors-grid"></div>

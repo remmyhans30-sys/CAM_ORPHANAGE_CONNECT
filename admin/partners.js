@@ -62,8 +62,12 @@ function render() {
 
   emptyState.classList.add('d-none');
 
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
   const statusFilter = document.getElementById('status-filter').value;
-  const partners = allPartners.filter(function (p) { return matchesStatusFilter(p.verificationStatus, statusFilter); });
+  const partners = allPartners.filter(function (p) {
+    const matchesSearch = !search || (p.name || '').toLowerCase().includes(search);
+    return matchesSearch && matchesStatusFilter(p.verificationStatus, statusFilter);
+  });
 
   if (partners.length === 0) {
     grid.classList.add('d-none');
@@ -269,5 +273,6 @@ function clearAllData() {
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('status-filter').addEventListener('change', render);
+document.getElementById('search-input').addEventListener('input', render);
 
 render();
