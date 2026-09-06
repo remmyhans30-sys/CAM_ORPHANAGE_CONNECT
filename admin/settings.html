@@ -90,6 +90,17 @@
         </div>
       </div>
     </div>
+
+    <div class="card card-admin p-4 p-md-5 mb-4">
+      <h2 class="h6 mb-1">Data backup</h2>
+      <p class="text-muted small mb-3">This admin panel currently stores all data in your browser only &mdash; clearing your browser data or switching devices will lose everything. Export a backup regularly, and use Import to restore it.</p>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <button type="button" class="btn btn-admin-primary btn-sm" id="export-backup-btn">Export backup (JSON)</button>
+        <button type="button" class="btn btn-admin-outline btn-sm" id="import-backup-btn">Import backup</button>
+        <input type="file" accept="application/json" id="import-backup-input" class="d-none">
+        <span class="small text-muted" id="backup-status"></span>
+      </div>
+    </div>
   </div>
 
   <script src="settings.js"></script>

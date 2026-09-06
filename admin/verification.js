@@ -82,6 +82,7 @@ function isUrgent(orphanage) {
 function computeDuplicateRisks(orphanages) {
   const byPhone = {};
   const byAccount = {};
+  const byEmail = {};
 
   orphanages.forEach(function (o) {
     const phone = (o.contactPhone || '').trim();
@@ -94,6 +95,11 @@ function computeDuplicateRisks(orphanages) {
       byAccount[account] = byAccount[account] || [];
       byAccount[account].push(o);
     }
+    const email = (o.contactEmail || '').trim().toLowerCase();
+    if (email) {
+      byEmail[email] = byEmail[email] || [];
+      byEmail[email].push(o);
+    }
   });
 
   const risks = {};
@@ -101,6 +107,7 @@ function computeDuplicateRisks(orphanages) {
     const reasons = [];
     const phone = (o.contactPhone || '').trim();
     const account = (o.paymentAccountNumber || '').trim();
+    const email = (o.contactEmail || '').trim().toLowerCase();
 
     const phoneSharers = phone ? byPhone[phone].filter(function (other) { return other.id !== o.id; }) : [];
     if (phoneSharers.length) {
@@ -110,6 +117,11 @@ function computeDuplicateRisks(orphanages) {
     const accountSharers = account ? byAccount[account].filter(function (other) { return other.id !== o.id; }) : [];
     if (accountSharers.length) {
       reasons.push('Payment account also used by ' + accountSharers.map(function (p) { return p.name; }).join(', '));
+    }
+
+    const emailSharers = email ? byEmail[email].filter(function (other) { return other.id !== o.id; }) : [];
+    if (emailSharers.length) {
+      reasons.push('Contact email also used by ' + emailSharers.map(function (p) { return p.name; }).join(', '));
     }
 
     if (reasons.length) risks[o.id] = reasons;
@@ -168,6 +180,8 @@ function updateFilterTabs(allOrphanages) {
   });
 }
 
+let currentOrphanages = [];
+
 function render() {
   const allOrphanages = loadOrphanages();
   const needs = loadNeeds();
@@ -177,6 +191,7 @@ function render() {
   const filterTabs = document.getElementById('filter-tabs');
 
   grid.innerHTML = '';
+  currentOrphanages = [];
 
   if (allOrphanages.length === 0) {
     grid.classList.add('d-none');
@@ -191,7 +206,15 @@ function render() {
   updateFilterTabs(allOrphanages);
 
   const duplicateRisks = computeDuplicateRisks(allOrphanages);
-  const orphanages = allOrphanages.filter(function (o) { return matchesFilter(o, currentFilter); });
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
+  const orphanages = allOrphanages.filter(function (o) {
+    const matchesSearch = !search ||
+      (o.name || '').toLowerCase().includes(search) ||
+      (o.location || '').toLowerCase().includes(search);
+    return matchesSearch && matchesFilter(o, currentFilter);
+  });
+
+  currentOrphanages = orphanages;
 
   if (orphanages.length === 0) {
     grid.classList.add('d-none');
@@ -414,8 +437,38 @@ function clearAllData() {
   render();
 }
 
+function csvField(value) {
+  const str = String(value === undefined || value === null ? '' : value);
+  if (/[",\n]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map(function (row) { return row.map(csvField).join(','); }).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-csv-btn').addEventListener('click', function () {
+  const rows = [['Name', 'Location', 'Status', 'Children', 'Founded', 'Contact', 'Phone', 'Email']];
+  currentOrphanages.forEach(function (o) {
+    rows.push([o.name, o.location || '', o.status, o.childrenCount || 0, o.foundedYear || '', o.contactName || '', o.contactPhone || '', o.contactEmail || '']);
+  });
+  downloadCsv('orphanages.csv', rows);
+});
+
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+document.getElementById('search-input').addEventListener('input', render);
 
 document.getElementById('filter-tabs').addEventListener('click', function (e) {
   const btn = e.target.closest('.filter-tab');

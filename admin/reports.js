@@ -44,20 +44,42 @@ const reportModal = new bootstrap.Modal(reportModalEl);
 let activeReportId = null;
 
 function render() {
-  const reports = loadReports().slice().sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
+  const allReports = loadReports().slice().sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
   const list = document.getElementById('reports-list');
   const emptyState = document.getElementById('empty-state');
+  const filterEmptyState = document.getElementById('filter-empty-state');
 
   list.innerHTML = '';
 
-  if (reports.length === 0) {
+  if (allReports.length === 0) {
     list.classList.add('d-none');
+    filterEmptyState.classList.add('d-none');
     emptyState.classList.remove('d-none');
     return;
   }
 
-  list.classList.remove('d-none');
   emptyState.classList.add('d-none');
+
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
+  const statusFilter = document.getElementById('status-filter').value;
+
+  const reports = allReports.filter(function (r) {
+    const matchesSearch = !search ||
+      (r.reportedAccountName || '').toLowerCase().includes(search) ||
+      (r.reporterName || '').toLowerCase().includes(search);
+    const isOpen = r.status !== 'resolved';
+    const matchesStatus = statusFilter === 'all' || isOpen;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (reports.length === 0) {
+    list.classList.add('d-none');
+    filterEmptyState.classList.remove('d-none');
+    return;
+  }
+
+  list.classList.remove('d-none');
+  filterEmptyState.classList.add('d-none');
 
   list.innerHTML = reports.map(function (r) {
     const when = new Date(r.timestamp);
@@ -221,6 +243,8 @@ function clearAllData() {
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
+document.getElementById('search-input').addEventListener('input', render);
+document.getElementById('status-filter').addEventListener('change', render);
 
 function formatFcfa(amount) {
   const currency = JSON.parse(localStorage.getItem('orgSettings') || '{}').currency || 'FCFA';
@@ -313,10 +337,54 @@ function generateNeedsReport() {
     '</tbody></table></div>';
 }
 
+function generateDonorsReport() {
+  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  const totalGiven = donors.reduce(function (sum, d) { return sum + Number(d.totalGiven || 0); }, 0);
+  const active = donors.filter(function (d) { return d.status !== 'flagged'; }).length;
+  const flagged = donors.filter(function (d) { return d.status === 'flagged'; }).length;
+
+  generatedReportRows = [['Name', 'Email', 'Status', 'Join Date', 'Total Given', 'Donations Count']].concat(
+    donors.map(function (d) { return [d.name, d.email || '', d.status, d.joinDate || '', d.totalGiven || 0, d.donationsCount || 0]; })
+  );
+
+  document.getElementById('generated-report-output').innerHTML =
+    '<h3 class="h6">Donors Report</h3>' +
+    '<p class="small text-muted">Generated ' + new Date().toLocaleString() + '</p>' +
+    '<p class="mb-3"><strong>' + donors.length + '</strong> donors (' + active + ' active, ' + flagged + ' flagged) &mdash; ' + formatFcfa(totalGiven) + ' given in total.</p>' +
+    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Join Date</th><th>Total Given</th><th>Donations</th></tr></thead><tbody>' +
+    donors.map(function (d) {
+      return '<tr><td>' + escapeHtml(d.name) + '</td><td>' + escapeHtml(d.email || '') + '</td><td>' + escapeHtml(d.status) + '</td><td>' + escapeHtml(d.joinDate || '') + '</td><td>' + formatFcfa(d.totalGiven) + '</td><td>' + (d.donationsCount || 0) + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div>';
+}
+
+function generatePartnersReport() {
+  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
+  const totalContributed = partners.reduce(function (sum, p) { return sum + Number(p.totalContributed || 0); }, 0);
+  const verified = partners.filter(function (p) { return p.verificationStatus === 'verified'; }).length;
+  const pending = partners.filter(function (p) { return p.verificationStatus === 'pending'; }).length;
+
+  generatedReportRows = [['Name', 'Contact', 'Country', 'Org Type', 'Verification Status', 'Total Contributed']].concat(
+    partners.map(function (p) { return [p.name, p.contactName || '', p.country || '', p.orgType || '', p.verificationStatus, p.totalContributed || 0]; })
+  );
+
+  document.getElementById('generated-report-output').innerHTML =
+    '<h3 class="h6">Partner Organizations Report</h3>' +
+    '<p class="small text-muted">Generated ' + new Date().toLocaleString() + '</p>' +
+    '<p class="mb-3"><strong>' + partners.length + '</strong> partner organizations (' + verified + ' verified, ' + pending + ' pending) &mdash; ' + formatFcfa(totalContributed) + ' contributed in total.</p>' +
+    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Name</th><th>Contact</th><th>Country</th><th>Org Type</th><th>Status</th><th>Total Contributed</th></tr></thead><tbody>' +
+    partners.map(function (p) {
+      return '<tr><td>' + escapeHtml(p.name) + '</td><td>' + escapeHtml(p.contactName || '') + '</td><td>' + escapeHtml(p.country || '') + '</td><td>' + escapeHtml(p.orgType || '') + '</td><td>' + escapeHtml(p.verificationStatus) + '</td><td>' + formatFcfa(p.totalContributed) + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div>';
+}
+
 document.getElementById('generate-report-btn').addEventListener('click', function () {
   const type = document.getElementById('report-type-select').value;
   if (type === 'donations') generateDonationsReport();
   else if (type === 'needs') generateNeedsReport();
+  else if (type === 'donors') generateDonorsReport();
+  else if (type === 'partners') generatePartnersReport();
   else generateProgramsReport();
 
   document.getElementById('print-report-btn').classList.remove('d-none');

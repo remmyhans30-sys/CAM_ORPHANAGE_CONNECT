@@ -356,6 +356,8 @@ document.addEventListener('click', function (e) {
 document.querySelectorAll('.logout-link').forEach(function (link) {
   link.addEventListener('click', function () {
     localStorage.removeItem('currentAdminEmail');
+    localStorage.removeItem('currentAdminRole');
+    localStorage.removeItem('currentAdminDisplayName');
   });
 });
 

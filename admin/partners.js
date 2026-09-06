@@ -45,6 +45,30 @@ function isUrgent(partner) {
   return days !== null && days >= STALE_PENDING_DAYS;
 }
 
+function computeDuplicateRisks(partners) {
+  const byEmail = {};
+  partners.forEach(function (p) {
+    const email = (p.email || '').trim().toLowerCase();
+    if (!email) return;
+    byEmail[email] = byEmail[email] || [];
+    byEmail[email].push(p);
+  });
+
+  const risks = {};
+  partners.forEach(function (p) {
+    const email = (p.email || '').trim().toLowerCase();
+    if (!email) return;
+    const sharers = byEmail[email].filter(function (other) { return other.id !== p.id; });
+    if (sharers.length) {
+      risks[p.id] = 'Email also used by ' + sharers.map(function (o) { return o.name; }).join(', ');
+    }
+  });
+
+  return risks;
+}
+
+let currentPartners = [];
+
 function render() {
   const allPartners = loadPartners();
   const grid = document.getElementById('partners-grid');
@@ -52,6 +76,7 @@ function render() {
   const filterEmptyState = document.getElementById('filter-empty-state');
 
   grid.innerHTML = '';
+  currentPartners = [];
 
   if (allPartners.length === 0) {
     grid.classList.add('d-none');
@@ -69,6 +94,8 @@ function render() {
     return matchesSearch && matchesStatusFilter(p.verificationStatus, statusFilter);
   });
 
+  currentPartners = partners;
+
   if (partners.length === 0) {
     grid.classList.add('d-none');
     filterEmptyState.classList.remove('d-none');
@@ -77,6 +104,8 @@ function render() {
 
   grid.classList.remove('d-none');
   filterEmptyState.classList.add('d-none');
+
+  const duplicateRisks = computeDuplicateRisks(allPartners);
 
   partners.forEach(function (partner) {
     const col = document.createElement('div');
@@ -99,6 +128,7 @@ function render() {
           (isUrgent(partner) ? '<span class="profile-urgent-badge">&#9201; Urgent</span>' : '') +
         '</div>' +
         '<p class="text-muted small mb-3">' + escapeHtml(partner.contactName || '') + (partner.country ? ' &middot; ' + escapeHtml(partner.country) : '') + '</p>' +
+        (duplicateRisks[partner.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[partner.id]) + '">&#9888; Duplicate account risk</p>' : '') +
         '<a href="partner-profile.html?id=' + encodeURIComponent(partner.id) + '" class="btn btn-admin-primary btn-sm mt-auto">Review profile</a>' +
       '</div>';
 
@@ -269,6 +299,35 @@ function clearAllData() {
   localStorage.removeItem('partners');
   render();
 }
+
+function csvField(value) {
+  const str = String(value === undefined || value === null ? '' : value);
+  if (/[",\n]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map(function (row) { return row.map(csvField).join(','); }).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-csv-btn').addEventListener('click', function () {
+  const rows = [['Name', 'Contact', 'Email', 'Country', 'Org Type', 'Tier', 'Verification Status', 'Total Contributed']];
+  currentPartners.forEach(function (p) {
+    rows.push([p.name, p.contactName || '', p.email || '', p.country || '', p.orgType || '', p.tier || '', p.verificationStatus, p.totalContributed || 0]);
+  });
+  downloadCsv('partner-organizations.csv', rows);
+});
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);

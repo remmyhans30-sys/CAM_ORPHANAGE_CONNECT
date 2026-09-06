@@ -132,7 +132,10 @@ function buildModalBody(msg) {
   }).join('');
 
   return (
-    '<p class="small text-muted mb-1">' + (msg.fromAdmin ? 'You messaged ' : 'From ') + '<strong class="text-body">' + escapeHtml(msg.senderName) + '</strong> (' + escapeHtml(accountTypeLabel(msg.accountType)) + ') &mdash; ' + escapeHtml(whenText) + '</p>' +
+    '<div class="d-flex justify-content-between align-items-start mb-1">' +
+      '<p class="small text-muted mb-0">' + (msg.fromAdmin ? 'You messaged ' : 'From ') + '<strong class="text-body">' + escapeHtml(msg.senderName) + '</strong> (' + escapeHtml(accountTypeLabel(msg.accountType)) + ') &mdash; ' + escapeHtml(whenText) + '</p>' +
+      '<button type="button" class="btn btn-admin-danger btn-sm" id="delete-message-btn">Delete conversation</button>' +
+    '</div>' +
     '<p class="small mb-3"><a href="' + profileUrlFor(msg) + '">View account profile</a></p>' +
     (msg.body ? '<div class="profile-info-note mb-3">' + escapeHtml(msg.body) + '</div>' : '<p class="text-muted small mb-3">No messages yet &mdash; start the conversation below.</p>') +
     (repliesList ? '<h3 class="h6">Replies</h3>' + repliesList : '') +
@@ -181,6 +184,18 @@ document.getElementById('messages-list').addEventListener('click', function (e) 
   const row = e.target.closest('.message-row');
   if (!row) return;
   openMessage(Number(row.dataset.messageId));
+});
+
+document.getElementById('message-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'delete-message-btn') return;
+  if (activeMessageId === null) return;
+  if (!confirm('Delete this conversation? This cannot be undone.')) return;
+
+  const messages = loadMessages().filter(function (m) { return m.id !== activeMessageId; });
+  saveMessages(messages);
+  activeMessageId = null;
+  messageModal.hide();
+  render();
 });
 
 document.getElementById('message-modal-body').addEventListener('click', function (e) {

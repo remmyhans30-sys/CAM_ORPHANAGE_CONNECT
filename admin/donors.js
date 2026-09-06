@@ -21,6 +21,30 @@ function initials(name) {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
+function computeDuplicateRisks(donors) {
+  const byEmail = {};
+  donors.forEach(function (d) {
+    const email = (d.email || '').trim().toLowerCase();
+    if (!email) return;
+    byEmail[email] = byEmail[email] || [];
+    byEmail[email].push(d);
+  });
+
+  const risks = {};
+  donors.forEach(function (d) {
+    const email = (d.email || '').trim().toLowerCase();
+    if (!email) return;
+    const sharers = byEmail[email].filter(function (other) { return other.id !== d.id; });
+    if (sharers.length) {
+      risks[d.id] = 'Email also used by ' + sharers.map(function (o) { return o.name; }).join(', ');
+    }
+  });
+
+  return risks;
+}
+
+let currentDonors = [];
+
 function render() {
   const allDonors = loadDonors();
   const grid = document.getElementById('donors-grid');
@@ -28,6 +52,7 @@ function render() {
   const filterEmptyState = document.getElementById('filter-empty-state');
 
   grid.innerHTML = '';
+  currentDonors = [];
 
   if (allDonors.length === 0) {
     grid.classList.add('d-none');
@@ -49,6 +74,8 @@ function render() {
     return matchesSearch && matchesStatus;
   });
 
+  currentDonors = donors;
+
   if (donors.length === 0) {
     grid.classList.add('d-none');
     filterEmptyState.classList.remove('d-none');
@@ -57,6 +84,8 @@ function render() {
 
   grid.classList.remove('d-none');
   filterEmptyState.classList.add('d-none');
+
+  const duplicateRisks = computeDuplicateRisks(allDonors);
 
   donors.forEach(function (donor) {
     const col = document.createElement('div');
@@ -76,6 +105,7 @@ function render() {
         '</div>' +
         '<p class="text-muted small mb-1">' + escapeHtml(donor.email || '') + '</p>' +
         '<p class="text-muted small mb-3">' + escapeHtml(donor.location || '') + '</p>' +
+        (duplicateRisks[donor.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[donor.id]) + '">&#9888; Duplicate account risk</p>' : '') +
         '<a href="donor-profile.html?id=' + encodeURIComponent(donor.id) + '" class="btn btn-admin-primary btn-sm mt-auto">Review profile</a>' +
       '</div>';
 
@@ -229,6 +259,35 @@ function clearAllData() {
   localStorage.removeItem('donors');
   render();
 }
+
+function csvField(value) {
+  const str = String(value === undefined || value === null ? '' : value);
+  if (/[",\n]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map(function (row) { return row.map(csvField).join(','); }).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-csv-btn').addEventListener('click', function () {
+  const rows = [['Name', 'Email', 'Location', 'Status', 'Join Date', 'Total Given', 'Donations Count']];
+  currentDonors.forEach(function (d) {
+    rows.push([d.name, d.email || '', d.location || '', d.status, d.joinDate || '', d.totalGiven || 0, d.donationsCount || 0]);
+  });
+  downloadCsv('donors.csv', rows);
+});
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);

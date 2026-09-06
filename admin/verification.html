@@ -26,6 +26,7 @@
         <a href="reports.html" class="btn btn-admin-outline">Reports</a>
         <a href="messages.html" class="btn btn-admin-outline">Inbox</a>
         <a href="finance.html" class="btn btn-admin-outline">Finance</a>
+        <button type="button" class="btn btn-admin-primary" id="export-csv-btn">Export CSV</button>
         <button id="seed-btn" class="btn btn-admin-outline" type="button">Load sample data</button>
         <button id="clear-btn" class="btn btn-admin-danger" type="button">Clear all data</button>
       </div>
@@ -34,6 +35,10 @@
     <p class="text-muted small mb-4" style="opacity:0.7;">
       "Load sample data" and "Clear all data" are dev-only tools for testing this page before real orphanage registrations exist &mdash; remove before launch.
     </p>
+
+    <div class="mb-3">
+      <input type="text" class="form-control" id="search-input" placeholder="Search orphanages by name or location..." style="max-width: 320px;">
+    </div>
 
     <div class="d-flex gap-2 flex-wrap mb-4" id="filter-tabs">
       <button type="button" class="filter-tab" data-filter="all">All</button>
