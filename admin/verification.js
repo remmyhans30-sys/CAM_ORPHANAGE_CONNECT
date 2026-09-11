@@ -3,12 +3,26 @@ if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.
 const COVER_CLASSES = ['p1', 'p2', 'p3', 'p4', 'p5'];
 const CHECK_SVG = '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+let orphanagesCache = [];
+
 function loadOrphanages() {
-  return JSON.parse(localStorage.getItem('orphanages') || '[]');
+  return orphanagesCache;
+}
+
+function fetchOrphanagesFromApi() {
+  return apiRequest('/orphanages').then(function (data) {
+    orphanagesCache = data.orphanages;
+  });
 }
 
 function saveOrphanages(orphanages) {
-  localStorage.setItem('orphanages', JSON.stringify(orphanages));
+  const orphanage = orphanages.find(function (o) { return o.id === activeOrphanageId; });
+  if (!orphanage) return Promise.resolve();
+
+  return apiRequest('/orphanages/' + orphanage.id, { method: 'PUT', body: orphanage })
+    .catch(function (err) {
+      alert('Could not save changes to the server: ' + err.message);
+    });
 }
 
 function loadNeeds() {
@@ -294,7 +308,7 @@ function render() {
 function seedSampleData() {
   const sampleOrphanages = [
     {
-      id: 1,
+      _sampleId: 1,
       name: "Hope Children's Home",
       location: 'Buea, Southwest Region',
       registrationNumber: 'MINAS/2022/00123',
@@ -328,7 +342,7 @@ function seedSampleData() {
       paymentAccountConfirmed: true,
     },
     {
-      id: 2,
+      _sampleId: 2,
       name: "Foyer de l'Espérance",
       location: 'Yaoundé, Centre Region',
       registrationNumber: 'MINAS/2023/00456',
@@ -347,7 +361,7 @@ function seedSampleData() {
       documents: [],
     },
     {
-      id: 3,
+      _sampleId: 3,
       name: 'Grace Orphanage',
       location: 'Bamenda, Northwest Region',
       registrationNumber: 'MINAS/2021/00789',
@@ -370,7 +384,7 @@ function seedSampleData() {
       ],
     },
     {
-      id: 4,
+      _sampleId: 4,
       name: 'Orphelinat Bethel',
       location: 'Douala, Littoral Region',
       registrationNumber: 'MINAS/2020/00234',
@@ -391,7 +405,7 @@ function seedSampleData() {
       documents: ['registration-certificate.pdf'],
     },
     {
-      id: 5,
+      _sampleId: 5,
       name: 'Little Angels Home',
       location: 'Limbe, Southwest Region',
       registrationNumber: 'MINAS/2024/00567',
@@ -417,24 +431,47 @@ function seedSampleData() {
     },
   ];
 
-  const sampleNeeds = [
-    { title: 'New dormitory beds', raised: 320000, goal: 500000, percent: 64, orphanageId: 1, date: '2026-08-10' },
-    { title: 'School fees for 10 children', raised: 150000, goal: 400000, percent: 38, orphanageId: 1, date: '2026-06-01' },
-    { title: 'Fournitures scolaires', raised: 60000, goal: 200000, percent: 30, orphanageId: 2, date: '2026-08-25' },
-    { title: 'Kitchen renovation', raised: 480000, goal: 480000, percent: 100, orphanageId: 3, date: '2026-05-14' },
-    { title: 'Water borehole', raised: 90000, goal: 600000, percent: 15, orphanageId: 5, date: '2026-08-30' },
-  ];
+  Promise.all(sampleOrphanages.map(function (o) {
+    const payload = Object.assign({}, o);
+    delete payload._sampleId;
+    return apiRequest('/orphanages', { method: 'POST', body: payload })
+      .then(function (result) { return { sampleId: o._sampleId, realId: result.orphanage.id }; });
+  }))
+    .then(function (idMappings) {
+      const idMap = {};
+      idMappings.forEach(function (m) { idMap[m.sampleId] = m.realId; });
 
-  localStorage.setItem('orphanages', JSON.stringify(sampleOrphanages));
-  localStorage.setItem('needs', JSON.stringify(sampleNeeds));
-  render();
+      const sampleNeeds = [
+        { title: 'New dormitory beds', raised: 320000, goal: 500000, percent: 64, orphanageId: idMap[1], date: '2026-08-10' },
+        { title: 'School fees for 10 children', raised: 150000, goal: 400000, percent: 38, orphanageId: idMap[1], date: '2026-06-01' },
+        { title: 'Fournitures scolaires', raised: 60000, goal: 200000, percent: 30, orphanageId: idMap[2], date: '2026-08-25' },
+        { title: 'Kitchen renovation', raised: 480000, goal: 480000, percent: 100, orphanageId: idMap[3], date: '2026-05-14' },
+        { title: 'Water borehole', raised: 90000, goal: 600000, percent: 15, orphanageId: idMap[5], date: '2026-08-30' },
+      ];
+      localStorage.setItem('needs', JSON.stringify(sampleNeeds));
+
+      return fetchOrphanagesFromApi();
+    })
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
 }
 
 function clearAllData() {
   if (!confirm('Clear all orphanages and needs data? This cannot be undone.')) return;
-  localStorage.removeItem('orphanages');
-  localStorage.removeItem('needs');
-  render();
+
+  Promise.all(orphanagesCache.map(function (o) {
+    return apiRequest('/orphanages/' + o.id, { method: 'DELETE' });
+  }))
+    .then(function () {
+      localStorage.removeItem('needs');
+      return fetchOrphanagesFromApi();
+    })
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
 }
 
 function csvField(value) {
@@ -939,19 +976,24 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
   if (e.target.id === 'delete-orphanage-btn') {
     if (!confirm('Permanently delete "' + orphanage.name + '"? This will also remove its needs. This cannot be undone.')) return;
 
-    const remainingOrphanages = orphanages.filter(function (o) { return o.id !== orphanage.id; });
-    saveOrphanages(remainingOrphanages);
+    apiRequest('/orphanages/' + orphanage.id, { method: 'DELETE' })
+      .then(function () {
+        orphanagesCache = orphanages.filter(function (o) { return o.id !== orphanage.id; });
 
-    const needs = loadNeeds();
-    const remainingNeeds = needs.filter(function (n) { return String(n.orphanageId) !== String(orphanage.id); });
-    localStorage.setItem('needs', JSON.stringify(remainingNeeds));
+        const needs = loadNeeds();
+        const remainingNeeds = needs.filter(function (n) { return String(n.orphanageId) !== String(orphanage.id); });
+        localStorage.setItem('needs', JSON.stringify(remainingNeeds));
 
-    const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
-    deletionLog.push({ accountName: orphanage.name, accountType: 'orphanage', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
-    localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
+        const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+        deletionLog.push({ accountName: orphanage.name, accountType: 'orphanage', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
+        localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
 
-    profileModal.hide();
-    render();
+        profileModal.hide();
+        render();
+      })
+      .catch(function (err) {
+        alert('Could not delete: ' + err.message);
+      });
     return;
   }
 
@@ -997,9 +1039,17 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
   }
 });
 
-render();
+fetchOrphanagesFromApi()
+  .then(function () {
+    render();
 
-const deepLinkId = new URLSearchParams(window.location.search).get('id');
-if (deepLinkId !== null) {
-  openProfileModal(Number(deepLinkId));
-}
+    const deepLinkId = new URLSearchParams(window.location.search).get('id');
+    if (deepLinkId !== null) {
+      openProfileModal(Number(deepLinkId));
+    }
+  })
+  .catch(function (err) {
+    document.getElementById('profile-grid').innerHTML =
+      '<div class="col-12"><div class="alert alert-danger">Could not load orphanages from the server: ' + err.message + '</div></div>';
+    document.getElementById('profile-grid').classList.remove('d-none');
+  });

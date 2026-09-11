@@ -37,17 +37,30 @@ document.getElementById('admin-login-form').addEventListener('submit', function 
   }
 
   errorBox.classList.add('d-none');
-  localStorage.setItem('currentAdminEmail', email);
 
-  const users = JSON.parse(localStorage.getItem('users') || '[]');
-  const matchedUser = users.find(function (u) { return u.email.toLowerCase() === email.toLowerCase(); });
-  localStorage.setItem('currentAdminRole', matchedUser ? matchedUser.role : 'Super Admin');
+  const submitBtn = this.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Signing in...';
 
-  if (rememberMe) {
-    localStorage.setItem('rememberedAdminEmail', email);
-  } else {
-    localStorage.removeItem('rememberedAdminEmail');
-  }
+  apiRequest('/auth/login', { method: 'POST', body: { email: email, password: password } })
+    .then(function (data) {
+      localStorage.setItem('adminToken', data.token);
+      localStorage.setItem('currentAdminEmail', data.admin.email);
+      localStorage.setItem('currentAdminRole', data.admin.role);
+      localStorage.setItem('currentAdminDisplayName', data.admin.name);
 
-  window.location.href = 'dashboard.html';
+      if (rememberMe) {
+        localStorage.setItem('rememberedAdminEmail', email);
+      } else {
+        localStorage.removeItem('rememberedAdminEmail');
+      }
+
+      window.location.href = 'dashboard.html';
+    })
+    .catch(function (err) {
+      errorBox.textContent = err.message || 'Could not reach the server. Is the backend running?';
+      errorBox.classList.remove('d-none');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign in';
+    });
 });

@@ -358,6 +358,7 @@ document.querySelectorAll('.logout-link').forEach(function (link) {
     localStorage.removeItem('currentAdminEmail');
     localStorage.removeItem('currentAdminRole');
     localStorage.removeItem('currentAdminDisplayName');
+    localStorage.removeItem('adminToken');
   });
 });
 
