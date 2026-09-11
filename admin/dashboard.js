@@ -1,6 +1,12 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
 
-function loadOrphanages() { return JSON.parse(localStorage.getItem('orphanages') || '[]'); }
+let orphanagesCache = [];
+function loadOrphanages() { return orphanagesCache; }
+function fetchOrphanagesFromApi() {
+  return apiRequest('/orphanages').then(function (data) {
+    orphanagesCache = data.orphanages;
+  });
+}
 function loadDonors() { return JSON.parse(localStorage.getItem('donors') || '[]'); }
 function loadPartners() { return JSON.parse(localStorage.getItem('partners') || '[]'); }
 function loadMessages() { return JSON.parse(localStorage.getItem('messages') || '[]'); }
@@ -372,8 +378,16 @@ document.getElementById('donations-range-select').addEventListener('change', fun
 
 applyRolePermissions();
 renderTopbar();
-renderStatCards();
 renderRecentDonations();
 renderRecentMessages();
 renderDonationsChart(document.getElementById('donations-range-select').value);
-renderStatusChart();
+
+fetchOrphanagesFromApi()
+  .then(function () {
+    renderStatCards();
+    renderStatusChart();
+  })
+  .catch(function (err) {
+    renderStatCards();
+    console.error('Could not load orphanages from the server:', err.message);
+  });

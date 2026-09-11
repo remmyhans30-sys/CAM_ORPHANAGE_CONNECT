@@ -2,7 +2,14 @@ if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.
 
 function loadNeeds() { return JSON.parse(localStorage.getItem('needs') || '[]'); }
 function saveNeeds(needs) { localStorage.setItem('needs', JSON.stringify(needs)); }
-function loadOrphanages() { return JSON.parse(localStorage.getItem('orphanages') || '[]'); }
+
+let orphanagesCache = [];
+function loadOrphanages() { return orphanagesCache; }
+function fetchOrphanagesFromApi() {
+  return apiRequest('/orphanages').then(function (data) {
+    orphanagesCache = data.orphanages;
+  });
+}
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -236,5 +243,13 @@ document.getElementById('need-form').addEventListener('submit', function (e) {
   render();
 });
 
-populateOrphanageDropdowns();
-render();
+fetchOrphanagesFromApi()
+  .then(function () {
+    populateOrphanageDropdowns();
+    render();
+  })
+  .catch(function (err) {
+    populateOrphanageDropdowns();
+    render();
+    alert('Could not load orphanages from the server: ' + err.message + '. The orphanage dropdown will be empty until the backend is reachable.');
+  });
