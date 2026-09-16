@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistics - CAM Orphanage Connect</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg site-navbar">
+    <div class="container">
+      <a class="navbar-brand brand-heading" href="../donor/index.html">CAM Orphanage Connect</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+          <li class="nav-item"><a class="nav-link" href="../donor/index.html">Donate</a></li>
+          <li class="nav-item"><a class="nav-link active" href="index.html">Statistics</a></li>
+          <li class="nav-item"><a class="nav-link" href="../login/index.html">Sign in</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <header class="stats-hero">
+    <div class="container text-center">
+      <span class="section-badge">Platform impact</span>
+      <h1 class="mt-3">Our impact so far</h1>
+      <p class="lead-muted mx-auto">
+        A live look at how donations are flowing to verified orphanages across Cameroon.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="row g-3 g-md-4 stat-tiles" id="statTiles">
+      <!-- Summary tiles injected by script.js -->
+    </section>
+
+    <section class="row g-3 g-md-4 chart-row">
+      <div class="col-lg-7">
+        <div class="card card-stats h-100">
+          <div class="card-body">
+            <h2 class="h6 card-eyebrow">Raised vs. goal by orphanage</h2>
+            <div class="chart-wrap">
+              <canvas id="orphanageChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card card-stats h-100">
+          <div class="card-body">
+            <h2 class="h6 card-eyebrow">Needs by funding status</h2>
+            <div class="chart-wrap chart-wrap-donut">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card card-stats breakdown-card">
+      <div class="card-body">
+        <h2 class="h6 card-eyebrow">Per-orphanage breakdown</h2>
+        <div class="table-responsive">
+          <table class="table breakdown-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Orphanage</th>
+                <th scope="col">Status</th>
+                <th scope="col">Needs</th>
+                <th scope="col">Raised</th>
+                <th scope="col">Goal</th>
+                <th scope="col">Progress</th>
+              </tr>
+            </thead>
+            <tbody id="breakdownBody">
+              <!-- Rows injected by script.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer text-center">
+    <div class="container">
+      <p class="mb-0">CAM Orphanage Connect &middot; Connecting donors to verified orphanages in Cameroon</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="../shared/data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
