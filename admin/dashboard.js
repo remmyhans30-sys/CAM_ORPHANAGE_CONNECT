@@ -151,7 +151,7 @@ function renderRecentDonations() {
   const all = [];
   donors.forEach(function (d) {
     (d.donations || []).forEach(function (donation) {
-      all.push({ donorName: d.name, amount: donation.amount, date: donation.date });
+      all.push({ donorName: d.name, type: donation.type || 'money', amount: donation.amount, itemDescription: donation.itemDescription, date: donation.date });
     });
   });
 
@@ -164,10 +164,11 @@ function renderRecentDonations() {
   }
 
   list.innerHTML = recent.map(function (d) {
+    const detail = d.type === 'item' ? escapeHtml(d.itemDescription || 'Item donation') : formatFcfa(d.amount);
     return (
       '<div class="d-flex justify-content-between align-items-center py-2 border-bottom">' +
         '<span class="small">' + escapeHtml(d.donorName) + '</span>' +
-        '<span class="small fw-bold">' + formatFcfa(d.amount) + '</span>' +
+        '<span class="small fw-bold">' + detail + '</span>' +
         '<span class="small text-muted">' + escapeHtml(d.date) + '</span>' +
       '</div>'
     );
@@ -220,6 +221,7 @@ function renderDonationsChart(range) {
 
   donors.forEach(function (d) {
     (d.donations || []).forEach(function (donation) {
+      if (donation.type === 'item') return;
       const date = donation.date || '';
       if (!date) return;
 

@@ -306,25 +306,40 @@ function buildDonationsReport(donors) {
 
   donors.forEach(function (d) {
     (d.donations || []).forEach(function (don) {
-      rows.push({ donor: d.name, amount: don.amount, need: don.need, method: don.method, date: don.date, status: don.status });
+      rows.push({
+        donor: d.name,
+        type: don.type || 'money',
+        amount: don.amount,
+        itemDescription: don.itemDescription,
+        need: don.need,
+        method: don.method || don.deliveryMethod,
+        date: don.date,
+        status: don.status,
+      });
     });
   });
 
-  const totalAmount = rows.reduce(function (sum, r) { return sum + Number(r.amount || 0); }, 0);
+  const moneyRows = rows.filter(function (r) { return r.type !== 'item'; });
+  const itemRows = rows.filter(function (r) { return r.type === 'item'; });
+  const totalAmount = moneyRows.reduce(function (sum, r) { return sum + Number(r.amount || 0); }, 0);
   const completed = rows.filter(function (r) { return r.status === 'completed'; }).length;
   const refunded = rows.filter(function (r) { return r.status === 'refunded'; }).length;
 
-  generatedReportRows = [['Donor', 'Amount', 'Need', 'Method', 'Date', 'Status']].concat(
-    rows.map(function (r) { return [r.donor, r.amount, r.need || '', r.method || '', r.date || '', r.status || '']; })
+  generatedReportRows = [['Donor', 'Type', 'Amount / Item', 'Need', 'Method', 'Date', 'Status']].concat(
+    rows.map(function (r) {
+      const detail = r.type === 'item' ? (r.itemDescription || '') : r.amount;
+      return [r.donor, r.type === 'item' ? 'Item' : 'Money', detail, r.need || '', r.method || '', r.date || '', r.status || ''];
+    })
   );
 
   document.getElementById('generated-report-output').innerHTML =
     '<h3 class="h6">Donations Report</h3>' +
     '<p class="small text-muted">Generated ' + new Date().toLocaleString() + '</p>' +
-    '<p class="mb-3"><strong>' + rows.length + '</strong> donations totaling <strong>' + formatFcfa(totalAmount) + '</strong> &mdash; ' + completed + ' completed, ' + refunded + ' refunded.</p>' +
-    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Donor</th><th>Amount</th><th>Need</th><th>Method</th><th>Date</th><th>Status</th></tr></thead><tbody>' +
+    '<p class="mb-3"><strong>' + rows.length + '</strong> donations (' + moneyRows.length + ' money totaling ' + formatFcfa(totalAmount) + ', ' + itemRows.length + ' item) &mdash; ' + completed + ' completed/delivered, ' + refunded + ' refunded/returned.</p>' +
+    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Donor</th><th>Type</th><th>Amount / Item</th><th>Need</th><th>Method</th><th>Date</th><th>Status</th></tr></thead><tbody>' +
     rows.map(function (r) {
-      return '<tr><td>' + escapeHtml(r.donor) + '</td><td>' + formatFcfa(r.amount) + '</td><td>' + escapeHtml(r.need || '') + '</td><td>' + escapeHtml(r.method || '') + '</td><td>' + escapeHtml(r.date || '') + '</td><td>' + escapeHtml(r.status || '') + '</td></tr>';
+      const detail = r.type === 'item' ? escapeHtml(r.itemDescription || '') : formatFcfa(r.amount);
+      return '<tr><td>' + escapeHtml(r.donor) + '</td><td>' + (r.type === 'item' ? 'Item' : 'Money') + '</td><td>' + detail + '</td><td>' + escapeHtml(r.need || '') + '</td><td>' + escapeHtml(r.method || '') + '</td><td>' + escapeHtml(r.date || '') + '</td><td>' + escapeHtml(r.status || '') + '</td></tr>';
     }).join('') +
     '</tbody></table></div>';
 }

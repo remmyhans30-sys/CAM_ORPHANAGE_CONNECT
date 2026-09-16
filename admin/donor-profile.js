@@ -14,6 +14,14 @@ function fetchDonorsFromApi() {
   });
 }
 
+let orphanagesCache = [];
+
+function fetchOrphanagesFromApi() {
+  return apiRequest('/orphanages').then(function (data) {
+    orphanagesCache = data.orphanages;
+  });
+}
+
 function loadDonor() {
   const id = getDonorId();
   if (id === null) return donorsCache[0] || null;
@@ -165,24 +173,43 @@ function renderStatsStrip(donor) {
   }).join('');
 }
 
+function donationTypeLabel(d) {
+  return d.type === 'item' ? 'Item' : 'Money';
+}
+
+function donationDetailsText(d) {
+  if (d.type === 'item') {
+    const parts = [escapeHtml(d.itemDescription || 'Item donation')];
+    if (d.quantity) parts.push('(' + escapeHtml(d.quantity) + ')');
+    if (d.amount) parts.push('&mdash; est. ' + formatFcfa(d.amount));
+    return parts.join(' ');
+  }
+  return formatFcfa(d.amount);
+}
+
 function renderDonationHistory(donor) {
   const tbody = document.getElementById('donation-history-tbody');
   const donations = donor.donations || [];
 
   if (donations.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-muted small">No donations recorded yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-muted small">No donations recorded yet.</td></tr>';
     return;
   }
 
   tbody.innerHTML = donations.map(function (d) {
+    const statusLabel = d.type === 'item'
+      ? (d.status === 'refunded' ? 'Returned' : 'Delivered')
+      : (d.status || '').charAt(0).toUpperCase() + (d.status || '').slice(1);
+
     return (
       '<tr>' +
         '<td>' + escapeHtml(d.date) + '</td>' +
         '<td>' + escapeHtml(d.orphanage) + '</td>' +
-        '<td>' + escapeHtml(d.need) + '</td>' +
-        '<td>' + formatFcfa(d.amount) + '</td>' +
-        '<td>' + escapeHtml(d.method) + '</td>' +
-        '<td><span class="tier-tag tier-friend">' + escapeHtml(d.status.charAt(0).toUpperCase() + d.status.slice(1)) + '</span></td>' +
+        '<td>' + escapeHtml(d.need || '&mdash;') + '</td>' +
+        '<td><span class="tier-tag ' + (d.type === 'item' ? 'tier-champion' : 'tier-friend') + '">' + donationTypeLabel(d) + '</span></td>' +
+        '<td>' + donationDetailsText(d) + '</td>' +
+        '<td>' + escapeHtml(d.method || d.deliveryMethod || '&mdash;') + '</td>' +
+        '<td><span class="tier-tag tier-friend">' + escapeHtml(statusLabel) + '</span></td>' +
       '</tr>'
     );
   }).join('');
@@ -442,7 +469,97 @@ document.getElementById('save-notes-btn').addEventListener('click', function () 
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
 });
 
-fetchDonorsFromApi()
+const addDonationModal = new bootstrap.Modal(document.getElementById('add-donation-modal'));
+
+function populateDonationOrphanageDropdown() {
+  const select = document.getElementById('donation-orphanage');
+  select.innerHTML = '<option value="" disabled selected>Select an orphanage&hellip;</option>';
+  orphanagesCache.forEach(function (o) {
+    const option = document.createElement('option');
+    option.value = o.name;
+    option.textContent = o.name;
+    select.appendChild(option);
+  });
+}
+
+document.getElementById('donation-type').addEventListener('change', function (e) {
+  const isItem = e.target.value === 'item';
+  document.getElementById('donation-money-fields').classList.toggle('d-none', isItem);
+  document.getElementById('donation-item-fields').classList.toggle('d-none', !isItem);
+});
+
+document.getElementById('add-donation-btn').addEventListener('click', function () {
+  document.getElementById('add-donation-form').reset();
+  document.getElementById('donation-type').value = 'money';
+  document.getElementById('donation-money-fields').classList.remove('d-none');
+  document.getElementById('donation-item-fields').classList.add('d-none');
+  document.getElementById('donation-date').value = new Date().toISOString().slice(0, 10);
+  populateDonationOrphanageDropdown();
+  addDonationModal.show();
+});
+
+document.getElementById('add-donation-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const donor = loadDonor();
+  if (!donor) return;
+
+  const type = document.getElementById('donation-type').value;
+  const orphanage = document.getElementById('donation-orphanage').value;
+  const need = document.getElementById('donation-need').value.trim();
+  const date = document.getElementById('donation-date').value || new Date().toISOString().slice(0, 10);
+
+  if (!orphanage) {
+    alert('Please select an orphanage.');
+    return;
+  }
+
+  let donation;
+  let estimatedValue = 0;
+
+  if (type === 'item') {
+    const itemDescription = document.getElementById('donation-item-description').value.trim();
+    if (!itemDescription) {
+      alert('Please describe what was donated.');
+      return;
+    }
+    estimatedValue = Number(document.getElementById('donation-item-value').value) || 0;
+    donation = {
+      type: 'item',
+      orphanage: orphanage,
+      need: need,
+      itemDescription: itemDescription,
+      quantity: document.getElementById('donation-quantity').value.trim(),
+      amount: estimatedValue,
+      deliveryMethod: document.getElementById('donation-delivery-method').value.trim(),
+      date: date,
+      status: 'completed',
+    };
+  } else {
+    estimatedValue = Number(document.getElementById('donation-amount').value) || 0;
+    donation = {
+      type: 'money',
+      orphanage: orphanage,
+      need: need,
+      amount: estimatedValue,
+      method: document.getElementById('donation-method').value.trim(),
+      date: date,
+      status: 'completed',
+    };
+  }
+
+  donor.donations = donor.donations || [];
+  donor.donations.push(donation);
+  donor.donationsCount = (donor.donationsCount || 0) + 1;
+  donor.totalGiven = (donor.totalGiven || 0) + estimatedValue;
+  logActivity(donor, 'Added ' + (type === 'item' ? 'item' : 'money') + ' donation');
+
+  saveDonor(donor).then(function () {
+    addDonationModal.hide();
+    render();
+  });
+});
+
+Promise.all([fetchDonorsFromApi(), fetchOrphanagesFromApi()])
   .then(render)
   .catch(function (err) {
     document.getElementById('empty-state').textContent = 'Could not load donor data from the server: ' + err.message;

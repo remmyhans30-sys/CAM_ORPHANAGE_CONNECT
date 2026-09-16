@@ -37,6 +37,20 @@ let sortDir = 'desc';
 let currentPage = 1;
 const PAGE_SIZE = 10;
 
+function donationTypeLabel(type) {
+  return type === 'item' ? 'Item' : 'Money';
+}
+
+function donationDetailsText(don) {
+  if (don.type === 'item') {
+    const parts = [escapeHtml(don.itemDescription || 'Item donation')];
+    if (don.quantity) parts.push('(' + escapeHtml(don.quantity) + ')');
+    if (don.amount) parts.push('&mdash; est. ' + formatFcfa(don.amount));
+    return parts.join(' ');
+  }
+  return formatFcfa(don.amount);
+}
+
 function collectDonations() {
   const donors = loadDonors();
   const rows = [];
@@ -48,9 +62,12 @@ function collectDonations() {
         donorName: d.name,
         donorIdx: donorIdx,
         donIdx: donIdx,
+        type: don.type || 'money',
         amount: Number(don.amount || 0),
+        itemDescription: don.itemDescription,
+        quantity: don.quantity,
         need: don.need,
-        method: don.method,
+        method: don.method || don.deliveryMethod,
         date: don.date,
         status: don.status,
       });
@@ -101,14 +118,19 @@ function render() {
 
   document.getElementById('donations-tbody').innerHTML = pageRows.map(function (r) {
     const rowId = r.donorId + '::' + r.donIdx;
+    const statusLabel = r.type === 'item'
+      ? (r.status === 'refunded' ? 'Returned' : 'Delivered')
+      : (r.status || '').charAt(0).toUpperCase() + (r.status || '').slice(1);
+
     return (
       '<tr>' +
         '<td>' + escapeHtml(r.donorName) + '</td>' +
-        '<td>' + formatFcfa(r.amount) + '</td>' +
+        '<td><span class="tier-tag ' + (r.type === 'item' ? 'tier-champion' : 'tier-friend') + '">' + donationTypeLabel(r.type) + '</span></td>' +
+        '<td>' + donationDetailsText(r) + '</td>' +
         '<td>' + escapeHtml(r.need || '&mdash;') + '</td>' +
         '<td>' + escapeHtml(r.method || '&mdash;') + '</td>' +
         '<td>' + escapeHtml(r.date || '&mdash;') + '</td>' +
-        '<td><span class="tier-tag ' + (r.status === 'completed' ? 'tier-friend' : 'tier-champion') + '">' + escapeHtml((r.status || '').charAt(0).toUpperCase() + (r.status || '').slice(1)) + '</span></td>' +
+        '<td><span class="tier-tag ' + (r.status === 'completed' ? 'tier-friend' : 'tier-champion') + '">' + escapeHtml(statusLabel) + '</span></td>' +
         '<td class="text-end">' +
           '<button class="btn btn-admin-outline btn-sm me-1 view-btn" data-row="' + rowId + '">View</button>' +
           '<button class="btn btn-admin-danger btn-sm delete-btn" data-row="' + rowId + '">Delete</button>' +
@@ -143,18 +165,25 @@ document.getElementById('donations-tbody').addEventListener('click', function (e
     const found = findDonationByRowId(rowId);
     if (!found) return;
     const d = found.donation;
+    const isItem = d.type === 'item';
     document.getElementById('donation-modal-body').innerHTML =
       '<dl class="row small mb-3">' +
         '<dt class="col-4">Donor</dt><dd class="col-8">' + escapeHtml(found.donor.name) + '</dd>' +
-        '<dt class="col-4">Amount</dt><dd class="col-8">' + formatFcfa(d.amount) + '</dd>' +
+        '<dt class="col-4">Type</dt><dd class="col-8">' + donationTypeLabel(d.type) + '</dd>' +
+        (isItem ? '<dt class="col-4">Item</dt><dd class="col-8">' + escapeHtml(d.itemDescription || '&mdash;') + '</dd>' : '') +
+        (isItem && d.quantity ? '<dt class="col-4">Quantity</dt><dd class="col-8">' + escapeHtml(d.quantity) + '</dd>' : '') +
+        (isItem ? '<dt class="col-4">Est. value</dt><dd class="col-8">' + formatFcfa(d.amount) + '</dd>' : '<dt class="col-4">Amount</dt><dd class="col-8">' + formatFcfa(d.amount) + '</dd>') +
         '<dt class="col-4">Need</dt><dd class="col-8">' + escapeHtml(d.need || '&mdash;') + '</dd>' +
-        '<dt class="col-4">Method</dt><dd class="col-8">' + escapeHtml(d.method || '&mdash;') + '</dd>' +
+        '<dt class="col-4">Method</dt><dd class="col-8">' + escapeHtml((isItem ? d.deliveryMethod : d.method) || '&mdash;') + '</dd>' +
         '<dt class="col-4">Date</dt><dd class="col-8">' + escapeHtml(d.date || '&mdash;') + '</dd>' +
       '</dl>' +
       '<label class="form-label small" for="edit-status-select">Status</label>' +
       '<select class="form-select mb-3" id="edit-status-select">' +
-        '<option value="completed"' + (d.status === 'completed' ? ' selected' : '') + '>Completed</option>' +
-        '<option value="refunded"' + (d.status === 'refunded' ? ' selected' : '') + '>Refunded</option>' +
+        (isItem
+          ? '<option value="completed"' + (d.status === 'completed' ? ' selected' : '') + '>Delivered</option>' +
+            '<option value="refunded"' + (d.status === 'refunded' ? ' selected' : '') + '>Returned</option>'
+          : '<option value="completed"' + (d.status === 'completed' ? ' selected' : '') + '>Completed</option>' +
+            '<option value="refunded"' + (d.status === 'refunded' ? ' selected' : '') + '>Refunded</option>') +
       '</select>' +
       '<button type="button" class="btn btn-admin-primary btn-sm" id="save-status-btn" data-row="' + rowId + '">Save status</button> ' +
       '<a href="donor-profile.html?id=' + encodeURIComponent(found.donor.id) + '" class="small ms-2">View donor profile</a>';
@@ -212,9 +241,9 @@ function csvField(value) {
 
 document.getElementById('export-csv-btn').addEventListener('click', function () {
   const rows = getFilteredSorted();
-  const csvRows = [['Donor', 'Amount', 'Need', 'Method', 'Date', 'Status']];
+  const csvRows = [['Donor', 'Type', 'Amount / Est. Value', 'Item Description', 'Quantity', 'Need', 'Method', 'Date', 'Status']];
   rows.forEach(function (r) {
-    csvRows.push([r.donorName, r.amount, r.need || '', r.method || '', r.date || '', r.status || '']);
+    csvRows.push([r.donorName, donationTypeLabel(r.type), r.amount, r.itemDescription || '', r.quantity || '', r.need || '', r.method || '', r.date || '', r.status || '']);
   });
   const csv = csvRows.map(function (row) { return row.map(csvField).join(','); }).join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

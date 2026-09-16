@@ -38,7 +38,10 @@
       <div class="row g-3 mb-4" id="donor-stats-strip"></div>
 
       <div class="card card-admin p-4 p-md-5 mb-4">
-        <h2 class="h6 mb-3">Donation history</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 mb-0">Donation history</h2>
+          <button type="button" class="btn btn-admin-outline btn-sm" id="add-donation-btn">+ Add donation</button>
+        </div>
         <div class="table-responsive">
           <table class="table align-middle mb-0">
             <thead>
@@ -46,7 +49,8 @@
                 <th>Date</th>
                 <th>Orphanage</th>
                 <th>Need</th>
-                <th>Amount</th>
+                <th>Type</th>
+                <th>Amount / Item</th>
                 <th>Method</th>
                 <th>Status</th>
               </tr>
@@ -164,6 +168,75 @@
     </div>
   </div>
 
+  <div class="modal fade" id="add-donation-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header">
+          <h2 class="h5 mb-0">Add Donation</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-donation-form" novalidate>
+            <div class="mb-3">
+              <label class="form-label" for="donation-type">Donation type</label>
+              <select class="form-select" id="donation-type">
+                <option value="money">Money</option>
+                <option value="item">Item</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="donation-orphanage">Orphanage</label>
+              <select class="form-select" id="donation-orphanage" required>
+                <option value="" disabled selected>Select an orphanage&hellip;</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="donation-need">Need (optional)</label>
+              <input type="text" class="form-control" id="donation-need" placeholder="e.g. New dormitory beds">
+            </div>
+
+            <div id="donation-money-fields">
+              <div class="mb-3">
+                <label class="form-label" for="donation-amount">Amount</label>
+                <input type="number" class="form-control" id="donation-amount" min="0" step="1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-method">Payment method</label>
+                <input type="text" class="form-control" id="donation-method" placeholder="e.g. MTN Mobile Money, Bank transfer">
+              </div>
+            </div>
+
+            <div id="donation-item-fields" class="d-none">
+              <div class="mb-3">
+                <label class="form-label" for="donation-item-description">Item description</label>
+                <input type="text" class="form-control" id="donation-item-description" placeholder="e.g. 50 blankets, 20 pairs of shoes">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-quantity">Quantity</label>
+                <input type="text" class="form-control" id="donation-quantity" placeholder="e.g. 50 blankets">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-item-value">Estimated value (optional)</label>
+                <input type="number" class="form-control" id="donation-item-value" min="0" step="1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-delivery-method">Delivery method</label>
+                <input type="text" class="form-control" id="donation-delivery-method" placeholder="e.g. In-person drop-off, Courier">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="donation-date">Date</label>
+              <input type="date" class="form-control" id="donation-date">
+            </div>
+            <button type="submit" class="btn btn-admin-primary w-100">Save donation</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="api.js"></script>
   <script src="donor-profile.js"></script>
 </body>
