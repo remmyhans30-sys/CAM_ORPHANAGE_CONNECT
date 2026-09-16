@@ -10,6 +10,7 @@ if (!process.env.JWT_SECRET) {
 const authRoutes = require('./routes/auth');
 const orphanageRoutes = require('./routes/orphanages');
 const donorRoutes = require('./routes/donors');
+const partnerRoutes = require('./routes/partners');
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
@@ -19,6 +20,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/orphanages', orphanageRoutes);
 app.use('/api/donors', donorRoutes);
+app.use('/api/partners', partnerRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found.' });

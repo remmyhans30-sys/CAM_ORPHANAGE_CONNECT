@@ -84,6 +84,38 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS partners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    contact_name TEXT,
+    email TEXT,
+    country TEXT,
+    submitted_date TEXT,
+    verification_status TEXT NOT NULL DEFAULT 'pending',
+    org_type TEXT,
+    tier TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    flag_reason TEXT,
+    total_contributed INTEGER DEFAULT 0,
+    placement_referrals_count INTEGER DEFAULT 0,
+    logo_url TEXT,
+    sponsored_by_blurb TEXT,
+    wording_approved INTEGER DEFAULT 0,
+    sanctions_screened INTEGER DEFAULT 0,
+    info_request_message TEXT,
+    rejection_reason TEXT,
+    appeal_message TEXT,
+    appeal_date TEXT,
+    admin_notes TEXT,
+    pledge TEXT,
+    orphanages_sponsored TEXT NOT NULL DEFAULT '[]',
+    documents TEXT NOT NULL DEFAULT '[]',
+    placement_cases TEXT NOT NULL DEFAULT '[]',
+    activity_log TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 module.exports = db;
