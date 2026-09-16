@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Orphanage Portal - CAM Orphanage Connect</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <div class="portal-shell">
+            <aside class="portal-sidebar" id="portal-sidebar">
+                <div class="portal-brand">
+                    <svg class="brand-heart" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 84 C 20 61, 9 35, 27 18 C 39 7, 50 18, 50 33 C 50 18, 61 7, 73 18 C 91 35, 80 61, 50 84 Z" fill="url(#heartGradSidebar)"/>
+                        <circle cx="50" cy="11" r="5.5" fill="#2E8B57"/>
+                        <defs>
+                            <linearGradient id="heartGradSidebar" x1="9" y1="7" x2="91" y2="84">
+                                <stop offset="0" stop-color="#4ec37f"/>
+                                <stop offset="1" stop-color="#1f6b45"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <p class="brand-word">Cam Orphanage<span>Connect</span></p>
+                </div>
+                <nav class="portal-nav">
+                    <button type="button" class="portal-nav-link active" data-view="overview"><i class="bi bi-grid-1x2"></i> Overview</button>
+                    <button type="button" class="portal-nav-link" data-view="profile"><i class="bi bi-person-circle"></i> Profile</button>
+                    <button type="button" class="portal-nav-link" data-view="needs"><i class="bi bi-clipboard2-pulse"></i> Manage Needs</button>
+                    <button type="button" class="portal-nav-link" data-view="donations"><i class="bi bi-cash-coin"></i> Donations Received</button>
+                    <a class="portal-nav-link logout-link" href="../login/index.html"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                </nav>
+            </aside>
+
+            <main class="portal-main">
+                <div class="portal-topbar">
+                    <div>
+                        <h1>Welcome back, Hope House</h1>
+                        <p>Here's what's happening with your orphanage profile</p>
+                    </div>
+                    <span class="verify-badge pending"><i class="bi bi-hourglass-split"></i> Pending Verification</span>
+                </div>
+
+                <!-- Overview -->
+                <section class="portal-view active" id="view-overview">
+                    <div class="info-note">
+                        <i class="bi bi-info-circle"></i>
+                        <div>Your profile is under review by our team. You can still add needs and update your profile while you wait — donors will see your listing once verification is complete.</div>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <span class="stat-icon green"><i class="bi bi-clipboard2-pulse"></i></span>
+                            <div><div class="stat-value">3</div><div class="stat-label">Active Needs</div></div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon teal"><i class="bi bi-check2-circle"></i></span>
+                            <div><div class="stat-value">1</div><div class="stat-label">Fully Funded</div></div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon gold"><i class="bi bi-cash-coin"></i></span>
+                            <div><div class="stat-value">FCFA 170,000</div><div class="stat-label">Total Raised</div></div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon coral"><i class="bi bi-heart"></i></span>
+                            <div><div class="stat-value">8</div><div class="stat-label">Donations Received</div></div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h2>Quick actions</h2>
+                        <p class="panel-desc">Keep your listing fresh so donors know you're active.</p>
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap">
+                            <button type="button" class="btn-primary-pill" id="quick-add-need"><i class="bi bi-plus-lg"></i> Add a Need</button>
+                            <button type="button" class="btn-outline-pill" data-view-link="profile"><i class="bi bi-pencil"></i> Update Profile</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Profile -->
+                <section class="portal-view" id="view-profile">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div>
+                                <h2>Orphanage Profile</h2>
+                                <p class="panel-desc">This information is shown to donors once your profile is verified.</p>
+                            </div>
+                            <button type="button" class="btn-outline-pill" id="edit-profile-btn"><i class="bi bi-pencil"></i> Edit</button>
+                        </div>
+
+                        <form id="profile-form">
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="org-name">Orphanage Name</label>
+                                    <input type="text" id="org-name" value="Hope House" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-location">Location</label>
+                                    <input type="text" id="org-location" value="Yaoundé, Cameroon" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-founded">Founded Year</label>
+                                    <input type="text" id="org-founded" value="2010" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-children">Children in Care</label>
+                                    <input type="text" id="org-children" value="24" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-contact-name">Contact Person</label>
+                                    <input type="text" id="org-contact-name" value="Grace Mbeki" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-contact-phone">Contact Phone</label>
+                                    <input type="text" id="org-contact-phone" value="+237 6XX XXX XXX" disabled>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="org-story">About / Story</label>
+                                <textarea id="org-story" disabled>Hope House has cared for children in Yaoundé since 2010, focusing on education and family reunification.</textarea>
+                            </div>
+                            <button type="submit" class="btn-primary-pill" id="save-profile-btn" style="display:none"><i class="bi bi-check2"></i> Save Changes</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Needs -->
+                <section class="portal-view" id="view-needs">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div>
+                                <h2>Manage Needs</h2>
+                                <p class="panel-desc">Post specific, tracked needs so donors know exactly what their gift funds.</p>
+                            </div>
+                            <button type="button" class="btn-primary-pill" id="add-need-btn"><i class="bi bi-plus-lg"></i> Add New Need</button>
+                        </div>
+
+                        <div class="needs-grid" id="needs-list">
+                            <div class="need-card">
+                                <div class="need-card-head">
+                                    <h3>School fees for 12 children</h3>
+                                    <span class="need-status open">Open</span>
+                                </div>
+                                <p>Covers tuition and supplies for the next school term.</p>
+                                <div class="need-progress"><div class="need-progress-bar" style="width:50%"></div></div>
+                                <div class="need-amounts"><span>FCFA 150,000 raised</span><span>Goal FCFA 300,000</span></div>
+                                <div class="need-actions">
+                                    <button type="button"><i class="bi bi-pencil"></i> Edit</button>
+                                    <button type="button"><i class="bi bi-trash"></i> Remove</button>
+                                </div>
+                            </div>
+                            <div class="need-card">
+                                <div class="need-card-head">
+                                    <h3>Mattresses and bedding</h3>
+                                    <span class="need-status funded">Funded</span>
+                                </div>
+                                <p>New bedding for the dormitory renovation.</p>
+                                <div class="need-progress"><div class="need-progress-bar" style="width:100%"></div></div>
+                                <div class="need-amounts"><span>FCFA 80,000 raised</span><span>Goal FCFA 80,000</span></div>
+                                <div class="need-actions">
+                                    <button type="button"><i class="bi bi-pencil"></i> Edit</button>
+                                    <button type="button"><i class="bi bi-trash"></i> Remove</button>
+                                </div>
+                            </div>
+                            <div class="need-card">
+                                <div class="need-card-head">
+                                    <h3>Medical checkups</h3>
+                                    <span class="need-status open">Open</span>
+                                </div>
+                                <p>Routine health screening for all children this quarter.</p>
+                                <div class="need-progress"><div class="need-progress-bar" style="width:20%"></div></div>
+                                <div class="need-amounts"><span>FCFA 20,000 raised</span><span>Goal FCFA 100,000</span></div>
+                                <div class="need-actions">
+                                    <button type="button"><i class="bi bi-pencil"></i> Edit</button>
+                                    <button type="button"><i class="bi bi-trash"></i> Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Donations -->
+                <section class="portal-view" id="view-donations">
+                    <div class="panel">
+                        <h2>Donations Received</h2>
+                        <p class="panel-desc">Recent donations from supporters toward your needs.</p>
+                        <table class="donations-table">
+                            <thead>
+                                <tr><th>Date</th><th>Donor</th><th>Need</th><th>Amount</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Aug 28, 2025</td><td>Anonymous</td><td>School fees for 12 children</td><td>FCFA 50,000</td><td><span class="donation-status completed">Completed</span></td></tr>
+                                <tr><td>Aug 15, 2025</td><td>John Doe</td><td>Mattresses and bedding</td><td>FCFA 80,000</td><td><span class="donation-status completed">Completed</span></td></tr>
+                                <tr><td>Jul 10, 2025</td><td>Amara N.</td><td>Medical checkups</td><td>FCFA 20,000</td><td><span class="donation-status completed">Completed</span></td></tr>
+                                <tr><td>Jun 22, 2025</td><td>Anonymous</td><td>School fees for 12 children</td><td>FCFA 100,000</td><td><span class="donation-status completed">Completed</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Add Need modal -->
+        <div class="modal-backdrop-custom" id="add-need-modal">
+            <div class="modal-box">
+                <h2>Add a New Need</h2>
+                <form id="add-need-form">
+                    <div class="field">
+                        <label for="need-title">Need title</label>
+                        <input type="text" id="need-title" placeholder="e.g. Winter blankets" required>
+                    </div>
+                    <div class="field">
+                        <label for="need-description">Description</label>
+                        <textarea id="need-description" placeholder="What is this need for?" required></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="need-goal">Goal amount (FCFA)</label>
+                        <input type="number" id="need-goal" min="1000" step="1000" placeholder="e.g. 100000" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-text" id="cancel-need-btn">Cancel</button>
+                        <button type="submit" class="btn-primary-pill"><i class="bi bi-check2"></i> Post Need</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
+    </body>
+</html>
