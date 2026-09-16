@@ -18,9 +18,19 @@ function accountTypeLabel(type) {
   return type;
 }
 
+let orphanagesCache = [];
+let donorsCache = [];
+
+function fetchCachesFromApi() {
+  return Promise.all([
+    apiRequest('/orphanages').then(function (data) { orphanagesCache = data.orphanages; }),
+    apiRequest('/donors').then(function (data) { donorsCache = data.donors; }),
+  ]);
+}
+
 function collectEntries() {
-  const orphanages = JSON.parse(localStorage.getItem('orphanages') || '[]');
-  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  const orphanages = orphanagesCache;
+  const donors = donorsCache;
   const partners = JSON.parse(localStorage.getItem('partners') || '[]');
 
   const entries = [];
@@ -154,4 +164,9 @@ document.getElementById('export-csv-btn').addEventListener('click', function () 
   downloadCsv('activity-log.csv', rows);
 });
 
-render();
+fetchCachesFromApi()
+  .then(render)
+  .catch(function (err) {
+    render();
+    console.error('Could not load orphanages/donors from the server:', err.message);
+  });

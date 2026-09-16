@@ -18,15 +18,20 @@ function formatFcfa(amount) {
   return num + ' FCFA';
 }
 
-const orphanages = JSON.parse(localStorage.getItem('orphanages') || '[]');
+let orphanages = [];
 const needs = JSON.parse(localStorage.getItem('needs') || '[]');
 
 const groupsEl = document.getElementById('finance-groups');
 const emptyState = document.getElementById('empty-state');
 
-if (needs.length === 0) {
-  emptyState.classList.remove('d-none');
-} else {
+function renderFinance() {
+  groupsEl.innerHTML = '';
+
+  if (needs.length === 0) {
+    emptyState.classList.remove('d-none');
+    return;
+  }
+
   orphanages.forEach(function (orphanage) {
     const orphanageNeeds = needs.filter(function (n) { return String(n.orphanageId) === String(orphanage.id); });
     if (orphanageNeeds.length === 0) return;
@@ -105,3 +110,13 @@ document.getElementById('export-csv-btn').addEventListener('click', function () 
 
   downloadCsv('donations-by-orphanage.csv', rows);
 });
+
+apiRequest('/orphanages')
+  .then(function (data) {
+    orphanages = data.orphanages;
+    renderFinance();
+  })
+  .catch(function (err) {
+    emptyState.textContent = 'Could not load orphanages from the server: ' + err.message;
+    emptyState.classList.remove('d-none');
+  });

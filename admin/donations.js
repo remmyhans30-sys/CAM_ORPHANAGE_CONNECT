@@ -4,8 +4,19 @@ if (localStorage.getItem('currentAdminRole') === 'Content Manager') {
   window.location.href = 'dashboard.html';
 }
 
-function loadDonors() { return JSON.parse(localStorage.getItem('donors') || '[]'); }
-function saveDonors(donors) { localStorage.setItem('donors', JSON.stringify(donors)); }
+let donorsCache = [];
+function loadDonors() { return donorsCache; }
+function fetchDonorsFromApi() {
+  return apiRequest('/donors').then(function (data) {
+    donorsCache = data.donors;
+  });
+}
+function saveDonor(donor) {
+  return apiRequest('/donors/' + donor.id, { method: 'PUT', body: donor })
+    .catch(function (err) {
+      alert('Could not save changes to the server: ' + err.message);
+    });
+}
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -155,7 +166,7 @@ document.getElementById('donations-tbody').addEventListener('click', function (e
     const found = findDonationByRowId(rowId);
     if (!found) return;
     found.donor.donations.splice(found.donIdx, 1);
-    saveDonors(found.donors);
+    saveDonor(found.donor);
     render();
   }
 });
@@ -165,7 +176,7 @@ document.getElementById('donation-modal-body').addEventListener('click', functio
   const found = findDonationByRowId(e.target.dataset.row);
   if (!found) return;
   found.donation.status = document.getElementById('edit-status-select').value;
-  saveDonors(found.donors);
+  saveDonor(found.donor);
   donationModal.hide();
   render();
 });
@@ -217,4 +228,10 @@ document.getElementById('export-csv-btn').addEventListener('click', function () 
   URL.revokeObjectURL(url);
 });
 
-render();
+fetchDonorsFromApi()
+  .then(render)
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load donations from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+    document.getElementById('table-card').classList.add('d-none');
+  });

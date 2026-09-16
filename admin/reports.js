@@ -143,23 +143,34 @@ function openReport(id) {
 }
 
 function flagAccount(type, accountId, action) {
-  const storageKey = type === 'donor' ? 'donors' : (type === 'orphanage' ? 'orphanages' : 'partners');
-  const accounts = JSON.parse(localStorage.getItem(storageKey) || '[]');
-  const account = accounts.find(function (a) { return String(a.id) === String(accountId); });
-  if (!account) return;
+  if (type === 'orphanage' || type === 'donor') {
+    const apiPath = type === 'orphanage' ? '/orphanages/' : '/donors/';
+    return apiRequest(apiPath + accountId).then(function (data) {
+      const account = data.orphanage || data.donor;
+      if (type === 'orphanage') {
+        account.flagged = true;
+      } else {
+        account.status = 'flagged';
+      }
+      account.flagReason = 'Flagged from a user report.';
+      account.activityLog = account.activityLog || [];
+      account.activityLog.push({ reviewer: currentAdmin(), action: action, timestamp: new Date().toISOString() });
 
-  if (type === 'orphanage') {
-    account.flagged = true;
-    account.flagReason = 'Flagged from a user report.';
-  } else {
-    account.status = 'flagged';
-    account.flagReason = 'Flagged from a user report.';
+      return apiRequest(apiPath + accountId, { method: 'PUT', body: account });
+    });
   }
 
+  const accounts = JSON.parse(localStorage.getItem('partners') || '[]');
+  const account = accounts.find(function (a) { return String(a.id) === String(accountId); });
+  if (!account) return Promise.resolve();
+
+  account.status = 'flagged';
+  account.flagReason = 'Flagged from a user report.';
   account.activityLog = account.activityLog || [];
   account.activityLog.push({ reviewer: currentAdmin(), action: action, timestamp: new Date().toISOString() });
 
-  localStorage.setItem(storageKey, JSON.stringify(accounts));
+  localStorage.setItem('partners', JSON.stringify(accounts));
+  return Promise.resolve();
 }
 
 document.getElementById('reports-list').addEventListener('click', function (e) {
@@ -175,12 +186,17 @@ document.getElementById('report-modal-body').addEventListener('click', function 
   if (!report) return;
 
   if (e.target.id === 'flag-reported-account-btn') {
-    flagAccount(report.reportedAccountType, report.reportedAccountId, 'Flagged from a user report');
-    report.status = 'resolved';
-    report.resolution = 'Account flagged.';
-    saveReports(reports);
-    render();
-    document.getElementById('report-modal-body').innerHTML = buildModalBody(report);
+    flagAccount(report.reportedAccountType, report.reportedAccountId, 'Flagged from a user report')
+      .then(function () {
+        report.status = 'resolved';
+        report.resolution = 'Account flagged.';
+        saveReports(reports);
+        render();
+        document.getElementById('report-modal-body').innerHTML = buildModalBody(report);
+      })
+      .catch(function (err) {
+        alert('Could not flag account: ' + err.message);
+      });
   }
 
   if (e.target.id === 'dismiss-report-btn') {
@@ -257,7 +273,12 @@ function formatFcfa(amount) {
 let generatedReportRows = [];
 
 function generateDonationsReport() {
-  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  return apiRequest('/donors').then(function (data) {
+    buildDonationsReport(data.donors);
+  });
+}
+
+function buildDonationsReport(donors) {
   const rows = [];
 
   donors.forEach(function (d) {
@@ -308,7 +329,12 @@ function generateProgramsReport() {
 }
 
 function generateNeedsReport() {
-  const orphanages = JSON.parse(localStorage.getItem('orphanages') || '[]');
+  return apiRequest('/orphanages').then(function (data) {
+    buildNeedsReport(data.orphanages);
+  });
+}
+
+function buildNeedsReport(orphanages) {
   const needs = JSON.parse(localStorage.getItem('needs') || '[]');
 
   const totalGoal = needs.reduce(function (sum, n) { return sum + Number(n.goal || 0); }, 0);
@@ -338,7 +364,12 @@ function generateNeedsReport() {
 }
 
 function generateDonorsReport() {
-  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
+  return apiRequest('/donors').then(function (data) {
+    buildDonorsReport(data.donors);
+  });
+}
+
+function buildDonorsReport(donors) {
   const totalGiven = donors.reduce(function (sum, d) { return sum + Number(d.totalGiven || 0); }, 0);
   const active = donors.filter(function (d) { return d.status !== 'flagged'; }).length;
   const flagged = donors.filter(function (d) { return d.status === 'flagged'; }).length;
@@ -381,14 +412,21 @@ function generatePartnersReport() {
 
 document.getElementById('generate-report-btn').addEventListener('click', function () {
   const type = document.getElementById('report-type-select').value;
-  if (type === 'donations') generateDonationsReport();
-  else if (type === 'needs') generateNeedsReport();
-  else if (type === 'donors') generateDonorsReport();
-  else if (type === 'partners') generatePartnersReport();
-  else generateProgramsReport();
+  let result;
+  if (type === 'donations') result = generateDonationsReport();
+  else if (type === 'needs') result = generateNeedsReport();
+  else if (type === 'donors') result = generateDonorsReport();
+  else if (type === 'partners') result = generatePartnersReport();
+  else result = generateProgramsReport();
 
-  document.getElementById('print-report-btn').classList.remove('d-none');
-  document.getElementById('export-report-btn').classList.remove('d-none');
+  Promise.resolve(result)
+    .then(function () {
+      document.getElementById('print-report-btn').classList.remove('d-none');
+      document.getElementById('export-report-btn').classList.remove('d-none');
+    })
+    .catch(function (err) {
+      alert('Could not generate report: ' + err.message);
+    });
 });
 
 document.getElementById('print-report-btn').addEventListener('click', function () {

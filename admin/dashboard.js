@@ -7,7 +7,13 @@ function fetchOrphanagesFromApi() {
     orphanagesCache = data.orphanages;
   });
 }
-function loadDonors() { return JSON.parse(localStorage.getItem('donors') || '[]'); }
+let donorsCache = [];
+function loadDonors() { return donorsCache; }
+function fetchDonorsFromApi() {
+  return apiRequest('/donors').then(function (data) {
+    donorsCache = data.donors;
+  });
+}
 function loadPartners() { return JSON.parse(localStorage.getItem('partners') || '[]'); }
 function loadMessages() { return JSON.parse(localStorage.getItem('messages') || '[]'); }
 function loadReports() { return JSON.parse(localStorage.getItem('reports') || '[]'); }
@@ -378,16 +384,18 @@ document.getElementById('donations-range-select').addEventListener('change', fun
 
 applyRolePermissions();
 renderTopbar();
-renderRecentDonations();
 renderRecentMessages();
-renderDonationsChart(document.getElementById('donations-range-select').value);
 
-fetchOrphanagesFromApi()
+Promise.all([fetchOrphanagesFromApi(), fetchDonorsFromApi()])
   .then(function () {
     renderStatCards();
     renderStatusChart();
+    renderRecentDonations();
+    renderDonationsChart(document.getElementById('donations-range-select').value);
   })
   .catch(function (err) {
     renderStatCards();
-    console.error('Could not load orphanages from the server:', err.message);
+    renderRecentDonations();
+    renderDonationsChart(document.getElementById('donations-range-select').value);
+    console.error('Could not load data from the server:', err.message);
   });
