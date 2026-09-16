@@ -7,27 +7,12 @@ if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.
   }
 })();
 
-function loadUsers() {
-  const users = JSON.parse(localStorage.getItem('users') || 'null');
-  if (users) return users;
-
-  const seeded = [
-    { id: 1, name: 'You (current session)', email: localStorage.getItem('currentAdminEmail') || 'admin@camorphanage.org', role: 'Super Admin' },
-  ];
-  localStorage.setItem('users', JSON.stringify(seeded));
-  return seeded;
-}
-
-function saveUsers(users) {
-  localStorage.setItem('users', JSON.stringify(users));
-}
-
-function hasAdminAccess(role) {
-  return role === 'Super Admin' || role === 'Administrator';
-}
-
-function countOtherAdmins(users, excludeId) {
-  return users.filter(function (u) { return hasAdminAccess(u.role) && u.id !== excludeId; }).length;
+let usersCache = [];
+function loadUsers() { return usersCache; }
+function fetchUsersFromApi() {
+  return apiRequest('/admins').then(function (data) {
+    usersCache = data.admins;
+  });
 }
 
 function escapeHtml(str) {
@@ -72,50 +57,58 @@ document.getElementById('users-tbody').addEventListener('click', function (e) {
     document.getElementById('user-id').value = user.id;
     document.getElementById('user-name').value = user.name;
     document.getElementById('user-email').value = user.email;
+    document.getElementById('user-password').value = '';
     document.getElementById('user-role').value = user.role;
     userModal.show();
   }
 
   if (e.target.classList.contains('delete-user-btn')) {
     const id = Number(e.target.dataset.id);
-    const user = users.find(function (u) { return u.id === id; });
-    if (user && hasAdminAccess(user.role) && countOtherAdmins(users, id) === 0) {
-      alert('Cannot delete the last Super Admin/Administrator account — this would lock everyone out of Users & Roles and Settings.');
-      return;
-    }
     if (!confirm('Delete this user?')) return;
-    saveUsers(users.filter(function (u) { return u.id !== id; }));
-    render();
+    apiRequest('/admins/' + id, { method: 'DELETE' })
+      .then(fetchUsersFromApi)
+      .then(render)
+      .catch(function (err) {
+        alert(err.message);
+      });
   }
 });
 
 document.getElementById('user-form').addEventListener('submit', function (e) {
   e.preventDefault();
-  const users = loadUsers();
   const id = document.getElementById('user-id').value;
+  const password = document.getElementById('user-password').value;
+
   const data = {
     name: document.getElementById('user-name').value.trim(),
     email: document.getElementById('user-email').value.trim(),
     role: document.getElementById('user-role').value,
   };
 
-  if (id) {
-    const user = users.find(function (u) { return u.id === Number(id); });
-    if (user) {
-      if (hasAdminAccess(user.role) && !hasAdminAccess(data.role) && countOtherAdmins(users, user.id) === 0) {
-        alert('Cannot change this role — it is the last Super Admin/Administrator account and would lock everyone out of Users & Roles and Settings.');
-        return;
-      }
-      Object.assign(user, data);
-    }
-  } else {
-    data.id = Date.now();
-    users.push(data);
+  if (password) data.password = password;
+
+  if (!id && !password) {
+    alert('Password is required for new users.');
+    return;
   }
 
-  saveUsers(users);
-  userModal.hide();
-  render();
+  const request = id
+    ? apiRequest('/admins/' + id, { method: 'PUT', body: data })
+    : apiRequest('/admins', { method: 'POST', body: data });
+
+  request
+    .then(fetchUsersFromApi)
+    .then(function () {
+      userModal.hide();
+      render();
+    })
+    .catch(function (err) {
+      alert(err.message);
+    });
 });
 
-render();
+fetchUsersFromApi()
+  .then(render)
+  .catch(function (err) {
+    alert('Could not load users from the server: ' + err.message);
+  });

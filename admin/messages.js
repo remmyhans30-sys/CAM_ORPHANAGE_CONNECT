@@ -1,11 +1,22 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
 
-function loadMessages() {
-  return JSON.parse(localStorage.getItem('messages') || '[]');
+let messagesCache = [];
+function loadMessages() { return messagesCache; }
+function fetchMessagesFromApi() {
+  return apiRequest('/messages').then(function (data) {
+    messagesCache = data.messages;
+  });
 }
-
-function saveMessages(messages) {
-  localStorage.setItem('messages', JSON.stringify(messages));
+function saveMessage(msg) {
+  return apiRequest('/messages/' + msg.id, { method: 'PUT', body: msg })
+    .then(function (data) {
+      const idx = messagesCache.findIndex(function (m) { return m.id === msg.id; });
+      if (idx !== -1) messagesCache[idx] = data.message;
+      return data.message;
+    })
+    .catch(function (err) {
+      alert('Could not save changes to the server: ' + err.message);
+    });
 }
 
 function escapeHtml(str) {
@@ -169,15 +180,14 @@ function openMessage(id) {
     changed = true;
   }
 
-  if (changed) {
-    saveMessages(messages);
-    render();
-  }
-
   activeMessageId = id;
   document.getElementById('message-modal-title').textContent = msg.subject;
   document.getElementById('message-modal-body').innerHTML = buildModalBody(msg);
   messageModal.show();
+
+  if (changed) {
+    saveMessage(msg).then(render);
+  }
 }
 
 document.getElementById('messages-list').addEventListener('click', function (e) {
@@ -191,11 +201,17 @@ document.getElementById('message-modal-body').addEventListener('click', function
   if (activeMessageId === null) return;
   if (!confirm('Delete this conversation? This cannot be undone.')) return;
 
-  const messages = loadMessages().filter(function (m) { return m.id !== activeMessageId; });
-  saveMessages(messages);
-  activeMessageId = null;
-  messageModal.hide();
-  render();
+  const idToDelete = activeMessageId;
+  apiRequest('/messages/' + idToDelete, { method: 'DELETE' })
+    .then(function () {
+      messagesCache = messagesCache.filter(function (m) { return m.id !== idToDelete; });
+      activeMessageId = null;
+      messageModal.hide();
+      render();
+    })
+    .catch(function (err) {
+      alert('Could not delete: ' + err.message);
+    });
 });
 
 document.getElementById('message-modal-body').addEventListener('click', function (e) {
@@ -212,10 +228,9 @@ document.getElementById('message-modal-body').addEventListener('click', function
 
   msg.replies = msg.replies || [];
   msg.replies.push({ text: text, timestamp: new Date().toISOString() });
-  saveMessages(messages);
-  render();
 
   document.getElementById('message-modal-body').innerHTML = buildModalBody(msg);
+  saveMessage(msg).then(render);
 
   const statusEl = document.getElementById('reply-status');
   if (statusEl) {
@@ -224,52 +239,82 @@ document.getElementById('message-modal-body').addEventListener('click', function
 });
 
 function seedSampleData() {
-  const sampleMessages = [
-    {
-      id: 1,
-      senderName: "Hope Children's Home",
-      accountType: 'orphanage',
-      accountId: 1,
-      subject: 'Question about need approval',
-      body: "Hello, we submitted a new need for school fees last week but haven't heard back. Could someone confirm it's under review?",
-      timestamp: '2026-09-02T09:15:00.000Z',
-      read: false,
-      replies: [],
-    },
-    {
-      id: 2,
-      senderName: 'Ngozi Adeyemi',
-      accountType: 'donor',
-      accountId: 1,
-      subject: "Donation receipt didn't arrive",
-      body: 'Hi, I made a donation last week but never received a receipt by email. Could you check on this for me?',
-      timestamp: '2026-09-03T14:40:00.000Z',
-      read: false,
-      replies: [],
-    },
-    {
-      id: 3,
-      senderName: 'Global Child Aid NGO',
-      accountType: 'partner',
-      accountId: 3,
-      subject: 'Update on placement case documentation',
-      body: 'We wanted to let you know additional documentation for the case submitted in August has been prepared and can be sent over if needed.',
-      timestamp: '2026-08-25T11:00:00.000Z',
-      read: true,
-      replies: [
-        { text: 'Thank you, please go ahead and send the additional documentation whenever ready.', timestamp: '2026-08-25T15:30:00.000Z' },
-      ],
-    },
-  ];
+  Promise.all([apiRequest('/orphanages'), apiRequest('/donors'), apiRequest('/partners')])
+    .then(function (results) {
+      const orphanage = results[0].orphanages[0];
+      const donor = results[1].donors[0];
+      const partner = results[2].partners[0];
 
-  saveMessages(sampleMessages);
-  render();
+      const sampleMessages = [];
+
+      if (orphanage) {
+        sampleMessages.push({
+          senderName: orphanage.name,
+          accountType: 'orphanage',
+          accountId: orphanage.id,
+          subject: 'Question about need approval',
+          body: "Hello, we submitted a new need for school fees last week but haven't heard back. Could someone confirm it's under review?",
+          timestamp: '2026-09-02T09:15:00.000Z',
+          read: false,
+          replies: [],
+        });
+      }
+
+      if (donor) {
+        sampleMessages.push({
+          senderName: donor.name,
+          accountType: 'donor',
+          accountId: donor.id,
+          subject: "Donation receipt didn't arrive",
+          body: 'Hi, I made a donation last week but never received a receipt by email. Could you check on this for me?',
+          timestamp: '2026-09-03T14:40:00.000Z',
+          read: false,
+          replies: [],
+        });
+      }
+
+      if (partner) {
+        sampleMessages.push({
+          senderName: partner.name,
+          accountType: 'partner',
+          accountId: partner.id,
+          subject: 'Update on placement case documentation',
+          body: 'We wanted to let you know additional documentation for the case submitted in August has been prepared and can be sent over if needed.',
+          timestamp: '2026-08-25T11:00:00.000Z',
+          read: true,
+          replies: [
+            { text: 'Thank you, please go ahead and send the additional documentation whenever ready.', timestamp: '2026-08-25T15:30:00.000Z' },
+          ],
+        });
+      }
+
+      if (sampleMessages.length === 0) {
+        alert('Load sample data on Orphanages, Donors, or Partner Orgs first, then load sample messages.');
+        return Promise.resolve();
+      }
+
+      return Promise.all(sampleMessages.map(function (m) {
+        return apiRequest('/messages', { method: 'POST', body: m });
+      }));
+    })
+    .then(fetchMessagesFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
 }
 
 function clearAllData() {
   if (!confirm('Clear all messages? This cannot be undone.')) return;
-  localStorage.removeItem('messages');
-  render();
+
+  Promise.all(messagesCache.map(function (m) {
+    return apiRequest('/messages/' + m.id, { method: 'DELETE' });
+  }))
+    .then(fetchMessagesFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
 }
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
@@ -277,9 +322,16 @@ document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('search-input').addEventListener('input', render);
 document.getElementById('read-filter').addEventListener('change', render);
 
-render();
+fetchMessagesFromApi()
+  .then(function () {
+    render();
 
-const deepLinkId = new URLSearchParams(window.location.search).get('id');
-if (deepLinkId !== null) {
-  openMessage(Number(deepLinkId));
-}
+    const deepLinkId = new URLSearchParams(window.location.search).get('id');
+    if (deepLinkId !== null) {
+      openMessage(Number(deepLinkId));
+    }
+  })
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load messages from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+  });

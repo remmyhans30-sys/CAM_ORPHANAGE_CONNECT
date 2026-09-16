@@ -8,15 +8,21 @@ function initials(str) {
 }
 
 const email = localStorage.getItem('currentAdminEmail') || '';
-const users = JSON.parse(localStorage.getItem('users') || '[]');
-const matchedUser = users.find(function (u) { return u.email.toLowerCase() === email.toLowerCase(); });
 
-document.getElementById('profile-email').textContent = email;
-document.getElementById('profile-role').textContent = localStorage.getItem('currentAdminRole') || 'Super Admin';
+apiRequest('/auth/me').then(function (data) {
+  document.getElementById('profile-email').textContent = data.admin.email;
+  document.getElementById('profile-role').textContent = data.admin.role;
 
-const displayName = localStorage.getItem('currentAdminDisplayName') || (matchedUser ? matchedUser.name : '');
-document.getElementById('profile-name').value = displayName;
-document.getElementById('profile-avatar').textContent = initials(displayName || email);
+  const displayName = localStorage.getItem('currentAdminDisplayName') || data.admin.name || '';
+  document.getElementById('profile-name').value = displayName;
+  document.getElementById('profile-avatar').textContent = initials(displayName || email);
+}).catch(function () {
+  document.getElementById('profile-email').textContent = email;
+  document.getElementById('profile-role').textContent = localStorage.getItem('currentAdminRole') || 'Super Admin';
+  const displayName = localStorage.getItem('currentAdminDisplayName') || '';
+  document.getElementById('profile-name').value = displayName;
+  document.getElementById('profile-avatar').textContent = initials(displayName || email);
+});
 
 document.getElementById('profile-form').addEventListener('submit', function (e) {
   e.preventDefault();

@@ -21,8 +21,20 @@ function fetchPartnersFromApi() {
     partnersCache = data.partners;
   });
 }
-function loadMessages() { return JSON.parse(localStorage.getItem('messages') || '[]'); }
-function loadReports() { return JSON.parse(localStorage.getItem('reports') || '[]'); }
+let messagesCache = [];
+function loadMessages() { return messagesCache; }
+function fetchMessagesFromApi() {
+  return apiRequest('/messages').then(function (data) {
+    messagesCache = data.messages;
+  });
+}
+let reportsCache = [];
+function loadReports() { return reportsCache; }
+function fetchReportsFromApi() {
+  return apiRequest('/reports').then(function (data) {
+    reportsCache = data.reports;
+  });
+}
 let programsCache = [];
 function loadPrograms() { return programsCache; }
 function fetchProgramsFromApi() {
@@ -30,7 +42,13 @@ function fetchProgramsFromApi() {
     programsCache = data.programs;
   });
 }
-function loadNeeds() { return JSON.parse(localStorage.getItem('needs') || '[]'); }
+let needsCache = [];
+function loadNeeds() { return needsCache; }
+function fetchNeedsFromApi() {
+  return apiRequest('/needs').then(function (data) {
+    needsCache = data.needs;
+  });
+}
 
 function initials(name) {
   const words = (name || '').trim().split(/\s+/).filter(Boolean);
@@ -395,17 +413,19 @@ document.getElementById('donations-range-select').addEventListener('change', fun
 });
 
 applyRolePermissions();
-renderTopbar();
-renderRecentMessages();
 
-Promise.all([fetchOrphanagesFromApi(), fetchDonorsFromApi(), fetchPartnersFromApi(), fetchProgramsFromApi()])
+Promise.all([fetchOrphanagesFromApi(), fetchDonorsFromApi(), fetchPartnersFromApi(), fetchProgramsFromApi(), fetchNeedsFromApi(), fetchMessagesFromApi(), fetchReportsFromApi()])
   .then(function () {
+    renderTopbar();
+    renderRecentMessages();
     renderStatCards();
     renderStatusChart();
     renderRecentDonations();
     renderDonationsChart(document.getElementById('donations-range-select').value);
   })
   .catch(function (err) {
+    renderTopbar();
+    renderRecentMessages();
     renderStatCards();
     renderRecentDonations();
     renderDonationsChart(document.getElementById('donations-range-select').value);

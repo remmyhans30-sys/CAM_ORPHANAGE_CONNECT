@@ -28,27 +28,13 @@ function saveDonor(donor) {
 }
 
 function openOrCreateMessageThread(accountType, accountId, senderName) {
-  const messages = JSON.parse(localStorage.getItem('messages') || '[]');
-  let thread = messages.find(function (m) { return m.accountType === accountType && String(m.accountId) === String(accountId); });
-
-  if (!thread) {
-    thread = {
-      id: Date.now(),
-      senderName: senderName,
-      accountType: accountType,
-      accountId: accountId,
-      subject: 'Conversation with ' + senderName,
-      body: '',
-      timestamp: new Date().toISOString(),
-      read: true,
-      fromAdmin: true,
-      replies: [],
-    };
-    messages.push(thread);
-    localStorage.setItem('messages', JSON.stringify(messages));
-  }
-
-  window.location.href = 'messages.html?id=' + thread.id;
+  apiRequest('/messages/thread', { method: 'POST', body: { accountType: accountType, accountId: accountId, senderName: senderName } })
+    .then(function (data) {
+      window.location.href = 'messages.html?id=' + data.message.id;
+    })
+    .catch(function (err) {
+      alert('Could not open message thread: ' + err.message);
+    });
 }
 
 function escapeHtml(str) {

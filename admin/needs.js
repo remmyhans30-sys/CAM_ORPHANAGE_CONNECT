@@ -1,7 +1,12 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
 
-function loadNeeds() { return JSON.parse(localStorage.getItem('needs') || '[]'); }
-function saveNeeds(needs) { localStorage.setItem('needs', JSON.stringify(needs)); }
+let needsCache = [];
+function loadNeeds() { return needsCache; }
+function fetchNeedsFromApi() {
+  return apiRequest('/needs').then(function (data) {
+    needsCache = data.needs;
+  });
+}
 
 let orphanagesCache = [];
 function loadOrphanages() { return orphanagesCache; }
@@ -159,17 +164,37 @@ function seedSampleData() {
   const sampleNeeds = orphanages.slice(0, 3).map(function (o, i) {
     const goal = [500000, 900000, 300000][i] || 400000;
     const raised = [200000, 900000, 50000][i] || 0;
-    return { id: Date.now() + i, title: ['New dormitory beds', 'Kitchen renovation', 'School supplies'][i] || 'General support', goal: goal, raised: raised, orphanageId: o.id, date: new Date().toISOString().slice(0, 10) };
+    return {
+      title: ['New dormitory beds', 'Kitchen renovation', 'School supplies'][i] || 'General support',
+      goal: goal,
+      raised: raised,
+      percent: goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0,
+      orphanageId: o.id,
+      date: new Date().toISOString().slice(0, 10),
+    };
   });
 
-  saveNeeds(sampleNeeds);
-  render();
+  Promise.all(sampleNeeds.map(function (n) {
+    return apiRequest('/needs', { method: 'POST', body: n });
+  }))
+    .then(fetchNeedsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
 }
 
 function clearAllData() {
   if (!confirm('Clear all needs? This cannot be undone.')) return;
-  localStorage.removeItem('needs');
-  render();
+
+  Promise.all(needsCache.map(function (n) {
+    return apiRequest('/needs/' + n.id, { method: 'DELETE' });
+  }))
+    .then(fetchNeedsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
 }
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
@@ -208,15 +233,18 @@ document.getElementById('needs-grid').addEventListener('click', function (e) {
 
   if (e.target.classList.contains('delete-need-btn')) {
     if (!confirm('Delete this need? This cannot be undone.')) return;
-    saveNeeds(needs.filter(function (x) { return x.id !== id; }));
-    render();
+    apiRequest('/needs/' + id, { method: 'DELETE' })
+      .then(fetchNeedsFromApi)
+      .then(render)
+      .catch(function (err) {
+        alert('Could not delete: ' + err.message);
+      });
   }
 });
 
 document.getElementById('need-form').addEventListener('submit', function (e) {
   e.preventDefault();
 
-  const needs = loadNeeds();
   const editId = document.getElementById('need-id').value;
   const goal = Number(document.getElementById('need-goal').value) || 0;
   const raised = Number(document.getElementById('need-raised').value) || 0;
@@ -229,21 +257,26 @@ document.getElementById('need-form').addEventListener('submit', function (e) {
     percent: goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0,
   };
 
-  if (editId) {
-    const n = needs.find(function (x) { return x.id === Number(editId); });
-    if (n) Object.assign(n, data);
-  } else {
-    data.id = Date.now();
+  if (!editId) {
     data.date = new Date().toISOString().slice(0, 10);
-    needs.push(data);
   }
 
-  saveNeeds(needs);
-  needModal.hide();
-  render();
+  const request = editId
+    ? apiRequest('/needs/' + editId, { method: 'PUT', body: data })
+    : apiRequest('/needs', { method: 'POST', body: data });
+
+  request
+    .then(fetchNeedsFromApi)
+    .then(function () {
+      needModal.hide();
+      render();
+    })
+    .catch(function (err) {
+      alert('Could not save: ' + err.message);
+    });
 });
 
-fetchOrphanagesFromApi()
+Promise.all([fetchOrphanagesFromApi(), fetchNeedsFromApi()])
   .then(function () {
     populateOrphanageDropdowns();
     render();
@@ -251,5 +284,5 @@ fetchOrphanagesFromApi()
   .catch(function (err) {
     populateOrphanageDropdowns();
     render();
-    alert('Could not load orphanages from the server: ' + err.message + '. The orphanage dropdown will be empty until the backend is reachable.');
+    alert('Could not load data from the server: ' + err.message);
   });

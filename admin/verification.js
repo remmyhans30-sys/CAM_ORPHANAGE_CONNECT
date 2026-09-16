@@ -25,32 +25,26 @@ function saveOrphanages(orphanages) {
     });
 }
 
+let needsCache = [];
+
 function loadNeeds() {
-  return JSON.parse(localStorage.getItem('needs') || '[]');
+  return needsCache;
+}
+
+function fetchNeedsFromApi() {
+  return apiRequest('/needs').then(function (data) {
+    needsCache = data.needs;
+  });
 }
 
 function openOrCreateMessageThread(accountType, accountId, senderName) {
-  const messages = JSON.parse(localStorage.getItem('messages') || '[]');
-  let thread = messages.find(function (m) { return m.accountType === accountType && String(m.accountId) === String(accountId); });
-
-  if (!thread) {
-    thread = {
-      id: Date.now(),
-      senderName: senderName,
-      accountType: accountType,
-      accountId: accountId,
-      subject: 'Conversation with ' + senderName,
-      body: '',
-      timestamp: new Date().toISOString(),
-      read: true,
-      fromAdmin: true,
-      replies: [],
-    };
-    messages.push(thread);
-    localStorage.setItem('messages', JSON.stringify(messages));
-  }
-
-  window.location.href = 'messages.html?id=' + thread.id;
+  apiRequest('/messages/thread', { method: 'POST', body: { accountType: accountType, accountId: accountId, senderName: senderName } })
+    .then(function (data) {
+      window.location.href = 'messages.html?id=' + data.message.id;
+    })
+    .catch(function (err) {
+      alert('Could not open message thread: ' + err.message);
+    });
 }
 
 function escapeHtml(str) {
@@ -448,9 +442,13 @@ function seedSampleData() {
         { title: 'Kitchen renovation', raised: 480000, goal: 480000, percent: 100, orphanageId: idMap[3], date: '2026-05-14' },
         { title: 'Water borehole', raised: 90000, goal: 600000, percent: 15, orphanageId: idMap[5], date: '2026-08-30' },
       ];
-      localStorage.setItem('needs', JSON.stringify(sampleNeeds));
 
-      return fetchOrphanagesFromApi();
+      return Promise.all(sampleNeeds.map(function (n) {
+        return apiRequest('/needs', { method: 'POST', body: n });
+      }));
+    })
+    .then(function () {
+      return Promise.all([fetchOrphanagesFromApi(), fetchNeedsFromApi()]);
     })
     .then(render)
     .catch(function (err) {
@@ -465,8 +463,8 @@ function clearAllData() {
     return apiRequest('/orphanages/' + o.id, { method: 'DELETE' });
   }))
     .then(function () {
-      localStorage.removeItem('needs');
-      return fetchOrphanagesFromApi();
+      // The backend cascades: deleting each orphanage also deletes its needs.
+      return Promise.all([fetchOrphanagesFromApi(), fetchNeedsFromApi()]);
     })
     .then(render)
     .catch(function (err) {
@@ -980,10 +978,10 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
       .then(function () {
         orphanagesCache = orphanages.filter(function (o) { return o.id !== orphanage.id; });
 
-        const needs = loadNeeds();
-        const remainingNeeds = needs.filter(function (n) { return String(n.orphanageId) !== String(orphanage.id); });
-        localStorage.setItem('needs', JSON.stringify(remainingNeeds));
-
+        // The backend cascades: deleting an orphanage also deletes its needs.
+        return fetchNeedsFromApi();
+      })
+      .then(function () {
         const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
         deletionLog.push({ accountName: orphanage.name, accountType: 'orphanage', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
         localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
@@ -1039,7 +1037,7 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
   }
 });
 
-fetchOrphanagesFromApi()
+Promise.all([fetchOrphanagesFromApi(), fetchNeedsFromApi()])
   .then(function () {
     render();
 
@@ -1050,6 +1048,6 @@ fetchOrphanagesFromApi()
   })
   .catch(function (err) {
     document.getElementById('profile-grid').innerHTML =
-      '<div class="col-12"><div class="alert alert-danger">Could not load orphanages from the server: ' + err.message + '</div></div>';
+      '<div class="col-12"><div class="alert alert-danger">Could not load data from the server: ' + err.message + '</div></div>';
     document.getElementById('profile-grid').classList.remove('d-none');
   });

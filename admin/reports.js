@@ -1,11 +1,22 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
 
-function loadReports() {
-  return JSON.parse(localStorage.getItem('reports') || '[]');
+let reportsCache = [];
+function loadReports() { return reportsCache; }
+function fetchReportsFromApi() {
+  return apiRequest('/reports').then(function (data) {
+    reportsCache = data.reports;
+  });
 }
-
-function saveReports(reports) {
-  localStorage.setItem('reports', JSON.stringify(reports));
+function saveReport(report) {
+  return apiRequest('/reports/' + report.id, { method: 'PUT', body: report })
+    .then(function (data) {
+      const idx = reportsCache.findIndex(function (r) { return r.id === report.id; });
+      if (idx !== -1) reportsCache[idx] = data.report;
+      return data.report;
+    })
+    .catch(function (err) {
+      alert('Could not save changes to the server: ' + err.message);
+    });
 }
 
 function escapeHtml(str) {
@@ -177,10 +188,10 @@ document.getElementById('report-modal-body').addEventListener('click', function 
       .then(function () {
         report.status = 'resolved';
         report.resolution = 'Account flagged.';
-        saveReports(reports);
-        render();
         document.getElementById('report-modal-body').innerHTML = buildModalBody(report);
+        return saveReport(report);
       })
+      .then(render)
       .catch(function (err) {
         alert('Could not flag account: ' + err.message);
       });
@@ -189,9 +200,8 @@ document.getElementById('report-modal-body').addEventListener('click', function 
   if (e.target.id === 'dismiss-report-btn') {
     report.status = 'resolved';
     report.resolution = 'Dismissed, no action taken.';
-    saveReports(reports);
-    render();
     document.getElementById('report-modal-body').innerHTML = buildModalBody(report);
+    saveReport(report).then(render);
   }
 
   if (e.target.id === 'resolve-report-btn') {
@@ -199,49 +209,75 @@ document.getElementById('report-modal-body').addEventListener('click', function 
     if (note === null) return;
     report.status = 'resolved';
     report.resolution = note.trim() || 'Resolved.';
-    saveReports(reports);
-    render();
     document.getElementById('report-modal-body').innerHTML = buildModalBody(report);
+    saveReport(report).then(render);
   }
 });
 
 function seedSampleData() {
-  const sampleReports = [
-    {
-      id: 1,
-      reporterName: 'Ngozi Adeyemi',
-      reporterAccountType: 'donor',
-      reportedAccountType: 'partner',
-      reportedAccountId: 2,
-      reportedAccountName: 'Douala Business Alliance',
-      reasonCategory: 'Fraud',
-      details: 'This organization contacted me directly asking to send donations to a personal mobile money number instead of through the platform.',
-      timestamp: '2026-09-03T16:00:00.000Z',
-      status: 'open',
-    },
-    {
-      id: 2,
-      reporterName: 'Anonymous',
-      reporterAccountType: '',
-      reportedAccountType: 'orphanage',
-      reportedAccountId: 4,
-      reportedAccountName: 'Orphelinat Bethel',
-      reasonCategory: 'Safeguarding concern',
-      details: 'A visitor noticed the published photos show children\'s faces and full names, which seems unsafe.',
-      timestamp: '2026-08-15T10:30:00.000Z',
-      status: 'resolved',
-      resolution: 'Reviewed with orphanage; blur-faces setting enabled on their profile.',
-    },
-  ];
+  Promise.all([apiRequest('/partners'), apiRequest('/orphanages')])
+    .then(function (results) {
+      const partner = results[0].partners[0];
+      const orphanage = results[1].orphanages[0];
 
-  saveReports(sampleReports);
-  render();
+      const sampleReports = [];
+
+      if (partner) {
+        sampleReports.push({
+          reporterName: 'Ngozi Adeyemi',
+          reporterAccountType: 'donor',
+          reportedAccountType: 'partner',
+          reportedAccountId: partner.id,
+          reportedAccountName: partner.name,
+          reasonCategory: 'Fraud',
+          details: 'This organization contacted me directly asking to send donations to a personal mobile money number instead of through the platform.',
+          timestamp: '2026-09-03T16:00:00.000Z',
+          status: 'open',
+        });
+      }
+
+      if (orphanage) {
+        sampleReports.push({
+          reporterName: 'Anonymous',
+          reporterAccountType: '',
+          reportedAccountType: 'orphanage',
+          reportedAccountId: orphanage.id,
+          reportedAccountName: orphanage.name,
+          reasonCategory: 'Safeguarding concern',
+          details: 'A visitor noticed the published photos show children\'s faces and full names, which seems unsafe.',
+          timestamp: '2026-08-15T10:30:00.000Z',
+          status: 'resolved',
+          resolution: 'Reviewed with orphanage; blur-faces setting enabled on their profile.',
+        });
+      }
+
+      if (sampleReports.length === 0) {
+        alert('Load sample data on Partner Orgs or Orphanages first, then load sample reports.');
+        return Promise.resolve();
+      }
+
+      return Promise.all(sampleReports.map(function (r) {
+        return apiRequest('/reports', { method: 'POST', body: r });
+      }));
+    })
+    .then(fetchReportsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
 }
 
 function clearAllData() {
   if (!confirm('Clear all reports? This cannot be undone.')) return;
-  localStorage.removeItem('reports');
-  render();
+
+  Promise.all(reportsCache.map(function (r) {
+    return apiRequest('/reports/' + r.id, { method: 'DELETE' });
+  }))
+    .then(fetchReportsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
 }
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
@@ -321,14 +357,12 @@ function buildProgramsReport(programs) {
 }
 
 function generateNeedsReport() {
-  return apiRequest('/orphanages').then(function (data) {
-    buildNeedsReport(data.orphanages);
+  return Promise.all([apiRequest('/orphanages'), apiRequest('/needs')]).then(function (results) {
+    buildNeedsReport(results[0].orphanages, results[1].needs);
   });
 }
 
-function buildNeedsReport(orphanages) {
-  const needs = JSON.parse(localStorage.getItem('needs') || '[]');
-
+function buildNeedsReport(orphanages, needs) {
   const totalGoal = needs.reduce(function (sum, n) { return sum + Number(n.goal || 0); }, 0);
   const totalRaised = needs.reduce(function (sum, n) { return sum + Number(n.raised || 0); }, 0);
   const open = needs.filter(function (n) { return Number(n.raised || 0) < Number(n.goal || 0); }).length;
@@ -449,4 +483,9 @@ document.getElementById('export-report-btn').addEventListener('click', function 
   URL.revokeObjectURL(url);
 });
 
-render();
+fetchReportsFromApi()
+  .then(render)
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load reports from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+  });

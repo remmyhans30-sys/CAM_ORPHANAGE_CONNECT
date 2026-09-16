@@ -19,7 +19,7 @@ function formatFcfa(amount) {
 }
 
 let orphanages = [];
-const needs = JSON.parse(localStorage.getItem('needs') || '[]');
+let needs = [];
 
 const groupsEl = document.getElementById('finance-groups');
 const emptyState = document.getElementById('empty-state');
@@ -111,12 +111,13 @@ document.getElementById('export-csv-btn').addEventListener('click', function () 
   downloadCsv('donations-by-orphanage.csv', rows);
 });
 
-apiRequest('/orphanages')
-  .then(function (data) {
-    orphanages = data.orphanages;
+Promise.all([apiRequest('/orphanages'), apiRequest('/needs')])
+  .then(function (results) {
+    orphanages = results[0].orphanages;
+    needs = results[1].needs;
     renderFinance();
   })
   .catch(function (err) {
-    emptyState.textContent = 'Could not load orphanages from the server: ' + err.message;
+    emptyState.textContent = 'Could not load data from the server: ' + err.message;
     emptyState.classList.remove('d-none');
   });
