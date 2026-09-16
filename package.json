@@ -1,0 +1,13 @@
+{
+  "name": "cam-orphanage-connect",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static HTML/CSS/JS/Bootstrap site for CAM Orphanage Connect. These are dev-only tools for local previewing — the site itself ships no Node code and needs no build step.",
+  "scripts": {
+    "start": "live-server --port=5500 --no-browser",
+    "serve": "live-server --port=5500 --no-browser"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
