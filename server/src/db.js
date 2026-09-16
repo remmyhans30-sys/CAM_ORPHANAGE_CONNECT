@@ -131,6 +131,63 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS needs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    orphanage_id INTEGER NOT NULL REFERENCES orphanages(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    goal INTEGER DEFAULT 0,
+    raised INTEGER DEFAULT 0,
+    percent INTEGER DEFAULT 0,
+    date TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_name TEXT,
+    account_type TEXT,
+    account_id INTEGER,
+    subject TEXT,
+    body TEXT,
+    timestamp TEXT,
+    read INTEGER DEFAULT 0,
+    from_admin INTEGER DEFAULT 0,
+    auto_replied INTEGER DEFAULT 0,
+    replies TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_name TEXT,
+    reporter_account_type TEXT,
+    reported_account_type TEXT,
+    reported_account_id INTEGER,
+    reported_account_name TEXT,
+    reason_category TEXT,
+    details TEXT,
+    timestamp TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    resolution TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    org_name TEXT,
+    org_email TEXT,
+    org_phone TEXT,
+    org_address TEXT,
+    org_description TEXT,
+    currency TEXT NOT NULL DEFAULT 'FCFA',
+    notif_email INTEGER NOT NULL DEFAULT 1,
+    notif_donations INTEGER NOT NULL DEFAULT 1,
+    notif_messages INTEGER NOT NULL DEFAULT 1
+  );
 `);
 
 module.exports = db;
