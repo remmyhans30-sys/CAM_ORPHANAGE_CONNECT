@@ -1,0 +1,206 @@
+:root {
+    --ink: #1A2035;
+    --dawn-purple: #2E8B57;
+    --coral: #E5484D;
+    --gold: #F5A623;
+    --teal: #3B82F6;
+    --paper: #FFFFFF;
+    --paper-dim: #F1F5F9;
+    --line: rgba(26, 32, 53, 0.1);
+}
+
+* { box-sizing: border-box }
+html, body { margin: 0; padding: 0 }
+
+body {
+    font-family: 'Work Sans', sans-serif;
+    color: var(--ink);
+    background-color: var(--paper-dim);
+}
+
+h1, h2, h3, .brand-word {
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--dawn-purple);
+}
+
+button { font-family: inherit }
+
+/* Shell */
+.portal-shell { display: flex; min-height: 100vh }
+
+.portal-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background-color: var(--ink);
+    color: #fff;
+    padding: 1.5rem 1rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+.portal-brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 2rem; padding: 0 0.4rem }
+.portal-brand .brand-heart { width: 32px; height: 32px; flex-shrink: 0 }
+.portal-brand .brand-word { font-size: 0.9rem; line-height: 1.25; color: #fff; margin: 0 }
+.portal-brand .brand-word span { display: block; color: #6be79a }
+
+.portal-nav { display: flex; flex-direction: column; gap: 0.3rem }
+.portal-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    padding: 0.65rem 0.8rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+.portal-nav-link:hover { background-color: rgba(255, 255, 255, 0.08); color: #fff }
+.portal-nav-link.active { background-color: var(--dawn-purple); color: #fff }
+.portal-nav-link.logout-link { margin-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 1rem }
+
+/* Main */
+.portal-main { flex-grow: 1; min-width: 0 }
+.portal-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.75rem;
+    background-color: #fff;
+    border-bottom: 1px solid var(--line);
+}
+.portal-topbar h1 { font-size: 1.15rem; margin: 0 }
+.portal-topbar p { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--ink); opacity: 0.6 }
+
+.verify-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; border-radius: 100px; padding: 0.3rem 0.8rem }
+.verify-badge.verified { background-color: rgba(59, 130, 246, 0.15); color: var(--teal) }
+.verify-badge.pending { background-color: rgba(245, 166, 35, 0.25); color: #92400E }
+
+.portal-view { display: none; padding: 1.75rem }
+.portal-view.active { display: block }
+
+/* Stat cards */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; margin-bottom: 1.75rem }
+.stat-card {
+    background-color: #fff;
+    border-radius: 16px;
+    box-shadow: 0 6px 16px rgba(26, 32, 53, 0.08);
+    padding: 1.1rem 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+.stat-icon { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.1rem; flex-shrink: 0 }
+.stat-icon.teal { background-color: var(--teal) }
+.stat-icon.coral { background-color: var(--coral) }
+.stat-icon.green { background-color: var(--dawn-purple) }
+.stat-icon.gold { background-color: var(--gold); color: var(--ink) }
+.stat-value { font-family: 'Baloo 2', sans-serif; font-size: 1.25rem; color: var(--ink); line-height: 1.1 }
+.stat-label { font-size: 0.75rem; color: var(--ink); opacity: 0.6 }
+
+.panel { background-color: #fff; border-radius: 18px; box-shadow: 0 6px 16px rgba(26, 32, 53, 0.08); padding: 1.5rem 1.6rem; margin-bottom: 1.5rem }
+.panel h2 { font-size: 1.1rem; margin: 0 0 0.25rem }
+.panel .panel-desc { margin: 0 0 1.25rem; font-size: 0.85rem; color: var(--ink); opacity: 0.6 }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem }
+
+.info-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    background-color: rgba(245, 166, 35, 0.12);
+    color: #92400E;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+.info-note.verified { background-color: rgba(46, 139, 87, 0.1); color: var(--dawn-purple) }
+
+/* Buttons */
+.btn-primary-pill, .btn-outline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.55rem 1.2rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-primary-pill { background-color: var(--dawn-purple); color: #fff; border: none }
+.btn-primary-pill:hover { background-color: var(--ink) }
+.btn-outline-pill { background: transparent; color: var(--dawn-purple); border: 1px solid var(--dawn-purple) }
+.btn-outline-pill:hover { background-color: rgba(46, 139, 87, 0.08) }
+
+/* Profile form */
+.field-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem }
+.field { margin-bottom: 1rem }
+.field label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem }
+.field input, .field textarea, .field select {
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background-color: #fff;
+    color: var(--ink);
+}
+.field input:disabled, .field textarea:disabled { background-color: var(--paper-dim); color: var(--ink); opacity: 0.75 }
+.field textarea { resize: vertical; min-height: 90px }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) }
+
+/* Needs */
+.needs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.1rem }
+.need-card { border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem }
+.need-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.5rem }
+.need-card-head h3 { font-size: 0.98rem; margin: 0 }
+.need-status { font-size: 0.7rem; font-weight: 600; border-radius: 100px; padding: 0.2rem 0.65rem; white-space: nowrap }
+.need-status.open { background-color: rgba(59, 130, 246, 0.15); color: var(--teal) }
+.need-status.funded { background-color: rgba(46, 139, 87, 0.15); color: var(--dawn-purple) }
+.need-card p { font-size: 0.82rem; color: var(--ink); opacity: 0.65; margin: 0 0 0.75rem }
+.need-progress { height: 8px; border-radius: 100px; background-color: var(--paper-dim); overflow: hidden; margin-bottom: 0.5rem }
+.need-progress-bar { height: 100%; background-color: var(--dawn-purple) }
+.need-amounts { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--ink); opacity: 0.65 }
+.need-actions { display: flex; gap: 0.5rem; margin-top: 0.9rem }
+.need-actions button { flex: 1; border-radius: 100px; border: 1px solid var(--line); background: #fff; padding: 0.4rem; font-size: 0.78rem; cursor: pointer; color: var(--ink) }
+.need-actions button:hover { border-color: var(--dawn-purple); color: var(--dawn-purple) }
+
+/* Donations table */
+.donations-table { width: 100%; border-collapse: collapse; font-size: 0.88rem }
+.donations-table th { text-align: left; padding: 0.6rem 0.75rem; color: var(--ink); opacity: 0.55; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--line) }
+.donations-table td { padding: 0.75rem; border-bottom: 1px solid var(--line) }
+.donations-table tr:last-child td { border-bottom: none }
+.donation-status { font-size: 0.72rem; font-weight: 600; border-radius: 100px; padding: 0.2rem 0.65rem }
+.donation-status.completed { background-color: rgba(46, 139, 87, 0.15); color: var(--dawn-purple) }
+
+/* Modal (Add Need) */
+.modal-backdrop-custom {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(26, 32, 53, 0.5);
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 100;
+}
+.modal-backdrop-custom.open { display: flex }
+.modal-box { background-color: #fff; border-radius: 18px; width: 100%; max-width: 420px; padding: 1.75rem; max-height: 90vh; overflow-y: auto }
+.modal-box h2 { font-size: 1.1rem; margin: 0 0 1rem }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.25rem }
+.btn-text { background: none; border: none; color: var(--ink); opacity: 0.6; font-size: 0.85rem; cursor: pointer; padding: 0.5rem 0.75rem }
+
+@media (max-width: 991px) {
+    .portal-sidebar { position: fixed; left: -260px; z-index: 200; transition: left 0.2s ease }
+    .portal-sidebar.show { left: 0 }
+    .stat-grid { grid-template-columns: repeat(2, 1fr) }
+    .field-row, .needs-grid { grid-template-columns: 1fr }
+}
