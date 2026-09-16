@@ -52,6 +52,38 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS donors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT,
+    join_date TEXT,
+    location TEXT,
+    preferred_payment TEXT,
+    preferred_currency TEXT,
+    last_active TEXT,
+    vip INTEGER DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    flag_reason TEXT,
+    total_given INTEGER DEFAULT 0,
+    donations_count INTEGER DEFAULT 0,
+    homes_followed_count INTEGER DEFAULT 0,
+    active_recurring_gifts INTEGER DEFAULT 0,
+    chargebacks_count INTEGER DEFAULT 0,
+    photo_url TEXT,
+    referred_by TEXT,
+    admin_notes TEXT,
+    donations TEXT NOT NULL DEFAULT '[]',
+    password_resets TEXT NOT NULL DEFAULT '[]',
+    failed_payments TEXT NOT NULL DEFAULT '[]',
+    support_tickets TEXT NOT NULL DEFAULT '[]',
+    referrals_made TEXT NOT NULL DEFAULT '[]',
+    homes_followed TEXT NOT NULL DEFAULT '[]',
+    groups_joined TEXT NOT NULL DEFAULT '[]',
+    activity_log TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 module.exports = db;
