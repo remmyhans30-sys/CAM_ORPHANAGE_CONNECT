@@ -11,6 +11,16 @@ function apiRequest(path, options) {
     headers: headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   }).then(function (response) {
+    if (response.status === 401 && path !== '/auth/login') {
+      localStorage.removeItem('currentAdminEmail');
+      localStorage.removeItem('currentAdminRole');
+      localStorage.removeItem('currentAdminDisplayName');
+      localStorage.removeItem('adminToken');
+      alert('Your session has expired. Please log in again.');
+      window.location.href = 'index.html';
+      return new Promise(function () {});
+    }
+
     if (response.status === 204) return null;
 
     return response.json().catch(function () { return null; }).then(function (data) {
