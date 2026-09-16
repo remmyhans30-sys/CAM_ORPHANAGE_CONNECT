@@ -6,19 +6,33 @@ function getPartnerId() {
   return id !== null ? Number(id) : null;
 }
 
+let partnerCache = null;
+
 function loadPartner() {
-  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
+  return partnerCache;
+}
+
+function fetchPartnerFromApi() {
   const id = getPartnerId();
-  if (id === null) return partners[0] || null;
-  return partners.find(function (p) { return p.id === id; }) || null;
+  const path = id === null ? null : '/partners/' + id;
+  if (!path) {
+    return apiRequest('/partners').then(function (data) {
+      partnerCache = data.partners[0] || null;
+    });
+  }
+  return apiRequest(path).then(function (data) {
+    partnerCache = data.partner;
+  });
 }
 
 function savePartner(partner) {
-  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
-  const idx = partners.findIndex(function (p) { return p.id === partner.id; });
-  if (idx === -1) return;
-  partners[idx] = partner;
-  localStorage.setItem('partners', JSON.stringify(partners));
+  return apiRequest('/partners/' + partner.id, { method: 'PUT', body: partner })
+    .then(function (data) {
+      partnerCache = data.partner;
+    })
+    .catch(function (err) {
+      alert('Could not save changes to the server: ' + err.message);
+    });
 }
 
 function openOrCreateMessageThread(accountType, accountId, senderName) {
@@ -551,14 +565,23 @@ document.getElementById('delete-partner-btn').addEventListener('click', function
   if (!partner) return;
   if (!confirm('Permanently delete "' + partner.name + '"? This cannot be undone.')) return;
 
-  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
-  localStorage.setItem('partners', JSON.stringify(partners.filter(function (p) { return p.id !== partner.id; })));
+  apiRequest('/partners/' + partner.id, { method: 'DELETE' })
+    .then(function () {
+      const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+      deletionLog.push({ accountName: partner.name, accountType: 'partner', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
+      localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
 
-  const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
-  deletionLog.push({ accountName: partner.name, accountType: 'partner', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
-  localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
-
-  window.location.href = 'partners.html';
+      window.location.href = 'partners.html';
+    })
+    .catch(function (err) {
+      alert('Could not delete: ' + err.message);
+    });
 });
 
-render();
+fetchPartnerFromApi()
+  .then(render)
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load this partner organization from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+    document.getElementById('partner-content').classList.add('d-none');
+  });

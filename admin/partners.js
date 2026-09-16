@@ -1,11 +1,11 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
 
-function loadPartners() {
-  return JSON.parse(localStorage.getItem('partners') || '[]');
-}
-
-function savePartners(partners) {
-  localStorage.setItem('partners', JSON.stringify(partners));
+let partnersCache = [];
+function loadPartners() { return partnersCache; }
+function fetchPartnersFromApi() {
+  return apiRequest('/partners').then(function (data) {
+    partnersCache = data.partners;
+  });
 }
 
 function escapeHtml(str) {
@@ -290,14 +290,29 @@ function seedSampleData() {
     },
   ];
 
-  savePartners(samplePartners);
-  render();
+  Promise.all(samplePartners.map(function (p) {
+    const payload = Object.assign({}, p);
+    delete payload.id;
+    return apiRequest('/partners', { method: 'POST', body: payload });
+  }))
+    .then(fetchPartnersFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
 }
 
 function clearAllData() {
   if (!confirm('Clear all partner organization data? This cannot be undone.')) return;
-  localStorage.removeItem('partners');
-  render();
+
+  Promise.all(partnersCache.map(function (p) {
+    return apiRequest('/partners/' + p.id, { method: 'DELETE' });
+  }))
+    .then(fetchPartnersFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
 }
 
 function csvField(value) {
@@ -334,4 +349,9 @@ document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('status-filter').addEventListener('change', render);
 document.getElementById('search-input').addEventListener('input', render);
 
-render();
+fetchPartnersFromApi()
+  .then(render)
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load partner organizations from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+  });
