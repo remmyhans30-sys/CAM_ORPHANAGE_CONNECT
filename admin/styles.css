@@ -88,3 +88,263 @@ h1, h2, h3, h4, h5, h6,
   padding: 0.3rem 0.9rem;
   margin-bottom: 1rem;
 }
+
+/* ===== Admin management pages (children / needs / donations & visits) ===== */
+
+.admin-page {
+  padding-bottom: 3rem;
+}
+
+.admin-topbar {
+  background-color: var(--section-bg);
+  padding: 2rem 0 1.75rem;
+  margin-bottom: 2rem;
+}
+
+.admin-topbar .brand-heading {
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.admin-topbar h1 {
+  margin-bottom: 0.25rem;
+}
+
+.admin-topbar .text-muted {
+  color: var(--ink) !important;
+  opacity: 0.65;
+}
+
+.admin-toolbar {
+  background-color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(34, 26, 61, 0.08);
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-toolbar .form-control,
+.admin-toolbar .form-select {
+  border-radius: 12px;
+  border: 1px solid #E0D9C8;
+  padding: 0.55rem 0.85rem;
+}
+
+.admin-toolbar .form-control:focus,
+.admin-toolbar .form-select:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 0.2rem rgba(27, 153, 139, 0.15);
+}
+
+/* Tables */
+.table-admin thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.55;
+  border-bottom: 1px solid #E0D9C8;
+  padding-bottom: 0.75rem;
+  white-space: nowrap;
+}
+
+.table-admin td {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #F1EEE5;
+  vertical-align: middle;
+}
+
+.row-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.row-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.row-sub {
+  font-size: 0.82rem;
+  color: var(--ink);
+  opacity: 0.6;
+}
+
+/* Status badges */
+.badge-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 0.3rem 0.75rem;
+  white-space: nowrap;
+}
+
+.badge-status.status-sponsored,
+.badge-status.status-completed,
+.badge-status.status-approved {
+  background-color: rgba(27, 153, 139, 0.12);
+  color: var(--teal);
+}
+
+.badge-status.status-needs-sponsor,
+.badge-status.status-pending {
+  background-color: rgba(255, 200, 87, 0.25);
+  color: #8A6B12;
+}
+
+.badge-status.status-declined {
+  background-color: rgba(255, 111, 89, 0.12);
+  color: var(--coral);
+}
+
+/* Row action buttons */
+.btn-row-action {
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid transparent;
+  margin-right: 0.35rem;
+}
+
+.btn-row-action:last-child {
+  margin-right: 0;
+}
+
+.btn-row-edit {
+  background-color: var(--section-bg);
+  color: var(--dawn-purple);
+}
+
+.btn-row-edit:hover {
+  background-color: var(--gold);
+  color: var(--ink);
+}
+
+.btn-row-approve {
+  background-color: rgba(27, 153, 139, 0.12);
+  color: var(--teal);
+}
+
+.btn-row-approve:hover {
+  background-color: var(--teal);
+  color: #fff;
+}
+
+.btn-row-decline,
+.btn-row-delete {
+  background-color: rgba(255, 111, 89, 0.1);
+  color: var(--coral);
+}
+
+.btn-row-decline:hover,
+.btn-row-delete:hover {
+  background-color: var(--coral);
+  color: #fff;
+}
+
+/* Progress (needs table) */
+.mini-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 130px;
+}
+
+.mini-progress .progress {
+  flex: 1;
+  height: 8px;
+  border-radius: 100px;
+  background-color: var(--section-bg);
+}
+
+.mini-progress .progress-bar {
+  background-color: var(--coral);
+  border-radius: 100px;
+}
+
+.mini-progress .progress-bar.is-funded {
+  background-color: var(--teal);
+}
+
+.mini-progress .mini-progress-pct {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--teal);
+  white-space: nowrap;
+}
+
+/* Tabs (donations / visit requests) */
+.admin-tabs.nav-tabs {
+  border-bottom: 1px solid #E0D9C8;
+  margin-bottom: 1.5rem;
+}
+
+.admin-tabs .nav-link {
+  border: none;
+  color: var(--ink);
+  opacity: 0.6;
+  font-weight: 600;
+  padding: 0.6rem 0.25rem;
+  margin-right: 1.75rem;
+  border-radius: 0;
+}
+
+.admin-tabs .nav-link.active {
+  color: var(--dawn-purple);
+  opacity: 1;
+  border-bottom: 3px solid var(--coral);
+  background: none;
+}
+
+/* Modal (shared look for all admin forms) */
+.modal-content {
+  border-radius: 20px;
+  border: none;
+}
+
+/* Empty state */
+.admin-empty {
+  text-align: center;
+  color: var(--ink);
+  opacity: 0.55;
+  padding: 3rem 0;
+}
+
+/* Summary tiles (incoming donations) */
+.stat-tile {
+  background-color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(34, 26, 61, 0.08);
+  padding: 1.3rem 1.4rem;
+  height: 100%;
+  border-top: 4px solid var(--coral);
+}
+
+.stat-tile.accent-gold { border-top-color: var(--gold); }
+.stat-tile.accent-teal { border-top-color: var(--teal); }
+.stat-tile.accent-purple { border-top-color: var(--dawn-purple); }
+
+.stat-tile .stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.6;
+  margin-bottom: 0.4rem;
+}
+
+.stat-tile .stat-value {
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--dawn-purple);
+  line-height: 1.1;
+}
