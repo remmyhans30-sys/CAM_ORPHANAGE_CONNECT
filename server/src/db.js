@@ -116,6 +116,21 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS programs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    description TEXT,
+    funding_goal INTEGER DEFAULT 0,
+    amount_raised INTEGER DEFAULT 0,
+    children_benefiting INTEGER DEFAULT 0,
+    objectives TEXT,
+    activities TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 module.exports = db;

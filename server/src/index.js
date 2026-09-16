@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const orphanageRoutes = require('./routes/orphanages');
 const donorRoutes = require('./routes/donors');
 const partnerRoutes = require('./routes/partners');
+const programRoutes = require('./routes/programs');
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/orphanages', orphanageRoutes);
 app.use('/api/donors', donorRoutes);
 app.use('/api/partners', partnerRoutes);
+app.use('/api/programs', programRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found.' });
