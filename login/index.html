@@ -7,50 +7,109 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
         <link rel="stylesheet" href="styles.css">
     </head>
-    <body>
-        <div class="auth-wrapper">
-            <div class="auth-card">
-                <div class="brand">
-                    <img src="logo.png" alt="CAM Orphanage" class="logo" onerror="this.style.display='none'">
-                    <span class="auth-badge">Welcome Back</span>
-                    <h1>CAM Orphanage Connect</h1>
-                    <p class="subtitle">Sign in to continue</p>
+    <body class="split-body">
+        <div class="login-split">
+            <div class="login-hero" style="background-image: url('images/photo1.jpg')">
+                <div class="login-hero-overlay"></div>
+                <div class="login-hero-content">
+                    <div class="brand-lockup">
+                        <svg class="brand-heart" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 84 C 20 61, 9 35, 27 18 C 39 7, 50 18, 50 33 C 50 18, 61 7, 73 18 C 91 35, 80 61, 50 84 Z" fill="url(#heartGradHero)"/>
+                            <path d="M50 33 C 50 47, 46 62, 50 84" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.5" fill="none"/>
+                            <circle cx="50" cy="11" r="5.5" fill="#2E8B57"/>
+                            <defs>
+                                <linearGradient id="heartGradHero" x1="9" y1="7" x2="91" y2="84">
+                                    <stop offset="0" stop-color="#4ec37f"/>
+                                    <stop offset="1" stop-color="#1f6b45"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <p class="brand-word">Cam Orphanage<span>Connect</span></p>
+                    </div>
+
+                    <div class="hero-main">
+                        <h1 class="hero-headline">Together We<span>Change Lives</span></h1>
+                        <p class="hero-desc">Cam Orphanage Connect is dedicated to providing love, care, education and hope for a brighter future for every child in Cameroon.</p>
+                        <ul class="hero-features">
+                            <li class="feature-item">
+                                <span class="feature-icon f-green"><i class="bi bi-book"></i></span>
+                                <strong>Education</strong>
+                                <span>Quality education for a better tomorrow.</span>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-icon f-blue"><i class="bi bi-heart-pulse"></i></span>
+                                <strong>Healthcare</strong>
+                                <span>Health and wellness for every child.</span>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-icon f-gold"><i class="bi bi-people"></i></span>
+                                <strong>Support</strong>
+                                <span>Community support that makes a difference.</span>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-icon f-purple"><i class="bi bi-flower1"></i></span>
+                                <strong>Growth</strong>
+                                <span>Skills and opportunities for a brighter future.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="hero-location">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <div>
+                            <strong>Based in Cameroon</strong>
+                            <span>Serving children. Building a stronger tomorrow.</span>
+                        </div>
+                    </div>
                 </div>
-                <form class="login-form" novalidate>
-                    <div class="input-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="you@domain.com" required>
-                    </div>
-                    <div class="input-group password-field">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                        <button type="button" class="toggle-password" data-target="password">Show</button>
-                    </div>
-                    <div class="form-row">
-                        <label class="checkbox"><input type="checkbox" id="remember-me"> Remember me</label>
-                        <a href="forgot-password.html" class="forgot">Forgot?</a>
-                    </div>
-                    <button type="submit" class="btn-primary">Sign in</button>
-                    <p class="back-link">Don't have an account? <a href="register.html">Sign up</a></p>
-                </form>
-                <p class="footer-note">Questions? <a href="#">Contact us</a></p>
             </div>
-            <footer class="footer">
-                <div class="footer-content">
-                    <div class="footer-logo">
-                        <h3>CAM_ORPHANAGE_CONNECT</h3>
-                        <p>Connect. Care. Change.</p>
+
+            <div class="login-panel">
+                <div class="login-panel-inner">
+                    <div class="panel-brand">
+                        <svg class="brand-heart brand-heart-lg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 84 C 20 61, 9 35, 27 18 C 39 7, 50 18, 50 33 C 50 18, 61 7, 73 18 C 91 35, 80 61, 50 84 Z" fill="url(#heartGradPanel)"/>
+                            <path d="M50 33 C 50 47, 46 62, 50 84" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.5" fill="none"/>
+                            <circle cx="50" cy="11" r="5.5" fill="#2E8B57"/>
+                            <defs>
+                                <linearGradient id="heartGradPanel" x1="9" y1="7" x2="91" y2="84">
+                                    <stop offset="0" stop-color="#4ec37f"/>
+                                    <stop offset="1" stop-color="#1f6b45"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <p class="brand-word">Cam Orphanage<span>Connect</span></p>
                     </div>
-                    <div class="footer-link">
-                        <a href="#">About</a>
-                    </div>
+
+                    <h1 class="panel-title">Welcome Back</h1>
+                    <p class="panel-subtitle">Sign in to your account to continue</p>
+
+                    <form class="login-form" novalidate>
+                        <div class="field-icon-group">
+                            <i class="bi bi-envelope"></i>
+                            <input type="email" id="email" name="email" placeholder="Email or Username" aria-label="Email or Username" required>
+                        </div>
+                        <div class="field-icon-group">
+                            <i class="bi bi-lock"></i>
+                            <input type="password" id="password" name="password" placeholder="Password" aria-label="Password" required>
+                            <button type="button" class="toggle-password" data-target="password" aria-label="Show password"><i class="bi bi-eye-slash"></i></button>
+                        </div>
+                        <div class="form-row">
+                            <label class="checkbox"><input type="checkbox" id="remember-me"> Remember me</label>
+                            <a href="forgot-password.html" class="forgot">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="btn-primary"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+                        <div class="divider"><span>or</span></div>
+                        <button type="button" class="btn-google"><i class="bi bi-google"></i> Login with Google</button>
+                    </form>
+
+                    <p class="back-link">Don't have an account? <a href="register.html">Sign up</a></p>
                 </div>
-                <div class="footer-bottom">
-                    <p>© 2026 CAM_ORPHANAGE_CONNECT. All rights reserved.</p>
-                </div>
-            </footer>
+                <p class="panel-copyright">© 2026 Cam Orphanage Connect. All rights reserved.</p>
+            </div>
         </div>
         <script src="script.js"></script>
     </body>
