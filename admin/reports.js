@@ -143,34 +143,21 @@ function openReport(id) {
 }
 
 function flagAccount(type, accountId, action) {
-  if (type === 'orphanage' || type === 'donor') {
-    const apiPath = type === 'orphanage' ? '/orphanages/' : '/donors/';
-    return apiRequest(apiPath + accountId).then(function (data) {
-      const account = data.orphanage || data.donor;
-      if (type === 'orphanage') {
-        account.flagged = true;
-      } else {
-        account.status = 'flagged';
-      }
-      account.flagReason = 'Flagged from a user report.';
-      account.activityLog = account.activityLog || [];
-      account.activityLog.push({ reviewer: currentAdmin(), action: action, timestamp: new Date().toISOString() });
+  const apiPath = type === 'orphanage' ? '/orphanages/' : (type === 'donor' ? '/donors/' : '/partners/');
 
-      return apiRequest(apiPath + accountId, { method: 'PUT', body: account });
-    });
-  }
+  return apiRequest(apiPath + accountId).then(function (data) {
+    const account = data.orphanage || data.donor || data.partner;
+    if (type === 'orphanage') {
+      account.flagged = true;
+    } else {
+      account.status = 'flagged';
+    }
+    account.flagReason = 'Flagged from a user report.';
+    account.activityLog = account.activityLog || [];
+    account.activityLog.push({ reviewer: currentAdmin(), action: action, timestamp: new Date().toISOString() });
 
-  const accounts = JSON.parse(localStorage.getItem('partners') || '[]');
-  const account = accounts.find(function (a) { return String(a.id) === String(accountId); });
-  if (!account) return Promise.resolve();
-
-  account.status = 'flagged';
-  account.flagReason = 'Flagged from a user report.';
-  account.activityLog = account.activityLog || [];
-  account.activityLog.push({ reviewer: currentAdmin(), action: action, timestamp: new Date().toISOString() });
-
-  localStorage.setItem('partners', JSON.stringify(accounts));
-  return Promise.resolve();
+    return apiRequest(apiPath + accountId, { method: 'PUT', body: account });
+  });
 }
 
 document.getElementById('reports-list').addEventListener('click', function (e) {
@@ -390,7 +377,12 @@ function buildDonorsReport(donors) {
 }
 
 function generatePartnersReport() {
-  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
+  return apiRequest('/partners').then(function (data) {
+    buildPartnersReport(data.partners);
+  });
+}
+
+function buildPartnersReport(partners) {
   const totalContributed = partners.reduce(function (sum, p) { return sum + Number(p.totalContributed || 0); }, 0);
   const verified = partners.filter(function (p) { return p.verificationStatus === 'verified'; }).length;
   const pending = partners.filter(function (p) { return p.verificationStatus === 'pending'; }).length;

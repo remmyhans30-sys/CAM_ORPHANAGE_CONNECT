@@ -20,18 +20,20 @@ function accountTypeLabel(type) {
 
 let orphanagesCache = [];
 let donorsCache = [];
+let partnersCache = [];
 
 function fetchCachesFromApi() {
   return Promise.all([
     apiRequest('/orphanages').then(function (data) { orphanagesCache = data.orphanages; }),
     apiRequest('/donors').then(function (data) { donorsCache = data.donors; }),
+    apiRequest('/partners').then(function (data) { partnersCache = data.partners; }),
   ]);
 }
 
 function collectEntries() {
   const orphanages = orphanagesCache;
   const donors = donorsCache;
-  const partners = JSON.parse(localStorage.getItem('partners') || '[]');
+  const partners = partnersCache;
 
   const entries = [];
 
@@ -168,5 +170,5 @@ fetchCachesFromApi()
   .then(render)
   .catch(function (err) {
     render();
-    console.error('Could not load orphanages/donors from the server:', err.message);
+    console.error('Could not load orphanages/donors/partners from the server:', err.message);
   });
