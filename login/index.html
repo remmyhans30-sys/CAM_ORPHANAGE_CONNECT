@@ -1,67 +1,57 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Login - CAM Orphanage</title>
+        <title>Login - CAM Orphanage Connect</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
-        <div class="photo-grid">
-            <img src="images/photo1.jpg" alt="">
-            <img src="images/photo2.jpg" alt="">
-            <img src="images/photo3.jpg" alt="">
-            <img src="images/photo4.jpg" alt="">
-            <img src="images/photo5.jpg" alt="">
-            <img src="images/photo6.jpg" alt="">
-            <img src="images/photo7.jpg" alt="">
-            <img src="images/photo8.jpg" alt="">
-        </div>
-        <div class="overlay"></div>
         <div class="auth-wrapper">
             <div class="auth-card">
                 <div class="brand">
                     <img src="logo.png" alt="CAM Orphanage" class="logo" onerror="this.style.display='none'">
-                    <h1>CAM Orphanage</h1>
-                    <p class="subtitle">Welcome back — sign in to continue</p>
+                    <span class="auth-badge">Welcome Back</span>
+                    <h1>CAM Orphanage Connect</h1>
+                    <p class="subtitle">Sign in to continue</p>
                 </div>
                 <form class="login-form" novalidate>
                     <div class="input-group">
                         <label for="email">Email</label>
                         <input type="email" id="email" name="email" placeholder="you@domain.com" required>
                     </div>
-                    <div class="input-group">
+                    <div class="input-group password-field">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-password" data-target="password">Show</button>
                     </div>
                     <div class="form-row">
-                        <label class="checkbox"> Remember me</label> 
+                        <label class="checkbox"><input type="checkbox" id="remember-me"> Remember me</label>
                         <a href="forgot-password.html" class="forgot">Forgot?</a>
                     </div>
                     <button type="submit" class="btn-primary">Sign in</button>
-                    <div class="form-row">
-                        <p class="back-link">Don't have an account? <a href="register.html">Sign up</a></p>
-                    </div>
+                    <p class="back-link">Don't have an account? <a href="register.html">Sign up</a></p>
                 </form>
                 <p class="footer-note">Questions? <a href="#">Contact us</a></p>
-                <footer class="footer">
-                    <div class="footer-content">
-                        <div class="footer-logo">
-                            <h3>CAM_ORPHANAGE_CONNECT</h3>
-                            <p>Connect. Care. Change.</p>
-                        </div>
-                        <div class="footer-link">
-                            <a href="#">About</a>
-                        </div>
-                    </div>
-                    <div class="footer-bottom">
-                        <p>© 2026 CAM_ORPHANAGE_CONNECT. All rights reserved.</p>
-                    </div>
-                </footer>
             </div>
+            <footer class="footer">
+                <div class="footer-content">
+                    <div class="footer-logo">
+                        <h3>CAM_ORPHANAGE_CONNECT</h3>
+                        <p>Connect. Care. Change.</p>
+                    </div>
+                    <div class="footer-link">
+                        <a href="#">About</a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>© 2026 CAM_ORPHANAGE_CONNECT. All rights reserved.</p>
+                </div>
+            </footer>
         </div>
+        <script src="script.js"></script>
     </body>
 </html>
