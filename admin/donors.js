@@ -1,11 +1,15 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
 
+let donorsCache = [];
+
 function loadDonors() {
-  return JSON.parse(localStorage.getItem('donors') || '[]');
+  return donorsCache;
 }
 
-function saveDonors(donors) {
-  localStorage.setItem('donors', JSON.stringify(donors));
+function fetchDonorsFromApi() {
+  return apiRequest('/donors').then(function (data) {
+    donorsCache = data.donors;
+  });
 }
 
 function escapeHtml(str) {
@@ -116,7 +120,6 @@ function render() {
 function seedSampleData() {
   const sampleDonors = [
     {
-      id: 1,
       name: 'Ngozi Adeyemi',
       email: 'ngozi.adeyemi@example.com',
       joinDate: '2026-02-14',
@@ -162,7 +165,6 @@ function seedSampleData() {
       groupsJoined: ['Cameroon Diaspora Paris', 'Douala Alumni Giving Circle'],
     },
     {
-      id: 2,
       name: 'Marc Dubois',
       email: 'marc.dubois@example.com',
       joinDate: '2026-05-10',
@@ -197,7 +199,6 @@ function seedSampleData() {
       ],
     },
     {
-      id: 3,
       name: 'Achu Peter',
       email: 'achu.peter@example.com',
       joinDate: '2026-08-01',
@@ -224,7 +225,6 @@ function seedSampleData() {
       groupsJoined: [],
     },
     {
-      id: 4,
       name: 'Ngozi A.',
       email: 'ngozi.adeyemi@example.com',
       joinDate: '2026-08-25',
@@ -250,14 +250,27 @@ function seedSampleData() {
     },
   ];
 
-  saveDonors(sampleDonors);
-  render();
+  Promise.all(sampleDonors.map(function (d) {
+    return apiRequest('/donors', { method: 'POST', body: d });
+  }))
+    .then(fetchDonorsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
 }
 
 function clearAllData() {
   if (!confirm('Clear all donor data? This cannot be undone.')) return;
-  localStorage.removeItem('donors');
-  render();
+
+  Promise.all(donorsCache.map(function (d) {
+    return apiRequest('/donors/' + d.id, { method: 'DELETE' });
+  }))
+    .then(fetchDonorsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
 }
 
 function csvField(value) {
@@ -294,4 +307,10 @@ document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('search-input').addEventListener('input', render);
 document.getElementById('status-filter').addEventListener('change', render);
 
-render();
+fetchDonorsFromApi()
+  .then(render)
+  .catch(function (err) {
+    document.getElementById('donors-grid').innerHTML =
+      '<div class="col-12"><div class="alert alert-danger">Could not load donors from the server: ' + err.message + '</div></div>';
+    document.getElementById('donors-grid').classList.remove('d-none');
+  });

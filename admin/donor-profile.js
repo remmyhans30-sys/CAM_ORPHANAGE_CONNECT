@@ -6,19 +6,25 @@ function getDonorId() {
   return id !== null ? Number(id) : null;
 }
 
+let donorsCache = [];
+
+function fetchDonorsFromApi() {
+  return apiRequest('/donors').then(function (data) {
+    donorsCache = data.donors;
+  });
+}
+
 function loadDonor() {
-  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
   const id = getDonorId();
-  if (id === null) return donors[0] || null;
-  return donors.find(function (d) { return d.id === id; }) || null;
+  if (id === null) return donorsCache[0] || null;
+  return donorsCache.find(function (d) { return d.id === id; }) || null;
 }
 
 function saveDonor(donor) {
-  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
-  const idx = donors.findIndex(function (d) { return d.id === donor.id; });
-  if (idx === -1) return;
-  donors[idx] = donor;
-  localStorage.setItem('donors', JSON.stringify(donors));
+  return apiRequest('/donors/' + donor.id, { method: 'PUT', body: donor })
+    .catch(function (err) {
+      alert('Could not save changes to the server: ' + err.message);
+    });
 }
 
 function openOrCreateMessageThread(accountType, accountId, senderName) {
@@ -67,11 +73,10 @@ function monthsSince(dateStr) {
 }
 
 function computeDuplicateRisk(donor) {
-  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
   const email = (donor.email || '').trim().toLowerCase();
   if (!email) return null;
 
-  const sharers = donors.filter(function (d) {
+  const sharers = donorsCache.filter(function (d) {
     return d.id !== donor.id && (d.email || '').trim().toLowerCase() === email;
   });
 
@@ -424,14 +429,17 @@ document.getElementById('delete-donor-btn').addEventListener('click', function (
   if (!donor) return;
   if (!confirm('Permanently delete "' + donor.name + '"? This cannot be undone.')) return;
 
-  const donors = JSON.parse(localStorage.getItem('donors') || '[]');
-  localStorage.setItem('donors', JSON.stringify(donors.filter(function (d) { return d.id !== donor.id; })));
+  apiRequest('/donors/' + donor.id, { method: 'DELETE' })
+    .then(function () {
+      const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
+      deletionLog.push({ accountName: donor.name, accountType: 'donor', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
+      localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
 
-  const deletionLog = JSON.parse(localStorage.getItem('deletionLog') || '[]');
-  deletionLog.push({ accountName: donor.name, accountType: 'donor', reviewer: currentAdmin(), timestamp: new Date().toISOString() });
-  localStorage.setItem('deletionLog', JSON.stringify(deletionLog));
-
-  window.location.href = 'donors.html';
+      window.location.href = 'donors.html';
+    })
+    .catch(function (err) {
+      alert('Could not delete: ' + err.message);
+    });
 });
 
 document.getElementById('save-notes-btn').addEventListener('click', function () {
@@ -448,4 +456,10 @@ document.getElementById('save-notes-btn').addEventListener('click', function () 
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
 });
 
-render();
+fetchDonorsFromApi()
+  .then(render)
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load donor data from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+    document.getElementById('donor-content').classList.add('d-none');
+  });
