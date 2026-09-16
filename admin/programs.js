@@ -1,7 +1,12 @@
 if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
 
-function loadPrograms() { return JSON.parse(localStorage.getItem('programs') || '[]'); }
-function savePrograms(programs) { localStorage.setItem('programs', JSON.stringify(programs)); }
+let programsCache = [];
+function loadPrograms() { return programsCache; }
+function fetchProgramsFromApi() {
+  return apiRequest('/programs').then(function (data) {
+    programsCache = data.programs;
+  });
+}
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -118,19 +123,32 @@ function render() {
 
 function seedSampleData() {
   const samplePrograms = [
-    { id: 1, name: 'Back to School Support', category: 'Education', status: 'active', description: 'Covers school fees, uniforms, and supplies for children across partner orphanages each new academic year.', fundingGoal: 2000000, amountRaised: 850000, childrenBenefiting: 120 },
-    { id: 2, name: 'Community Health Checkups', category: 'Health', status: 'active', description: 'Quarterly visits from partner clinics to screen and treat common childhood illnesses.', fundingGoal: 800000, amountRaised: 800000, childrenBenefiting: 90 },
-    { id: 3, name: 'Nutrition & Meal Program', category: 'Nutrition', status: 'planned', description: 'Proposed program to fund balanced daily meals at orphanages reporting food insecurity.', fundingGoal: 1200000, amountRaised: 0, childrenBenefiting: 60 },
+    { name: 'Back to School Support', category: 'Education', status: 'active', description: 'Covers school fees, uniforms, and supplies for children across partner orphanages each new academic year.', fundingGoal: 2000000, amountRaised: 850000, childrenBenefiting: 120 },
+    { name: 'Community Health Checkups', category: 'Health', status: 'active', description: 'Quarterly visits from partner clinics to screen and treat common childhood illnesses.', fundingGoal: 800000, amountRaised: 800000, childrenBenefiting: 90 },
+    { name: 'Nutrition & Meal Program', category: 'Nutrition', status: 'planned', description: 'Proposed program to fund balanced daily meals at orphanages reporting food insecurity.', fundingGoal: 1200000, amountRaised: 0, childrenBenefiting: 60 },
   ];
 
-  savePrograms(samplePrograms);
-  render();
+  Promise.all(samplePrograms.map(function (p) {
+    return apiRequest('/programs', { method: 'POST', body: p });
+  }))
+    .then(fetchProgramsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
 }
 
 function clearAllData() {
   if (!confirm('Clear all programs? This cannot be undone.')) return;
-  localStorage.removeItem('programs');
-  render();
+
+  Promise.all(programsCache.map(function (p) {
+    return apiRequest('/programs/' + p.id, { method: 'DELETE' });
+  }))
+    .then(fetchProgramsFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
 }
 
 document.getElementById('seed-btn').addEventListener('click', seedSampleData);
@@ -172,15 +190,18 @@ document.getElementById('programs-grid').addEventListener('click', function (e) 
 
   if (e.target.classList.contains('delete-program-btn')) {
     if (!confirm('Delete this program? This cannot be undone.')) return;
-    savePrograms(programs.filter(function (x) { return x.id !== id; }));
-    render();
+    apiRequest('/programs/' + id, { method: 'DELETE' })
+      .then(fetchProgramsFromApi)
+      .then(render)
+      .catch(function (err) {
+        alert('Could not delete: ' + err.message);
+      });
   }
 });
 
 document.getElementById('program-form').addEventListener('submit', function (e) {
   e.preventDefault();
 
-  const programs = loadPrograms();
   const editId = document.getElementById('program-id').value;
 
   const data = {
@@ -195,17 +216,24 @@ document.getElementById('program-form').addEventListener('submit', function (e) 
     activities: document.getElementById('program-activities').value.trim(),
   };
 
-  if (editId) {
-    const p = programs.find(function (x) { return x.id === Number(editId); });
-    if (p) Object.assign(p, data);
-  } else {
-    data.id = Date.now();
-    programs.push(data);
-  }
+  const request = editId
+    ? apiRequest('/programs/' + editId, { method: 'PUT', body: data })
+    : apiRequest('/programs', { method: 'POST', body: data });
 
-  savePrograms(programs);
-  programModal.hide();
-  render();
+  request
+    .then(fetchProgramsFromApi)
+    .then(function () {
+      programModal.hide();
+      render();
+    })
+    .catch(function (err) {
+      alert('Could not save: ' + err.message);
+    });
 });
 
-render();
+fetchProgramsFromApi()
+  .then(render)
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load programs from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+  });

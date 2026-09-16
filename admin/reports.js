@@ -294,7 +294,12 @@ function buildDonationsReport(donors) {
 }
 
 function generateProgramsReport() {
-  const programs = JSON.parse(localStorage.getItem('programs') || '[]');
+  return apiRequest('/programs').then(function (data) {
+    buildProgramsReport(data.programs);
+  });
+}
+
+function buildProgramsReport(programs) {
   const totalGoal = programs.reduce(function (sum, p) { return sum + Number(p.fundingGoal || 0); }, 0);
   const totalRaised = programs.reduce(function (sum, p) { return sum + Number(p.amountRaised || 0); }, 0);
   const active = programs.filter(function (p) { return p.status === 'active'; }).length;

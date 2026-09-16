@@ -23,7 +23,13 @@ function fetchPartnersFromApi() {
 }
 function loadMessages() { return JSON.parse(localStorage.getItem('messages') || '[]'); }
 function loadReports() { return JSON.parse(localStorage.getItem('reports') || '[]'); }
-function loadPrograms() { return JSON.parse(localStorage.getItem('programs') || '[]'); }
+let programsCache = [];
+function loadPrograms() { return programsCache; }
+function fetchProgramsFromApi() {
+  return apiRequest('/programs').then(function (data) {
+    programsCache = data.programs;
+  });
+}
 function loadNeeds() { return JSON.parse(localStorage.getItem('needs') || '[]'); }
 
 function initials(name) {
@@ -392,7 +398,7 @@ applyRolePermissions();
 renderTopbar();
 renderRecentMessages();
 
-Promise.all([fetchOrphanagesFromApi(), fetchDonorsFromApi(), fetchPartnersFromApi()])
+Promise.all([fetchOrphanagesFromApi(), fetchDonorsFromApi(), fetchPartnersFromApi(), fetchProgramsFromApi()])
   .then(function () {
     renderStatCards();
     renderStatusChart();
