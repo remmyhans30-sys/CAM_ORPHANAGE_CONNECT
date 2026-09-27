@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner Dashboard - CAM Orphanage Connect</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="text-center py-2">
+    <span class="dashboard-title-pill">PARTNER PORTAL</span>
+  </div>
+  <div class="dashboard-shell">
+    <aside class="dashboard-sidebar" id="dashboard-sidebar">
+      <div class="dashboard-brand">
+        <span class="dashboard-brand-icon">&#10084;</span>
+        <span>CAM Orphanage<br>Connect</span>
+      </div>
+      <nav class="dashboard-nav">
+        <a href="dashboard.html" class="dashboard-nav-link active"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+        <a href="orphanages.html" class="dashboard-nav-link"><i class="bi bi-house-heart"></i> Browse Orphanages</a>
+        <a href="messages.html" id="messages-nav-link" class="dashboard-nav-link"><i class="bi bi-chat-dots"></i> Messages</a>
+        <a href="index.html" class="dashboard-nav-link logout-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
+      </nav>
+    </aside>
+
+    <div class="dashboard-main">
+      <div class="dashboard-topbar">
+        <button type="button" class="btn btn-sm btn-admin-outline d-lg-none" id="sidebar-toggle-btn"><i class="bi bi-list"></i></button>
+        <h1 class="h5 mb-0">Dashboard</h1>
+      </div>
+
+      <div class="p-4 p-md-5">
+        <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none"></div>
+
+        <div id="dashboard-content" class="d-none">
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
+            <div class="avatar" id="partner-avatar">?</div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h1 class="h4 mb-0" id="partner-name">&nbsp;</h1>
+                <span class="status-badge" id="partner-status-badge"></span>
+                <span class="tier-tag" id="partner-tier-badge"></span>
+              </div>
+              <p class="text-muted small mb-0" id="partner-country">&mdash;</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="status-note-box" class="mb-4"></div>
+
+      <div class="row g-3 mb-4" id="partner-stats"></div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 mb-0">Donation history</h2>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-admin-outline btn-sm" id="export-donations-btn">Export CSV</button>
+            <button type="button" class="btn btn-admin-outline btn-sm" id="add-donation-btn">+ Add donation</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Orphanage</th>
+                <th>Need</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="donation-history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Your favorite orphanages</h2>
+        <div id="favorites-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Orphanages you sponsor</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Orphanage</th>
+                <th>Sponsor since</th>
+                <th>Amount contributed</th>
+              </tr>
+            </thead>
+            <tbody id="orphanages-sponsored-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Matching pledge</h2>
+        <div id="matching-pledge-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4" id="placement-referrals-card" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 mb-0">Placement referrals submitted</h2>
+          <button type="button" class="btn btn-admin-outline btn-sm" id="add-placement-case-btn">+ Submit new case</button>
+        </div>
+        <div id="placement-referrals-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Verification documents on file</h2>
+        <div id="documents-panel"></div>
+        <p class="text-muted small mb-0 mt-2">To submit new documents, contact the CAM Orphanage Connect admin team.</p>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 mb-0">Contact details</h2>
+          <span class="small text-muted" id="edit-save-status"></span>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small mb-1" for="edit-contact-name">Contact person</label>
+            <input type="text" class="form-control form-control-sm" id="edit-contact-name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small mb-1" for="edit-country">Country</label>
+            <input type="text" class="form-control form-control-sm" id="edit-country">
+          </div>
+        </div>
+        <button type="button" class="btn btn-admin-outline btn-sm mt-3" id="save-edit-btn">Save details</button>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 mb-0">Change password</h2>
+          <span class="small text-muted" id="password-save-status"></span>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="current-password">Current password</label>
+            <input type="password" class="form-control form-control-sm" id="current-password" autocomplete="current-password">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="new-password">New password</label>
+            <input type="password" class="form-control form-control-sm" id="new-password" placeholder="At least 6 characters" autocomplete="new-password">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="confirm-new-password">Confirm new password</label>
+            <input type="password" class="form-control form-control-sm" id="confirm-new-password" autocomplete="new-password">
+          </div>
+        </div>
+        <button type="button" class="btn btn-admin-outline btn-sm mt-3" id="change-password-btn">Change password</button>
+      </div>
+        </div>
+      </div>
+
+      <p class="text-center text-muted small py-3 mb-0">&copy; 2026 CAM Orphanage Connect. All Rights Reserved.</p>
+    </div>
+  </div>
+
+  <div class="modal fade" id="add-donation-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header">
+          <h2 class="h5 mb-0">Add Donation</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-donation-form" novalidate>
+            <div class="mb-3">
+              <label class="form-label" for="donation-type">Donation type</label>
+              <select class="form-select" id="donation-type">
+                <option value="money">Money</option>
+                <option value="item">Item</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="donation-orphanage">Orphanage</label>
+              <select class="form-select" id="donation-orphanage" required>
+                <option value="" disabled selected>Select an orphanage&hellip;</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="donation-need">Need (optional)</label>
+              <input type="text" class="form-control" id="donation-need" placeholder="e.g. New dormitory beds">
+            </div>
+
+            <div id="donation-money-fields">
+              <div class="mb-3">
+                <label class="form-label" for="donation-amount">Amount</label>
+                <input type="number" class="form-control" id="donation-amount" min="0" step="1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-method">Payment method</label>
+                <input type="text" class="form-control" id="donation-method" placeholder="e.g. MTN Mobile Money, Bank transfer">
+              </div>
+            </div>
+
+            <div id="donation-item-fields" class="d-none">
+              <div class="mb-3">
+                <label class="form-label" for="donation-item-description">Item description</label>
+                <input type="text" class="form-control" id="donation-item-description" placeholder="e.g. 50 blankets, 20 pairs of shoes">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-quantity">Quantity</label>
+                <input type="text" class="form-control" id="donation-quantity" placeholder="e.g. 50 blankets">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-item-value">Estimated value (optional)</label>
+                <input type="number" class="form-control" id="donation-item-value" min="0" step="1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-delivery-method">Delivery method</label>
+                <input type="text" class="form-control" id="donation-delivery-method" placeholder="e.g. In-person drop-off, Courier">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="donation-date">Date</label>
+              <input type="date" class="form-control" id="donation-date">
+            </div>
+            <button type="submit" class="btn btn-admin-primary w-100">Save donation</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="add-placement-case-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header">
+          <h2 class="h5 mb-0">Submit Placement Case</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-placement-case-form" novalidate>
+            <div class="mb-3">
+              <label class="form-label" for="case-social-worker-name">Referring social worker</label>
+              <input type="text" class="form-control" id="case-social-worker-name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="case-social-worker-phone">Social worker phone</label>
+              <input type="text" class="form-control" id="case-social-worker-phone">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="case-reason">Reason for referral</label>
+              <textarea class="form-control" id="case-reason" rows="2" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="case-placement-type">Placement type</label>
+              <input type="text" class="form-control" id="case-placement-type" placeholder="e.g. Emergency shelter, Long-term care">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="case-educational-status">Educational status</label>
+              <input type="text" class="form-control" id="case-educational-status">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="case-living-environment">Living environment notes</label>
+              <textarea class="form-control" id="case-living-environment" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="case-discharge-date">Anticipated discharge date</label>
+              <input type="date" class="form-control" id="case-discharge-date">
+            </div>
+            <button type="submit" class="btn btn-admin-primary w-100">Submit case</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="api.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

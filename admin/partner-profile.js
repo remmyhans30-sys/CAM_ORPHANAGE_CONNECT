@@ -140,6 +140,7 @@ function renderStatsStrip(partner) {
   const stats = [
     { label: 'Orphanages sponsored', value: (partner.orphanagesSponsored || []).length },
     { label: 'Total contributed (lifetime)', value: formatFcfa(partner.totalContributed) },
+    { label: 'Donations logged', value: (partner.donations || []).length },
     { label: 'Placement referrals submitted', value: partner.placementReferralsCount || 0 },
     { label: 'Access tier', value: partner.tier },
   ];
@@ -152,6 +153,45 @@ function renderStatsStrip(partner) {
           '<span>' + escapeHtml(stat.label) + '</span>' +
         '</div>' +
       '</div>'
+    );
+  }).join('');
+}
+
+function donationTypeLabel(d) {
+  return d.type === 'item' ? 'Item' : 'Money';
+}
+
+function donationDetailsText(d) {
+  if (d.type === 'item') {
+    const parts = [escapeHtml(d.itemDescription || 'Item donation')];
+    if (d.quantity) parts.push('(' + escapeHtml(d.quantity) + ')');
+    if (d.amount) parts.push('&mdash; est. ' + formatFcfa(d.amount));
+    return parts.join(' ');
+  }
+  return formatFcfa(d.amount);
+}
+
+function renderDonationHistory(partner) {
+  const tbody = document.getElementById('donation-history-tbody');
+  const donations = partner.donations || [];
+
+  if (donations.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-muted small">No donations logged yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = donations.slice().reverse().map(function (d) {
+    const statusLabel = d.type === 'item' ? 'Delivered' : (d.status || '').charAt(0).toUpperCase() + (d.status || '').slice(1);
+    return (
+      '<tr>' +
+        '<td>' + escapeHtml(d.date) + '</td>' +
+        '<td>' + escapeHtml(d.orphanage) + '</td>' +
+        '<td>' + escapeHtml(d.need || '&mdash;') + '</td>' +
+        '<td><span class="tier-tag ' + (d.type === 'item' ? 'tier-champion' : 'tier-friend') + '">' + donationTypeLabel(d) + '</span></td>' +
+        '<td>' + donationDetailsText(d) + '</td>' +
+        '<td>' + escapeHtml(d.method || d.deliveryMethod || '&mdash;') + '</td>' +
+        '<td><span class="tier-tag tier-friend">' + escapeHtml(statusLabel) + '</span></td>' +
+      '</tr>'
     );
   }).join('');
 }
@@ -376,6 +416,7 @@ function render() {
   renderDuplicateRisk(partner);
   renderOnboardingChecklist(partner);
   renderStatsStrip(partner);
+  renderDonationHistory(partner);
   renderOrphanagesSponsored(partner);
   renderMatchingPledge(partner);
   renderPlacementReferrals(partner);
@@ -544,6 +585,28 @@ document.getElementById('save-edit-btn').addEventListener('click', function () {
   const statusEl = document.getElementById('edit-save-status');
   statusEl.textContent = 'Saved.';
   setTimeout(function () { statusEl.textContent = ''; }, 2000);
+});
+
+document.getElementById('save-partner-password-btn').addEventListener('click', function () {
+  const partner = loadPartner();
+  if (!partner) return;
+
+  const password = document.getElementById('partner-password-input').value;
+  if (!password || password.length < 6) {
+    alert('Password must be at least 6 characters.');
+    return;
+  }
+
+  partner.password = password;
+  logActivity(partner, 'Set partner portal password');
+
+  savePartner(partner).then(function () {
+    delete partner.password;
+    document.getElementById('partner-password-input').value = '';
+    const statusEl = document.getElementById('partner-password-status');
+    statusEl.textContent = 'Password set.';
+    setTimeout(function () { statusEl.textContent = ''; }, 2000);
+  });
 });
 
 document.getElementById('delete-partner-btn').addEventListener('click', function () {

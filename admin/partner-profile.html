@@ -42,6 +42,27 @@
       <div class="row g-3 mb-4" id="partner-stats-strip"></div>
 
       <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Donation history</h2>
+        <p class="text-muted small mb-3">Donations this organization has logged themselves from their partner portal.</p>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Orphanage</th>
+                <th>Need</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="donation-history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
         <h2 class="h6 mb-3">Orphanages sponsored</h2>
         <div class="table-responsive">
           <table class="table align-middle mb-0">
@@ -112,6 +133,21 @@
           </div>
         </div>
         <button type="button" class="btn btn-admin-outline btn-sm mt-3" id="save-edit-btn">Save details</button>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-2">Partner portal access</h2>
+        <p class="text-muted small mb-3">Set or reset the password this organization uses to sign in to their own partner portal (separate from this admin panel).</p>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label small mb-1" for="partner-password-input">New password</label>
+            <input type="password" class="form-control form-control-sm" id="partner-password-input" placeholder="At least 6 characters" autocomplete="new-password">
+          </div>
+          <div class="col-md-6 d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-admin-outline btn-sm" id="save-partner-password-btn">Set password</button>
+            <span class="small text-muted" id="partner-password-status"></span>
+          </div>
+        </div>
       </div>
 
       <div class="card card-admin p-4 p-md-5 mb-4" style="border: 1px solid var(--coral);">

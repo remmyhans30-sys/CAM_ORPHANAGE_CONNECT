@@ -90,6 +90,7 @@ db.exec(`
     name TEXT NOT NULL,
     contact_name TEXT,
     email TEXT,
+    password_hash TEXT,
     country TEXT,
     submitted_date TEXT,
     verification_status TEXT NOT NULL DEFAULT 'pending',
@@ -113,6 +114,8 @@ db.exec(`
     documents TEXT NOT NULL DEFAULT '[]',
     placement_cases TEXT NOT NULL DEFAULT '[]',
     activity_log TEXT NOT NULL DEFAULT '[]',
+    donations TEXT NOT NULL DEFAULT '[]',
+    favorite_orphanage_ids TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -156,6 +159,7 @@ db.exec(`
     from_admin INTEGER DEFAULT 0,
     auto_replied INTEGER DEFAULT 0,
     replies TEXT NOT NULL DEFAULT '[]',
+    partner_last_seen_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -189,5 +193,22 @@ db.exec(`
     notif_messages INTEGER NOT NULL DEFAULT 1
   );
 `);
+
+// Lightweight migration: add columns to tables that already existed before this column was introduced.
+const partnerColumns = db.prepare("PRAGMA table_info(partners)").all().map((c) => c.name);
+if (!partnerColumns.includes('password_hash')) {
+  db.exec('ALTER TABLE partners ADD COLUMN password_hash TEXT');
+}
+if (!partnerColumns.includes('donations')) {
+  db.exec("ALTER TABLE partners ADD COLUMN donations TEXT NOT NULL DEFAULT '[]'");
+}
+if (!partnerColumns.includes('favorite_orphanage_ids')) {
+  db.exec("ALTER TABLE partners ADD COLUMN favorite_orphanage_ids TEXT NOT NULL DEFAULT '[]'");
+}
+
+const messageColumns = db.prepare("PRAGMA table_info(messages)").all().map((c) => c.name);
+if (!messageColumns.includes('partner_last_seen_at')) {
+  db.exec('ALTER TABLE messages ADD COLUMN partner_last_seen_at TEXT');
+}
 
 module.exports = db;

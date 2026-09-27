@@ -134,9 +134,10 @@ function buildModalBody(msg) {
   const repliesList = (msg.replies || []).map(function (r) {
     const replyWhen = new Date(r.timestamp);
     const replyWhenText = isNaN(replyWhen.getTime()) ? r.timestamp : replyWhen.toLocaleString();
+    const label = r.auto ? 'Auto-reply' : (r.sender === msg.accountType ? accountTypeLabel(msg.accountType) + ' reply' : 'Admin reply');
     return (
       '<div class="profile-post">' +
-        '<span class="profile-post-date">' + (r.auto ? 'Auto-reply' : 'Admin reply') + ' &mdash; ' + escapeHtml(replyWhenText) + '</span>' +
+        '<span class="profile-post-date">' + label + ' &mdash; ' + escapeHtml(replyWhenText) + '</span>' +
         '<p class="small mb-0 mt-1">' + escapeHtml(r.text) + '</p>' +
       '</div>'
     );
@@ -227,7 +228,7 @@ document.getElementById('message-modal-body').addEventListener('click', function
   if (!msg) return;
 
   msg.replies = msg.replies || [];
-  msg.replies.push({ text: text, timestamp: new Date().toISOString() });
+  msg.replies.push({ text: text, timestamp: new Date().toISOString(), sender: 'admin' });
 
   document.getElementById('message-modal-body').innerHTML = buildModalBody(msg);
   saveMessage(msg).then(render);

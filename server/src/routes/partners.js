@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
 
@@ -34,6 +35,8 @@ function rowToPartner(row) {
     documents: JSON.parse(row.documents),
     placementCases: JSON.parse(row.placement_cases),
     activityLog: JSON.parse(row.activity_log),
+    donations: JSON.parse(row.donations || '[]'),
+    favoriteOrphanageIds: JSON.parse(row.favorite_orphanage_ids || '[]'),
   };
 }
 
@@ -66,6 +69,8 @@ const JSON_FIELDS = {
   documents: 'documents',
   placementCases: 'placement_cases',
   activityLog: 'activity_log',
+  donations: 'donations',
+  favoriteOrphanageIds: 'favorite_orphanage_ids',
 };
 
 const BOOLEAN_COLUMNS = new Set(['wording_approved', 'sanctions_screened']);
@@ -126,6 +131,12 @@ router.put('/:id', (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Partner organization not found.' });
 
   const columns = bodyToColumns(req.body || {});
+  if (req.body && req.body.password) {
+    if (req.body.password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    }
+    columns.password_hash = bcrypt.hashSync(req.body.password, 10);
+  }
   const keys = Object.keys(columns);
 
   if (keys.length > 0) {
@@ -145,3 +156,4 @@ router.delete('/:id', (req, res) => {
 });
 
 module.exports = router;
+module.exports.rowToPartner = rowToPartner;

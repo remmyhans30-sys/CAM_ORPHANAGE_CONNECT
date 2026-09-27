@@ -45,6 +45,10 @@ function isUrgent(partner) {
   return days !== null && days >= STALE_PENDING_DAYS;
 }
 
+function pendingCaseCount(partner) {
+  return (partner.placementCases || []).filter(function (c) { return c.status === 'pending'; }).length;
+}
+
 function computeDuplicateRisks(partners) {
   const byEmail = {};
   partners.forEach(function (p) {
@@ -126,6 +130,7 @@ function render() {
           '<span class="tier-tag tier-friend">' + escapeHtml(partner.orgType) + '</span>' +
           '<span class="tier-tag ' + (partner.tier === 'Verified Referrer' ? 'tier-sustainer' : 'tier-champion') + '">' + escapeHtml(partner.tier) + '</span>' +
           (isUrgent(partner) ? '<span class="profile-urgent-badge">&#9201; Urgent</span>' : '') +
+          (pendingCaseCount(partner) > 0 ? '<span class="profile-info-badge">&#128203; ' + pendingCaseCount(partner) + ' placement case' + (pendingCaseCount(partner) === 1 ? '' : 's') + ' to review</span>' : '') +
         '</div>' +
         '<p class="text-muted small mb-3">' + escapeHtml(partner.contactName || '') + (partner.country ? ' &middot; ' + escapeHtml(partner.country) : '') + '</p>' +
         (duplicateRisks[partner.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[partner.id]) + '">&#9888; Duplicate account risk</p>' : '') +
