@@ -35,6 +35,76 @@ function savePartner(partner) {
     });
 }
 
+let orphanageThreadsCache = [];
+
+function fetchOrphanageThreadsFromApi() {
+  return apiRequest('/partner-orphanage-messages').then(function (data) {
+    orphanageThreadsCache = data.threads;
+  });
+}
+
+function renderOrphanageMessages(partner) {
+  const panel = document.getElementById('orphanage-messages-panel');
+  const threads = orphanageThreadsCache.filter(function (t) { return t.partnerId === partner.id; });
+
+  if (threads.length === 0) {
+    panel.innerHTML = '<p class="text-muted small mb-0">No messages with orphanages yet.</p>';
+    return;
+  }
+
+  panel.innerHTML = threads.map(function (t) {
+    const messagesHtml = t.messages.map(function (m) {
+      const when = new Date(m.timestamp);
+      const whenText = isNaN(when.getTime()) ? m.timestamp : when.toLocaleString();
+      const label = m.sender === 'partner' ? escapeHtml(partner.name) : 'You (on behalf of orphanage)';
+      return (
+        '<div class="mb-2">' +
+          '<div class="small text-muted">' + label + ' &mdash; ' + escapeHtml(whenText) + '</div>' +
+          '<div class="profile-info-note mb-0">' + escapeHtml(m.text) + '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    return (
+      '<div class="profile-post mb-3" data-thread-id="' + t.id + '">' +
+        '<p class="small mb-2"><strong>' + escapeHtml(t.orphanageName) + '</strong></p>' +
+        messagesHtml +
+        '<textarea class="form-control form-control-sm small mt-2 orphanage-reply-textarea" rows="2" placeholder="Reply on behalf of the orphanage..."></textarea>' +
+        '<div class="d-flex align-items-center gap-2 mt-2">' +
+          '<button type="button" class="btn btn-admin-outline btn-sm orphanage-reply-btn" data-thread-id="' + t.id + '">Send reply</button>' +
+          '<span class="small text-muted orphanage-reply-status"></span>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+document.getElementById('orphanage-messages-panel').addEventListener('click', function (e) {
+  const btn = e.target.closest('.orphanage-reply-btn');
+  if (!btn) return;
+
+  const threadId = btn.dataset.threadId;
+  const threadEl = btn.closest('[data-thread-id]');
+  const textarea = threadEl.querySelector('.orphanage-reply-textarea');
+  const statusEl = threadEl.querySelector('.orphanage-reply-status');
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  apiRequest('/partner-orphanage-messages/' + threadId + '/reply', { method: 'POST', body: { text: text } })
+    .then(function (data) {
+      const idx = orphanageThreadsCache.findIndex(function (t) { return t.id === data.thread.id; });
+      if (idx !== -1) orphanageThreadsCache[idx] = data.thread;
+      renderOrphanageMessages(loadPartner());
+      if (statusEl) {
+        statusEl.textContent = 'Sent.';
+        setTimeout(function () { statusEl.textContent = ''; }, 2000);
+      }
+    })
+    .catch(function (err) {
+      alert('Could not send reply: ' + err.message);
+    });
+});
+
 function openOrCreateMessageThread(accountType, accountId, senderName) {
   apiRequest('/messages/thread', { method: 'POST', body: { accountType: accountType, accountId: accountId, senderName: senderName } })
     .then(function (data) {
@@ -420,6 +490,7 @@ function render() {
   renderOrphanagesSponsored(partner);
   renderMatchingPledge(partner);
   renderPlacementReferrals(partner);
+  renderOrphanageMessages(partner);
   renderSponsoredByPreview(partner);
   renderVerificationDocuments(partner);
   renderActivityLog(partner);
@@ -627,7 +698,7 @@ document.getElementById('delete-partner-btn').addEventListener('click', function
     });
 });
 
-fetchPartnerFromApi()
+Promise.all([fetchPartnerFromApi(), fetchOrphanageThreadsFromApi()])
   .then(render)
   .catch(function (err) {
     document.getElementById('empty-state').textContent = 'Could not load this partner organization from the server: ' + err.message;

@@ -117,15 +117,18 @@ function renderStatCards() {
   const orphanages = loadOrphanages();
   const donors = loadDonors();
   const partners = loadPartners();
+  const messages = loadMessages();
 
   const totalChildren = orphanages.reduce(function (sum, o) { return sum + Number(o.childrenCount || 0); }, 0);
   const totalDonations = donors.reduce(function (sum, d) { return sum + Number(d.totalGiven || 0); }, 0);
+  const openTickets = messages.filter(function (m) { return (m.status || 'open') !== 'resolved' && (m.status || 'open') !== 'closed'; }).length;
 
   const cards = [
     { icon: 'bi-heart', color: 'teal', value: String(totalChildren), label: 'Children Served', link: 'verification.html', linkLabel: 'View all orphanages' },
     { icon: 'bi-cash-coin', color: 'coral', value: formatFcfa(totalDonations), label: 'Total Donations', link: 'finance.html', linkLabel: 'View all donations' },
     { icon: 'bi-people', color: 'purple', value: String(donors.length), label: 'Donors', link: 'donors.html', linkLabel: 'View all donors' },
     { icon: 'bi-building', color: 'gold', value: String(partners.length), label: 'Partner Orgs', link: 'partners.html', linkLabel: 'View all partners' },
+    { icon: 'bi-headset', color: 'coral', value: String(openTickets), label: 'Open Support Tickets', link: 'messages.html', linkLabel: 'View Support Center' },
   ];
 
   document.getElementById('stat-cards').innerHTML = cards.map(function (c) {

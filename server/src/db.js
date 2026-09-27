@@ -182,6 +182,16 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS partner_orphanage_threads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    partner_id INTEGER NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
+    orphanage_id INTEGER NOT NULL REFERENCES orphanages(id) ON DELETE CASCADE,
+    messages TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(partner_id, orphanage_id)
+  );
+
   CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     org_name TEXT,

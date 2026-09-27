@@ -75,6 +75,17 @@
             <h2 class="h6 mb-3">Updates</h2>
             <div id="posts-panel"></div>
           </div>
+
+          <div class="card card-admin p-4 p-md-5 mb-4">
+            <h2 class="h6 mb-3">Message this orphanage</h2>
+            <p class="text-muted small mb-3">Messages are reviewed by the CAM Orphanage Connect team on the orphanage's behalf, since orphanages don't have their own login yet.</p>
+            <div id="orphanage-conversation-thread" class="mb-3"></div>
+            <textarea class="form-control mb-2" id="orphanage-reply-textarea" rows="3" placeholder="Type your message..."></textarea>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-admin-primary btn-sm" id="send-orphanage-reply-btn">Send</button>
+              <span class="small text-muted" id="orphanage-reply-status"></span>
+            </div>
+          </div>
         </div>
       </div>
 

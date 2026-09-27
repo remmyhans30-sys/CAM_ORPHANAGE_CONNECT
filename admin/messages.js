@@ -69,8 +69,15 @@ function previewText(msg) {
   return 'No messages yet';
 }
 
+const PRIORITY_RANK = { urgent: 0, high: 1, normal: 2, low: 3 };
+
 function render() {
-  const allMessages = loadMessages().slice().sort(function (a, b) { return new Date(lastActivityTimestamp(b)) - new Date(lastActivityTimestamp(a)); });
+  const allMessages = loadMessages().slice().sort(function (a, b) {
+    const rankA = PRIORITY_RANK.hasOwnProperty(a.priority) ? PRIORITY_RANK[a.priority] : 2;
+    const rankB = PRIORITY_RANK.hasOwnProperty(b.priority) ? PRIORITY_RANK[b.priority] : 2;
+    if (rankA !== rankB) return rankA - rankB;
+    return new Date(lastActivityTimestamp(b)) - new Date(lastActivityTimestamp(a));
+  });
   const list = document.getElementById('messages-list');
   const emptyState = document.getElementById('empty-state');
   const filterEmptyState = document.getElementById('filter-empty-state');

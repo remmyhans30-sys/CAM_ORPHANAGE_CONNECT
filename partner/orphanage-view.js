@@ -111,6 +111,34 @@ function renderFavoriteButton(favoriteOrphanageIds) {
   btn.classList.toggle('is-favorite', isFavorite);
 }
 
+function renderOrphanageThread(thread) {
+  const box = document.getElementById('orphanage-conversation-thread');
+  const entries = thread ? thread.messages : [];
+
+  if (!entries || entries.length === 0) {
+    box.innerHTML = '<p class="text-muted small mb-0">No messages yet. Send one below to start the conversation.</p>';
+    return;
+  }
+
+  box.innerHTML = entries.map(function (e) {
+    const when = new Date(e.timestamp);
+    const whenText = isNaN(when.getTime()) ? e.timestamp : when.toLocaleString();
+    const label = e.sender === 'partner' ? 'You' : 'CAM Orphanage Connect team (on behalf of the orphanage)';
+    return (
+      '<div class="mb-3">' +
+        '<div class="small text-muted mb-1">' + escapeHtml(label) + ' &mdash; ' + escapeHtml(whenText) + '</div>' +
+        '<div class="profile-info-note mb-0">' + escapeHtml(e.text) + '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+function loadOrphanageThread() {
+  return apiRequest('/partner-auth/orphanages/' + orphanageId + '/messages').then(function (data) {
+    renderOrphanageThread(data.thread);
+  });
+}
+
 const orphanageId = getOrphanageId();
 
 if (!orphanageId) {
@@ -121,6 +149,7 @@ if (!orphanageId) {
       document.getElementById('orphanage-content').classList.remove('d-none');
       renderOrphanage(results[0].orphanage, results[0].needs);
       renderFavoriteButton(results[1].partner.favoriteOrphanageIds || []);
+      loadOrphanageThread();
     })
     .catch(function () {
       document.getElementById('empty-state').classList.remove('d-none');
@@ -133,6 +162,24 @@ if (!orphanageId) {
       })
       .catch(function (err) {
         alert('Could not update favorite: ' + err.message);
+      });
+  });
+
+  document.getElementById('send-orphanage-reply-btn').addEventListener('click', function () {
+    const textarea = document.getElementById('orphanage-reply-textarea');
+    const text = textarea.value.trim();
+    const statusEl = document.getElementById('orphanage-reply-status');
+    if (!text) return;
+
+    apiRequest('/partner-auth/orphanages/' + orphanageId + '/messages', { method: 'POST', body: { text: text } })
+      .then(function (data) {
+        renderOrphanageThread(data.thread);
+        textarea.value = '';
+        statusEl.textContent = 'Sent.';
+        setTimeout(function () { statusEl.textContent = ''; }, 2000);
+      })
+      .catch(function (err) {
+        alert('Could not send message: ' + err.message);
       });
   });
 }

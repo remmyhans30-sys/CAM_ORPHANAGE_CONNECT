@@ -320,4 +320,45 @@ router.post('/orphanages/:id/favorite', authenticatePartner, (req, res) => {
   res.json({ partner: rowToPartner(updated) });
 });
 
+function rowToPartnerOrphanageThread(row) {
+  return {
+    id: row.id,
+    partnerId: row.partner_id,
+    orphanageId: row.orphanage_id,
+    messages: JSON.parse(row.messages || '[]'),
+    updatedAt: row.updated_at,
+  };
+}
+
+router.get('/orphanages/:id/messages', authenticatePartner, (req, res) => {
+  const orphanageId = Number(req.params.id);
+  const row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE partner_id = ? AND orphanage_id = ?').get(req.partner.id, orphanageId);
+  res.json({ thread: row ? rowToPartnerOrphanageThread(row) : null });
+});
+
+router.post('/orphanages/:id/messages', authenticatePartner, (req, res) => {
+  const text = ((req.body || {}).text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Message text is required.' });
+
+  const orphanageId = Number(req.params.id);
+  const orphanageRow = db.prepare("SELECT id FROM orphanages WHERE id = ? AND status = 'verified'").get(orphanageId);
+  if (!orphanageRow) return res.status(404).json({ error: 'Orphanage not found.' });
+
+  let row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE partner_id = ? AND orphanage_id = ?').get(req.partner.id, orphanageId);
+  const entry = { text: text, timestamp: new Date().toISOString(), sender: 'partner' };
+
+  if (!row) {
+    const result = db.prepare('INSERT INTO partner_orphanage_threads (partner_id, orphanage_id, messages) VALUES (?,?,?)')
+      .run(req.partner.id, orphanageId, JSON.stringify([entry]));
+    row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE id = ?').get(result.lastInsertRowid);
+  } else {
+    const messages = JSON.parse(row.messages);
+    messages.push(entry);
+    db.prepare("UPDATE partner_orphanage_threads SET messages = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(messages), row.id);
+    row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE id = ?').get(row.id);
+  }
+
+  res.status(201).json({ thread: rowToPartnerOrphanageThread(row) });
+});
+
 module.exports = router;
