@@ -160,6 +160,8 @@ db.exec(`
     auto_replied INTEGER DEFAULT 0,
     replies TEXT NOT NULL DEFAULT '[]',
     partner_last_seen_at TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    priority TEXT NOT NULL DEFAULT 'normal',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -209,6 +211,12 @@ if (!partnerColumns.includes('favorite_orphanage_ids')) {
 const messageColumns = db.prepare("PRAGMA table_info(messages)").all().map((c) => c.name);
 if (!messageColumns.includes('partner_last_seen_at')) {
   db.exec('ALTER TABLE messages ADD COLUMN partner_last_seen_at TEXT');
+}
+if (!messageColumns.includes('status')) {
+  db.exec("ALTER TABLE messages ADD COLUMN status TEXT NOT NULL DEFAULT 'open'");
+}
+if (!messageColumns.includes('priority')) {
+  db.exec("ALTER TABLE messages ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'");
 }
 
 module.exports = db;

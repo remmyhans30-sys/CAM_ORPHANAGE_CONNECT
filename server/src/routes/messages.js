@@ -18,6 +18,8 @@ function rowToMessage(row) {
     fromAdmin: Boolean(row.from_admin),
     autoReplied: Boolean(row.auto_replied),
     replies: JSON.parse(row.replies),
+    status: row.status,
+    priority: row.priority,
   };
 }
 
@@ -31,6 +33,8 @@ const FIELD_MAP = {
   read: 'read',
   fromAdmin: 'from_admin',
   autoReplied: 'auto_replied',
+  status: 'status',
+  priority: 'priority',
 };
 
 const BOOLEAN_COLUMNS = new Set(['read', 'from_admin', 'auto_replied']);

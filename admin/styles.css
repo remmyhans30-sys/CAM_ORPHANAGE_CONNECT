@@ -644,6 +644,34 @@ h1, h2, h3, h4, h5, h6,
   display: inline-block;
 }
 
+.ticket-status-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 0.2rem 0.7rem;
+  text-transform: capitalize;
+}
+
+.ticket-status-badge.status-open { background-color: rgba(245, 166, 35, 0.25); color: #92400E; }
+.ticket-status-badge.status-in-progress { background-color: rgba(59, 130, 246, 0.15); color: var(--teal); }
+.ticket-status-badge.status-resolved { background-color: rgba(46, 139, 87, 0.15); color: var(--dawn-purple); }
+.ticket-status-badge.status-closed { background-color: rgba(26, 32, 53, 0.08); color: var(--ink); opacity: 0.65; }
+
+.ticket-priority-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 100px;
+  padding: 0.2rem 0.7rem;
+  text-transform: capitalize;
+}
+
+.ticket-priority-badge.priority-low { background-color: rgba(26, 32, 53, 0.08); color: var(--ink); opacity: 0.7; }
+.ticket-priority-badge.priority-normal { background-color: rgba(59, 130, 246, 0.12); color: var(--teal); }
+.ticket-priority-badge.priority-high { background-color: rgba(245, 166, 35, 0.25); color: #92400E; }
+.ticket-priority-badge.priority-urgent { background-color: rgba(229, 72, 77, 0.18); color: var(--coral); }
+
 /* Dashboard */
 .dashboard-title-pill {
   display: inline-block;

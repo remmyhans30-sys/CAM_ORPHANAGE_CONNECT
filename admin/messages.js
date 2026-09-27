@@ -32,6 +32,11 @@ function initials(name) {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
+function statusLabel(status) {
+  if (status === 'in-progress') return 'In progress';
+  return (status || 'open').charAt(0).toUpperCase() + (status || 'open').slice(1);
+}
+
 function accountTypeLabel(type) {
   if (type === 'donor') return 'Donor';
   if (type === 'orphanage') return 'Orphanage';
@@ -83,6 +88,8 @@ function render() {
 
   const search = document.getElementById('search-input').value.trim().toLowerCase();
   const readFilter = document.getElementById('read-filter').value;
+  const statusFilter = document.getElementById('status-filter').value;
+  const priorityFilter = document.getElementById('priority-filter').value;
 
   const messages = allMessages.filter(function (msg) {
     const matchesSearch = !search ||
@@ -90,7 +97,9 @@ function render() {
       (msg.subject || '').toLowerCase().includes(search) ||
       previewText(msg).toLowerCase().includes(search);
     const matchesRead = readFilter === 'all' || !msg.read;
-    return matchesSearch && matchesRead;
+    const matchesStatus = statusFilter === 'all' || (msg.status || 'open') === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || (msg.priority || 'normal') === priorityFilter;
+    return matchesSearch && matchesRead && matchesStatus && matchesPriority;
   });
 
   if (messages.length === 0) {
@@ -111,10 +120,12 @@ function render() {
         '<div class="account-row d-flex align-items-center gap-3 flex-wrap' + (msg.read ? '' : ' message-unread') + '">' +
           '<div class="row-avatar g' + ((msg.id % 5) + 1) + '">' + initials(msg.senderName) + '</div>' +
           '<div class="flex-grow-1" style="min-width: 200px;">' +
-            '<div class="d-flex align-items-center gap-2">' +
+            '<div class="d-flex align-items-center gap-2 flex-wrap">' +
               (msg.read ? '' : '<span class="message-unread-dot"></span>') +
               '<strong>' + escapeHtml(msg.senderName) + '</strong>' +
               '<span class="tier-tag tier-friend">' + escapeHtml(accountTypeLabel(msg.accountType)) + '</span>' +
+              '<span class="ticket-status-badge status-' + (msg.status || 'open') + '">' + escapeHtml(statusLabel(msg.status)) + '</span>' +
+              '<span class="ticket-priority-badge priority-' + (msg.priority || 'normal') + '">' + escapeHtml(msg.priority || 'normal') + '</span>' +
             '</div>' +
             '<div class="small text-muted text-truncate" style="max-width: 320px;">' + escapeHtml(previewText(msg)) + '</div>' +
           '</div>' +
@@ -149,6 +160,25 @@ function buildModalBody(msg) {
       '<button type="button" class="btn btn-admin-danger btn-sm" id="delete-message-btn">Delete conversation</button>' +
     '</div>' +
     '<p class="small mb-3"><a href="' + profileUrlFor(msg) + '">View account profile</a></p>' +
+    '<div class="d-flex gap-3 align-items-center mb-3">' +
+      '<div>' +
+        '<label class="form-label small mb-1" for="ticket-status-select">Status</label>' +
+        '<select class="form-select form-select-sm" id="ticket-status-select">' +
+          ['open', 'in-progress', 'resolved', 'closed'].map(function (s) {
+            return '<option value="' + s + '"' + ((msg.status || 'open') === s ? ' selected' : '') + '>' + statusLabel(s) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>' +
+      '<div>' +
+        '<label class="form-label small mb-1" for="ticket-priority-select">Priority</label>' +
+        '<select class="form-select form-select-sm" id="ticket-priority-select">' +
+          ['low', 'normal', 'high', 'urgent'].map(function (p) {
+            return '<option value="' + p + '"' + ((msg.priority || 'normal') === p ? ' selected' : '') + '>' + p.charAt(0).toUpperCase() + p.slice(1) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>' +
+      '<span class="small text-muted mt-4" id="ticket-status-save-status"></span>' +
+    '</div>' +
     (msg.body ? '<div class="profile-info-note mb-3">' + escapeHtml(msg.body) + '</div>' : '<p class="text-muted small mb-3">No messages yet &mdash; start the conversation below.</p>') +
     (repliesList ? '<h3 class="h6">Replies</h3>' + repliesList : '') +
     '<h3 class="h6 mt-3">Reply</h3>' +
@@ -195,6 +225,27 @@ document.getElementById('messages-list').addEventListener('click', function (e) 
   const row = e.target.closest('.message-row');
   if (!row) return;
   openMessage(Number(row.dataset.messageId));
+});
+
+document.getElementById('message-modal-body').addEventListener('change', function (e) {
+  if (e.target.id !== 'ticket-status-select' && e.target.id !== 'ticket-priority-select') return;
+  if (activeMessageId === null) return;
+
+  const messages = loadMessages();
+  const msg = messages.find(function (m) { return m.id === activeMessageId; });
+  if (!msg) return;
+
+  msg.status = document.getElementById('ticket-status-select').value;
+  msg.priority = document.getElementById('ticket-priority-select').value;
+
+  const statusEl = document.getElementById('ticket-status-save-status');
+  saveMessage(msg).then(function () {
+    render();
+    if (statusEl) {
+      statusEl.textContent = 'Saved.';
+      setTimeout(function () { statusEl.textContent = ''; }, 2000);
+    }
+  });
 });
 
 document.getElementById('message-modal-body').addEventListener('click', function (e) {
@@ -322,6 +373,8 @@ document.getElementById('seed-btn').addEventListener('click', seedSampleData);
 document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('search-input').addEventListener('input', render);
 document.getElementById('read-filter').addEventListener('change', render);
+document.getElementById('status-filter').addEventListener('change', render);
+document.getElementById('priority-filter').addEventListener('change', render);
 
 fetchMessagesFromApi()
   .then(function () {
