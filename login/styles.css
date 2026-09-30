@@ -277,26 +277,9 @@ h1, h2, h3, .brand-heading {
     display: flex;
 }
 
-.divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; color: var(--ink); opacity: 0.5; font-size: 0.8rem }
-.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background-color: var(--line) }
-
-.btn-google {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    background-color: #fff;
-    border: 1px solid var(--line);
-    border-radius: 100px;
-    padding: 0.7rem 1rem;
-    font-family: inherit;
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--ink);
-    cursor: pointer;
-}
-.btn-google:hover { background-color: var(--paper-dim) }
+.admin-link { text-align: center; margin: 0.75rem 0 0; font-size: 0.8rem }
+.admin-link a { color: var(--ink); opacity: 0.55; text-decoration: none }
+.admin-link a:hover { opacity: 0.85; text-decoration: underline }
 
 .panel-copyright { margin-top: 1.5rem; font-size: 0.75rem; color: var(--ink); opacity: 0.45; text-align: center }
 
