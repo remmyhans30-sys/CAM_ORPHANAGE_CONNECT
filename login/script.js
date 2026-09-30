@@ -14,21 +14,9 @@ document.querySelectorAll('.toggle-password').forEach(function (btn) {
     });
 });
 
-// Mock accounts (localStorage) — donor/orphanage roles have no backend yet.
-const USERS_KEY = 'cocUsers';
+// Accounts live in the backend (server/). Start it with `npm start` inside server/.
+const API_BASE = 'http://localhost:4000/api/users';
 const SESSION_KEY = 'cocSession';
-
-function getUsers() {
-    try {
-        return JSON.parse(window.localStorage.getItem(USERS_KEY)) || [];
-    } catch (err) {
-        return [];
-    }
-}
-
-function saveUsers(users) {
-    window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
 
 function destinationForRole(role) {
     if (role === 'admin') return '../admin/index.html';
@@ -36,9 +24,9 @@ function destinationForRole(role) {
     return '../donor/index.html';
 }
 
-function startSession(user, remember) {
+function startSession(user, token, remember) {
     const store = remember ? window.localStorage : window.sessionStorage;
-    store.setItem(SESSION_KEY, JSON.stringify({ fullname: user.fullname, email: user.email, role: user.role }));
+    store.setItem(SESSION_KEY, JSON.stringify({ fullname: user.fullname, email: user.email, role: user.role, token: token }));
 }
 
 function showFormError(box, message) {
@@ -50,12 +38,37 @@ function hideFormError(box) {
     box.classList.remove('show');
 }
 
+function setLoading(form, loading) {
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = loading;
+    button.style.opacity = loading ? '0.7' : '';
+}
+
+async function postJson(path, body) {
+    let response;
+    try {
+        response = await fetch(API_BASE + path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+    } catch (err) {
+        throw new Error('Cannot reach the server. Please make sure it is running and try again.');
+    }
+
+    const data = await response.json().catch(function () { return {}; });
+    if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong. Please try again.');
+    }
+    return data;
+}
+
 // Login form
 const loginForm = document.querySelector('.login-form');
 const loginError = document.getElementById('login-error');
 
 if (loginForm) {
-    loginForm.addEventListener('submit', function (e) {
+    loginForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const email = document.getElementById('email').value.trim().toLowerCase();
@@ -67,18 +80,16 @@ if (loginForm) {
             return;
         }
 
-        const user = getUsers().find(function (u) {
-            return u.email === email && u.password === password;
-        });
-
-        if (!user) {
-            showFormError(loginError, 'Invalid email or password.');
-            return;
-        }
-
         hideFormError(loginError);
-        startSession(user, remember);
-        window.location.href = destinationForRole(user.role);
+        setLoading(loginForm, true);
+        try {
+            const data = await postJson('/login', { email: email, password: password });
+            startSession(data.user, data.token, remember);
+            window.location.href = destinationForRole(data.user.role);
+        } catch (err) {
+            showFormError(loginError, err.message);
+            setLoading(loginForm, false);
+        }
     });
 }
 
@@ -87,7 +98,7 @@ const registerForm = document.querySelector('.register-form');
 const registerError = document.getElementById('register-error');
 
 if (registerForm) {
-    registerForm.addEventListener('submit', function (e) {
+    registerForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const fullname = document.getElementById('fullname').value.trim();
@@ -113,18 +124,46 @@ if (registerForm) {
             return;
         }
 
-        const users = getUsers();
-        if (users.some(function (u) { return u.email === email; })) {
-            showFormError(registerError, 'An account with this email already exists.');
+        hideFormError(registerError);
+        setLoading(registerForm, true);
+        try {
+            const data = await postJson('/register', { fullname: fullname, email: email, password: password, role: roleInput.value });
+            startSession(data.user, data.token, true);
+            window.location.href = destinationForRole(data.user.role);
+        } catch (err) {
+            showFormError(registerError, err.message);
+            setLoading(registerForm, false);
+        }
+    });
+}
+
+// Forgot password form
+const forgotForm = document.querySelector('.forgot-password-form');
+const forgotError = document.getElementById('forgot-error');
+const forgotSuccess = document.getElementById('forgot-success');
+
+if (forgotForm) {
+    forgotForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value.trim().toLowerCase();
+        forgotSuccess.classList.remove('show');
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showFormError(forgotError, 'Please enter a valid email address.');
             return;
         }
 
-        const user = { fullname: fullname, email: email, password: password, role: roleInput.value };
-        users.push(user);
-        saveUsers(users);
-
-        hideFormError(registerError);
-        startSession(user, true);
-        window.location.href = destinationForRole(user.role);
+        hideFormError(forgotError);
+        setLoading(forgotForm, true);
+        try {
+            const data = await postJson('/forgot-password', { email: email });
+            forgotSuccess.textContent = data.message;
+            forgotSuccess.classList.add('show');
+            forgotForm.reset();
+        } catch (err) {
+            showFormError(forgotError, err.message);
+        }
+        setLoading(forgotForm, false);
     });
 }
