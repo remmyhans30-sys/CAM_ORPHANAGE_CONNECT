@@ -7,7 +7,8 @@ const router = express.Router();
 
 // Donor/orphanage accounts from the public login pages. Tokens are signed with a
 // different secret than admin tokens, so they can never pass the admin API's auth.
-const ROLES = ['admin', 'user', 'volunteer'];
+// Admins are not created here — they live in the admins table.
+const ROLES = ['user', 'volunteer'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function userSecret() {

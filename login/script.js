@@ -19,7 +19,6 @@ const API_BASE = 'http://localhost:4000/api/users';
 const SESSION_KEY = 'cocSession';
 
 function destinationForRole(role) {
-    if (role === 'admin') return '../admin/index.html';
     if (role === 'volunteer') return '../orphanage/index.html';
     return '../donor/index.html';
 }
