@@ -13,7 +13,6 @@ const router = express.Router();
 const ROLES = ['user', 'volunteer'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-
 function toPublicUser(row) {
   return { id: row.id, fullname: row.fullname, email: row.email, role: row.role };
 }
