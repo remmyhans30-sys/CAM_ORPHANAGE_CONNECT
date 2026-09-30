@@ -238,4 +238,15 @@ if (!messageColumns.includes('priority')) {
   db.exec("ALTER TABLE messages ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'");
 }
 
+// Orphanage accounts from the public sign-up page own one orphanage record each.
+const orphanageColumns = db.prepare("PRAGMA table_info(orphanages)").all().map((c) => c.name);
+if (!orphanageColumns.includes('user_id')) {
+  db.exec('ALTER TABLE orphanages ADD COLUMN user_id INTEGER REFERENCES users(id)');
+}
+
+const needColumns = db.prepare("PRAGMA table_info(needs)").all().map((c) => c.name);
+if (!needColumns.includes('description')) {
+  db.exec('ALTER TABLE needs ADD COLUMN description TEXT');
+}
+
 module.exports = db;

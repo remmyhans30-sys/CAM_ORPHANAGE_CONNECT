@@ -20,6 +20,7 @@ const settingsRoutes = require('./routes/settings');
 const partnerAuthRoutes = require('./routes/partner-auth');
 const partnerOrphanageMessageRoutes = require('./routes/partner-orphanage-messages');
 const userRoutes = require('./routes/users');
+const myOrphanageRoutes = require('./routes/my-orphanage');
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
@@ -39,6 +40,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/partner-auth', partnerAuthRoutes);
 app.use('/api/partner-orphanage-messages', partnerOrphanageMessageRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/my-orphanage', myOrphanageRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found.' });

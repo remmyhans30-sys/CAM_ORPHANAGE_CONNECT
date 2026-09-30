@@ -73,6 +73,19 @@ admin tokens and do not work on the admin routes above.
 | POST   | /api/users/forgot-password | `{ email }` -> generic message (no email sent yet) |
 | GET    | /api/users/me              | Current user from the token (`Bearer` header) |
 
+Signing up with role `volunteer` (orphanage) also creates a `pending` orphanage
+record linked to the account, so it appears in the admin verification queue.
+
+### Orphanage portal (user token, orphanage accounts only)
+
+| Method | Path                          | Description                                          |
+|--------|-------------------------------|------------------------------------------------------|
+| GET    | /api/my-orphanage             | `{ orphanage, needs }` for the signed-in orphanage   |
+| PUT    | /api/my-orphanage             | Update name, location, foundedYear, childrenCount, contactName, contactPhone, story |
+| POST   | /api/my-orphanage/needs       | `{ title, description, goal }` -> `{ need }`         |
+| PUT    | /api/my-orphanage/needs/:id   | Edit an own need (goal can't go below raised)        |
+| DELETE | /api/my-orphanage/needs/:id   | Remove an own need that has no donations yet         |
+
 Orphanage JSON fields match the shape already used by `admin/verification.js`
 (`name`, `location`, `story`, `status`, `contactPhone`, `documents`, `activityLog`,
 etc.) so wiring the frontend to this API later is a drop-in swap for the

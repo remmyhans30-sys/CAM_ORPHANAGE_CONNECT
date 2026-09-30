@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
+const { authenticateUser, userSecret } = require('../middleware/userAuth');
+const { ensureOrphanageForUser } = require('../orphanageAccounts');
 
 const router = express.Router();
 
@@ -11,9 +13,6 @@ const router = express.Router();
 const ROLES = ['user', 'volunteer'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function userSecret() {
-  return process.env.JWT_SECRET + ':users';
-}
 
 function toPublicUser(row) {
   return { id: row.id, fullname: row.fullname, email: row.email, role: row.role };
@@ -21,23 +20,6 @@ function toPublicUser(row) {
 
 function issueToken(user) {
   return jwt.sign({ id: user.id, email: user.email, role: user.role }, userSecret(), { expiresIn: '7d' });
-}
-
-function authenticateUser(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-
-  if (!token) {
-    return res.status(401).json({ error: 'Missing authentication token.' });
-  }
-
-  try {
-    const payload = jwt.verify(token, userSecret());
-    req.user = { id: payload.id, email: payload.email, role: payload.role };
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token.' });
-  }
 }
 
 router.post('/register', (req, res) => {
@@ -68,6 +50,9 @@ router.post('/register', (req, res) => {
     .run(fullname.trim(), normalizedEmail, bcrypt.hashSync(password, 10), role);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+  if (user.role === 'volunteer') {
+    ensureOrphanageForUser(user);
+  }
   res.status(201).json({ token: issueToken(user), user: toPublicUser(user) });
 });
 
