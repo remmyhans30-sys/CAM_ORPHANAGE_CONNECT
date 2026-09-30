@@ -1,26 +1,21 @@
 require('dotenv').config();
-const bcrypt = require('bcryptjs');
 const db = require('./db');
+const { ensureFirstAdmin, LOCAL_DEFAULT } = require('./firstAdmin');
 
-const DEFAULT_ADMIN = {
-  name: 'Default Super Admin',
-  email: 'admin@camorphanage.org',
-  password: 'ChangeMe123!',
-  role: 'Super Admin',
-};
-
-const adminCount = db.prepare('SELECT COUNT(*) AS count FROM admins').get().count;
-if (adminCount === 0) {
-  const passwordHash = bcrypt.hashSync(DEFAULT_ADMIN.password, 10);
-  db.prepare('INSERT INTO admins (name, email, password_hash, role) VALUES (?, ?, ?, ?)')
-    .run(DEFAULT_ADMIN.name, DEFAULT_ADMIN.email, passwordHash, DEFAULT_ADMIN.role);
-  console.log(`Created default admin: ${DEFAULT_ADMIN.email} / ${DEFAULT_ADMIN.password} — change this password after first login.`);
-} else {
+const admin = ensureFirstAdmin({ allowDefault: true });
+if (!admin.created) {
   console.log('Admins already exist — skipping admin seed.');
+} else if (admin.usedDefault) {
+  console.log(`Created default admin: ${LOCAL_DEFAULT.email} / ${LOCAL_DEFAULT.password} — change this password after first login.`);
+} else {
+  console.log(`Created admin ${admin.email} from ADMIN_EMAIL / ADMIN_PASSWORD.`);
 }
 
+// Sample orphanages are for local testing only; set SEED_SAMPLE_DATA=false on the live site.
 const orphanageCount = db.prepare('SELECT COUNT(*) AS count FROM orphanages').get().count;
-if (orphanageCount === 0) {
+if (process.env.SEED_SAMPLE_DATA === 'false') {
+  console.log('SEED_SAMPLE_DATA=false — skipping sample orphanages.');
+} else if (orphanageCount === 0) {
   const insert = db.prepare(`
     INSERT INTO orphanages (
       name, location, registration_number, story, story_language, status,

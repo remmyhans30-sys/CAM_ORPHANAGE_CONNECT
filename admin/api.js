@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:4000/api';
+// Local copies talk to the server on this computer; the live site uses its own address.
+const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:4000' : '') + '/api';
 
 function apiRequest(path, options) {
   options = options || {};

@@ -15,7 +15,8 @@ document.querySelectorAll('.toggle-password').forEach(function (btn) {
 });
 
 // Accounts live in the backend (server/). Start it with `npm start` inside server/.
-const API_BASE = 'http://localhost:4000/api/users';
+// Local copies talk to the server on this computer; the live site uses its own address.
+const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:4000' : '') + '/api/users';
 const SESSION_KEY = 'cocSession';
 
 function destinationForRole(role) {

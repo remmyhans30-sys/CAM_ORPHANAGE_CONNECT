@@ -8,6 +8,18 @@ if (!process.env.JWT_SECRET) {
   console.error('Missing JWT_SECRET in .env — copy .env.example to .env and set one before starting the server.');
   process.exit(1);
 }
+if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET.length < 32) {
+  console.error('JWT_SECRET must be at least 32 random characters on the live site.');
+  process.exit(1);
+}
+
+const { ensureFirstAdmin } = require('./firstAdmin');
+const firstAdmin = ensureFirstAdmin({ allowDefault: process.env.NODE_ENV !== 'production' });
+if (firstAdmin.created) {
+  console.log(`Created first admin account: ${firstAdmin.email}`);
+} else if (firstAdmin.missingSettings) {
+  console.warn('No admin account yet — set ADMIN_EMAIL and ADMIN_PASSWORD and restart to create one.');
+}
 
 const authRoutes = require('./routes/auth');
 const orphanageRoutes = require('./routes/orphanages');
@@ -87,8 +99,12 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-const server = app.listen(PORT, () => {
-  console.log(`CAM Orphanage Connect running on http://localhost:${PORT}`);
+// Hosts such as alwaysdata give the address to listen on in IP (or HOST).
+const LISTEN_HOST = process.env.IP || process.env.HOST || undefined;
+const server = app.listen(PORT, LISTEN_HOST, () => {
+  console.log(LISTEN_HOST
+    ? `CAM Orphanage Connect listening on ${LISTEN_HOST} port ${PORT}`
+    : `CAM Orphanage Connect running on http://localhost:${PORT}`);
 });
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {

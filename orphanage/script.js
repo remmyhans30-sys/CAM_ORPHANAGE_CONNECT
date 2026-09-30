@@ -1,6 +1,7 @@
 // Session check — only signed-in orphanage accounts may use the portal.
 const SESSION_KEY = 'cocSession';
-const API_BASE = 'http://localhost:4000/api/my-orphanage';
+// Local copies talk to the server on this computer; the live site uses its own address.
+const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:4000' : '') + '/api/my-orphanage';
 
 function readSession() {
     const raw = window.sessionStorage.getItem(SESSION_KEY) || window.localStorage.getItem(SESSION_KEY);
