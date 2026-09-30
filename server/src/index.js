@@ -35,6 +35,8 @@ const partnerAuthRoutes = require('./routes/partner-auth');
 const partnerOrphanageMessageRoutes = require('./routes/partner-orphanage-messages');
 const userRoutes = require('./routes/users');
 const myOrphanageRoutes = require('./routes/my-orphanage');
+const publicRoutes = require('./routes/public');
+const pledgeRoutes = require('./routes/pledges');
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
@@ -55,6 +57,8 @@ app.use('/api/partner-auth', partnerAuthRoutes);
 app.use('/api/partner-orphanage-messages', partnerOrphanageMessageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/my-orphanage', myOrphanageRoutes);
+app.use('/api/public', publicRoutes);
+app.use('/api/pledges', pledgeRoutes);
 
 // The website itself: every top-level folder/file of the project except server/
 // (which holds .env and the database) and dotfiles. The list is exact, so encoded

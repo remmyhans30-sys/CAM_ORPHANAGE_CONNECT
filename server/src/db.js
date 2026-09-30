@@ -249,4 +249,19 @@ if (!needColumns.includes('description')) {
   db.exec('ALTER TABLE needs ADD COLUMN description TEXT');
 }
 
+// Donor pledges from the donor page (no money is charged; the amount counts toward the need).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pledges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    need_id INTEGER REFERENCES needs(id) ON DELETE SET NULL,
+    orphanage_id INTEGER NOT NULL REFERENCES orphanages(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    donor_name TEXT NOT NULL,
+    need_title TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    anonymous INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 module.exports = db;

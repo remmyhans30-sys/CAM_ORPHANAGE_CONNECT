@@ -174,4 +174,22 @@ router.delete('/needs/:id', (req, res) => {
   res.status(204).end();
 });
 
+router.get('/pledges', (req, res) => {
+  const pledges = db.prepare(
+    `SELECT p.id, p.amount, p.anonymous, p.donor_name, p.created_at, COALESCE(n.title, p.need_title) AS need_title
+     FROM pledges p LEFT JOIN needs n ON n.id = p.need_id
+     WHERE p.orphanage_id = ? ORDER BY p.id DESC`
+  ).all(req.orphanage.id);
+
+  res.json({
+    pledges: pledges.map((p) => ({
+      id: p.id,
+      amount: p.amount,
+      donorName: p.anonymous ? 'Anonymous' : p.donor_name,
+      needTitle: p.need_title,
+      createdAt: p.created_at,
+    })),
+  });
+});
+
 module.exports = router;
