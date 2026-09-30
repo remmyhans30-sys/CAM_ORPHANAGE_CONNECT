@@ -1,10 +1,11 @@
 # CAM Orphanage Connect — Backend API
 
-A small Express + SQLite backend for the admin panel, covering **admin login** and
-**orphanages** (the first slice — donors, partners, needs, etc. are not built yet).
+An Express + SQLite backend for the whole site: admin panel, partner portal,
+public sign-up/login and the orphanage portal. It also serves the website pages
+themselves, so everything runs from one address.
 
-This runs standalone; the admin panel's HTML/JS pages still use `localStorage` and
-are not wired to this API yet. That's the next step once this is confirmed working.
+The quickest way to run everything is `start.bat` (or `node server/start.js`) in
+the project folder — see the main `README.md`. The steps below are the manual way.
 
 ## Setup
 
@@ -40,7 +41,11 @@ seed script and re-seeding into a fresh database, or wait for that endpoint.)
 npm start
 ```
 
-Runs on `http://localhost:4000` by default (override with `PORT` in `.env`).
+Open `http://localhost:4000` for the website; the API is under `/api`. Keep the
+port at 4000 — the pages call the API at `http://localhost:4000/api`.
+
+Everything in `server/` (including `.env` and `data.sqlite`) is never served to
+the browser.
 
 ## API
 

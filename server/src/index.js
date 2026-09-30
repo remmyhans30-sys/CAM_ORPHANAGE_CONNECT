@@ -1,4 +1,6 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 
@@ -42,8 +44,41 @@ app.use('/api/partner-orphanage-messages', partnerOrphanageMessageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/my-orphanage', myOrphanageRoutes);
 
+// The website itself: every top-level folder/file of the project except server/
+// (which holds .env and the database) and dotfiles. The list is exact, so encoded
+// or Windows-equivalent spellings of "server" can't slip through.
+const SITE_ROOT = path.join(__dirname, '..', '..');
+const PUBLIC_ENTRIES = new Set(
+  fs.readdirSync(SITE_ROOT)
+    .filter((name) => !name.startsWith('.') && name.toLowerCase() !== 'server')
+    .map((name) => name.toLowerCase())
+);
+
+function isPublicPath(urlPath) {
+  let firstSegment;
+  try {
+    firstSegment = decodeURIComponent(urlPath).split(/[\\/]/).filter(Boolean)[0];
+  } catch (err) {
+    return false;
+  }
+  return firstSegment === undefined || PUBLIC_ENTRIES.has(firstSegment.toLowerCase());
+}
+
+const serveSite = express.static(SITE_ROOT);
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') || !isPublicPath(req.path)) return next();
+  serveSite(req, res, next);
+});
+
 app.use((req, res) => {
-  res.status(404).json({ error: 'Not found.' });
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found.' });
+  }
+  res.status(404).send(
+    '<!DOCTYPE html><title>Page not found</title>' +
+    '<body style="font-family:sans-serif;text-align:center;padding:4rem">' +
+    '<h1>Page not found</h1><p>This page does not exist yet.</p><p><a href="/">Back to the home page</a></p></body>'
+  );
 });
 
 app.use((err, req, res, next) => {
@@ -52,6 +87,13 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`CAM Orphanage Connect API running on http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`CAM Orphanage Connect running on http://localhost:${PORT}`);
+});
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use — the site is probably already running. Open http://localhost:${PORT}`);
+    process.exit(1);
+  }
+  throw err;
 });
