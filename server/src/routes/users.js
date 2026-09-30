@@ -70,8 +70,8 @@ router.post('/login', (req, res) => {
   res.json({ token: issueToken(user), user: toPublicUser(user) });
 });
 
-// No email service yet: always answer the same way so this can't be used to
-// find out which emails have accounts.
+// Reset emails are not sent yet, so say so honestly and point people to the team.
+// The answer is the same for every address, so it can't reveal who has an account.
 router.post('/forgot-password', (req, res) => {
   const { email } = req.body || {};
 
@@ -79,7 +79,11 @@ router.post('/forgot-password', (req, res) => {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
 
-  res.json({ message: 'If an account exists for this email, a reset link has been sent.' });
+  const contact = process.env.SUPPORT_EMAIL ? ' at ' + process.env.SUPPORT_EMAIL : '';
+  res.json({
+    message: 'Password reset by email is not available yet. Please contact the CAM Orphanage Connect team' + contact +
+      ' from the email address you signed up with, and we will help you get back in.',
+  });
 });
 
 router.get('/me', authenticateUser, (req, res) => {

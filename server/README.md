@@ -90,6 +90,24 @@ record linked to the account, so it appears in the admin verification queue.
 | POST   | /api/my-orphanage/needs       | `{ title, description, goal }` -> `{ need }`         |
 | PUT    | /api/my-orphanage/needs/:id   | Edit an own need (goal can't go below raised)        |
 | DELETE | /api/my-orphanage/needs/:id   | Remove an own need that has no donations yet         |
+| GET    | /api/my-orphanage/pledges     | Pledges received by the signed-in orphanage          |
+
+### Public and pledges
+
+| Method | Path                    | Auth        | Description                                             |
+|--------|-------------------------|-------------|---------------------------------------------------------|
+| GET    | /api/public/orphanages  | none        | Verified orphanages and their open needs (donor page)   |
+| POST   | /api/pledges            | donor token | `{ needId, amount, anonymous }` — records a pledge and adds it to the need |
+| GET    | /api/pledges/mine       | donor token | The signed-in donor's pledges                           |
+
+A pledge is a promise to give: no money is charged. Pledges start at 500 XAF and
+can't exceed what the need still requires.
+
+### Live-site settings
+
+See `DEPLOY.md` in the project folder. On the live site set `NODE_ENV=production`,
+a long `JWT_SECRET`, `ADMIN_EMAIL` / `ADMIN_PASSWORD` (creates the first admin on
+first start), `SEED_SAMPLE_DATA=false`, and optionally `SUPPORT_EMAIL`.
 
 Orphanage JSON fields match the shape already used by `admin/verification.js`
 (`name`, `location`, `story`, `status`, `contactPhone`, `documents`, `activityLog`,
