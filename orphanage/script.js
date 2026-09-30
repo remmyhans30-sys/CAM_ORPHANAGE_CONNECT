@@ -1,3 +1,30 @@
+// Session check — only signed-in orphanage accounts may use the portal.
+const SESSION_KEY = 'cocSession';
+
+function readSession() {
+    const raw = window.sessionStorage.getItem(SESSION_KEY) || window.localStorage.getItem(SESSION_KEY);
+    try {
+        return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+        return null;
+    }
+}
+
+const session = readSession();
+if (!session || session.role !== 'volunteer') {
+    window.location.replace('../login/index.html');
+}
+
+const greeting = document.getElementById('portal-greeting');
+if (session && session.fullname) {
+    greeting.textContent = 'Welcome back, ' + session.fullname;
+}
+
+document.getElementById('logout-link').addEventListener('click', function () {
+    window.sessionStorage.removeItem(SESSION_KEY);
+    window.localStorage.removeItem(SESSION_KEY);
+});
+
 // View switching
 const navLinks = document.querySelectorAll('.portal-nav-link[data-view]');
 const views = document.querySelectorAll('.portal-view');
