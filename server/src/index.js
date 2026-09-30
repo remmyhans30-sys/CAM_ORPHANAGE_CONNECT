@@ -17,6 +17,8 @@ const messageRoutes = require('./routes/messages');
 const reportRoutes = require('./routes/reports');
 const adminRoutes = require('./routes/admins');
 const settingsRoutes = require('./routes/settings');
+const partnerAuthRoutes = require('./routes/partner-auth');
+const partnerOrphanageMessageRoutes = require('./routes/partner-orphanage-messages');
 const userRoutes = require('./routes/users');
 
 const app = express();
@@ -34,6 +36,8 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/partner-auth', partnerAuthRoutes);
+app.use('/api/partner-orphanage-messages', partnerOrphanageMessageRoutes);
 app.use('/api/users', userRoutes);
 
 app.use((req, res) => {

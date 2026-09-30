@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner Organization Profile - CAM Orphanage Connect Admin</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container py-5">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+      <div>
+        <a href="partners.html" class="text-decoration-none d-block mb-2" style="color: var(--dawn-purple);">&larr; Back to partner organizations</a>
+        <span class="admin-badge">Partner Organizations</span>
+        <h1 class="h3 mb-1">Partner Organization Profile</h1>
+        <p class="text-muted mb-0">Review a sponsor or referrer organization's account and activity.</p>
+      </div>
+      <div class="d-flex gap-2 align-self-start">
+        <a href="dashboard.html" class="btn btn-admin-outline">Dashboard</a>
+        <a href="reports.html" class="btn btn-admin-outline">Reports</a>
+        <a href="messages.html" class="btn btn-admin-outline">Inbox</a>
+      </div>
+    </div>
+
+    <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">
+      No partner organization found. Go to the <a href="partners.html">partner organizations list</a> and click "Review profile" on one.
+    </div>
+
+    <div id="partner-content" class="d-none">
+      <div class="card card-admin p-4 p-md-5 mb-4" id="partner-header-card"></div>
+      <div id="duplicate-risk-box" class="mb-4"></div>
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Onboarding checklist</h2>
+        <div id="onboarding-checklist"></div>
+      </div>
+      <div class="row g-3 mb-4" id="partner-stats-strip"></div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Donation history</h2>
+        <p class="text-muted small mb-3">Donations this organization has logged themselves from their partner portal.</p>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Orphanage</th>
+                <th>Need</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="donation-history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Orphanages sponsored</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Orphanage</th>
+                <th>Sponsor since</th>
+                <th>Amount contributed</th>
+              </tr>
+            </thead>
+            <tbody id="orphanages-sponsored-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Matching pledge</h2>
+        <div id="matching-pledge-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Placement referrals</h2>
+        <div id="placement-referrals-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-2">Messages with orphanages</h2>
+        <p class="text-muted small mb-3">Since orphanages don't have their own login yet, replies here are sent on the orphanage's behalf. Be transparent with the partner that this is the CAM Orphanage Connect team relaying the message.</p>
+        <div id="orphanage-messages-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Public "Sponsored by" preview</h2>
+        <div id="sponsored-by-preview"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Verification documents</h2>
+        <div id="verification-documents-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Verification activity log</h2>
+        <div id="activity-log-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-1">Admin notes</h2>
+        <p class="text-muted small mb-3">Private &mdash; never shown to the partner organization.</p>
+        <textarea class="form-control small" id="admin-notes-textarea" rows="3" placeholder="Add a private note about this organization..."></textarea>
+        <div class="d-flex align-items-center gap-2 mt-2">
+          <button type="button" class="btn btn-admin-outline btn-sm" id="save-notes-btn">Save note</button>
+          <span class="small text-muted" id="notes-save-status"></span>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 mb-0">Edit details</h2>
+          <span class="small text-muted" id="edit-save-status"></span>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="edit-name-input">Organization name</label>
+            <input type="text" class="form-control form-control-sm" id="edit-name-input">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="edit-email-input">Email</label>
+            <input type="email" class="form-control form-control-sm" id="edit-email-input">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="edit-country-input">Country</label>
+            <input type="text" class="form-control form-control-sm" id="edit-country-input">
+          </div>
+        </div>
+        <button type="button" class="btn btn-admin-outline btn-sm mt-3" id="save-edit-btn">Save details</button>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-2">Partner portal access</h2>
+        <p class="text-muted small mb-3">Set or reset the password this organization uses to sign in to their own partner portal (separate from this admin panel).</p>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label small mb-1" for="partner-password-input">New password</label>
+            <input type="password" class="form-control form-control-sm" id="partner-password-input" placeholder="At least 6 characters" autocomplete="new-password">
+          </div>
+          <div class="col-md-6 d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-admin-outline btn-sm" id="save-partner-password-btn">Set password</button>
+            <span class="small text-muted" id="partner-password-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4" style="border: 1px solid var(--coral);">
+        <h2 class="h6 mb-2">Danger zone</h2>
+        <p class="text-muted small mb-3">Permanently delete this partner organization account and all of its records. This cannot be undone.</p>
+        <button type="button" class="btn btn-admin-danger btn-sm" id="delete-partner-btn">Delete partner account</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="partner-profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+if (!localStorage.getItem('currentAdminEmail')) { window.location.href = 'index.html'; }
+
+let messagesCache = [];
+function loadMessages() { return messagesCache; }
+function fetchMessagesFromApi() {
+  return apiRequest('/messages').then(function (data) {
+    messagesCache = data.messages;
+  });
+}
+function saveMessage(msg) {
+  return apiRequest('/messages/' + msg.id, { method: 'PUT', body: msg })
+    .then(function (data) {
+      const idx = messagesCache.findIndex(function (m) { return m.id === msg.id; });
+      if (idx !== -1) messagesCache[idx] = data.message;
+      return data.message;
+    })
+    .catch(function (err) {
+      alert('Could not save changes to the server: ' + err.message);
+    });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function initials(name) {
+  const words = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+function statusLabel(status) {
+  if (status === 'in-progress') return 'In progress';
+  return (status || 'open').charAt(0).toUpperCase() + (status || 'open').slice(1);
+}
+
+function accountTypeLabel(type) {
+  if (type === 'donor') return 'Donor';
+  if (type === 'orphanage') return 'Orphanage';
+  if (type === 'partner') return 'Partner Org';
+  return type;
+}
+
+function profileUrlFor(msg) {
+  if (msg.accountType === 'donor') return 'donor-profile.html?id=' + encodeURIComponent(msg.accountId);
+  if (msg.accountType === 'orphanage') return 'verification.html?id=' + encodeURIComponent(msg.accountId);
+  if (msg.accountType === 'partner') return 'partner-profile.html?id=' + encodeURIComponent(msg.accountId);
+  return '#';
+}
+
+const messageModalEl = document.getElementById('message-modal');
+const messageModal = new bootstrap.Modal(messageModalEl);
+let activeMessageId = null;
+
+function lastActivityTimestamp(msg) {
+  const replies = msg.replies || [];
+  if (replies.length === 0) return msg.timestamp;
+  const lastReply = replies[replies.length - 1];
+  return new Date(lastReply.timestamp) > new Date(msg.timestamp) ? lastReply.timestamp : msg.timestamp;
+}
+
+function previewText(msg) {
+  const replies = msg.replies || [];
+  if (replies.length > 0) return replies[replies.length - 1].text;
+  if (msg.body) return msg.body;
+  return 'No messages yet';
+}
+
+const PRIORITY_RANK = { urgent: 0, high: 1, normal: 2, low: 3 };
+
+function render() {
+  const allMessages = loadMessages().slice().sort(function (a, b) {
+    const rankA = PRIORITY_RANK.hasOwnProperty(a.priority) ? PRIORITY_RANK[a.priority] : 2;
+    const rankB = PRIORITY_RANK.hasOwnProperty(b.priority) ? PRIORITY_RANK[b.priority] : 2;
+    if (rankA !== rankB) return rankA - rankB;
+    return new Date(lastActivityTimestamp(b)) - new Date(lastActivityTimestamp(a));
+  });
+  const list = document.getElementById('messages-list');
+  const emptyState = document.getElementById('empty-state');
+  const filterEmptyState = document.getElementById('filter-empty-state');
+
+  list.innerHTML = '';
+
+  if (allMessages.length === 0) {
+    list.classList.add('d-none');
+    filterEmptyState.classList.add('d-none');
+    emptyState.classList.remove('d-none');
+    return;
+  }
+
+  emptyState.classList.add('d-none');
+
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
+  const readFilter = document.getElementById('read-filter').value;
+  const statusFilter = document.getElementById('status-filter').value;
+  const priorityFilter = document.getElementById('priority-filter').value;
+
+  const messages = allMessages.filter(function (msg) {
+    const matchesSearch = !search ||
+      (msg.senderName || '').toLowerCase().includes(search) ||
+      (msg.subject || '').toLowerCase().includes(search) ||
+      previewText(msg).toLowerCase().includes(search);
+    const matchesRead = readFilter === 'all' || !msg.read;
+    const matchesStatus = statusFilter === 'all' || (msg.status || 'open') === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || (msg.priority || 'normal') === priorityFilter;
+    return matchesSearch && matchesRead && matchesStatus && matchesPriority;
+  });
+
+  if (messages.length === 0) {
+    list.classList.add('d-none');
+    filterEmptyState.classList.remove('d-none');
+    return;
+  }
+
+  list.classList.remove('d-none');
+  filterEmptyState.classList.add('d-none');
+
+  list.innerHTML = messages.map(function (msg) {
+    const when = new Date(lastActivityTimestamp(msg));
+    const whenText = isNaN(when.getTime()) ? msg.timestamp : when.toLocaleString();
+
+    return (
+      '<div class="account-row-link message-row" data-message-id="' + msg.id + '" style="cursor:pointer;">' +
+        '<div class="account-row d-flex align-items-center gap-3 flex-wrap' + (msg.read ? '' : ' message-unread') + '">' +
+          '<div class="row-avatar g' + ((msg.id % 5) + 1) + '">' + initials(msg.senderName) + '</div>' +
+          '<div class="flex-grow-1" style="min-width: 200px;">' +
+            '<div class="d-flex align-items-center gap-2 flex-wrap">' +
+              (msg.read ? '' : '<span class="message-unread-dot"></span>') +
+              '<strong>' + escapeHtml(msg.senderName) + '</strong>' +
+              '<span class="tier-tag tier-friend">' + escapeHtml(accountTypeLabel(msg.accountType)) + '</span>' +
+              '<span class="ticket-status-badge status-' + (msg.status || 'open') + '">' + escapeHtml(statusLabel(msg.status)) + '</span>' +
+              '<span class="ticket-priority-badge priority-' + (msg.priority || 'normal') + '">' + escapeHtml(msg.priority || 'normal') + '</span>' +
+            '</div>' +
+            '<div class="small text-muted text-truncate" style="max-width: 320px;">' + escapeHtml(previewText(msg)) + '</div>' +
+          '</div>' +
+          '<div class="text-end small text-muted" style="min-width: 140px;">' +
+            whenText +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+function buildModalBody(msg) {
+  const when = new Date(msg.timestamp);
+  const whenText = isNaN(when.getTime()) ? msg.timestamp : when.toLocaleString();
+
+  const repliesList = (msg.replies || []).map(function (r) {
+    const replyWhen = new Date(r.timestamp);
+    const replyWhenText = isNaN(replyWhen.getTime()) ? r.timestamp : replyWhen.toLocaleString();
+    const label = r.auto ? 'Auto-reply' : (r.sender === msg.accountType ? accountTypeLabel(msg.accountType) + ' reply' : 'Admin reply');
+    return (
+      '<div class="profile-post">' +
+        '<span class="profile-post-date">' + label + ' &mdash; ' + escapeHtml(replyWhenText) + '</span>' +
+        '<p class="small mb-0 mt-1">' + escapeHtml(r.text) + '</p>' +
+      '</div>'
+    );
+  }).join('');
+
+  return (
+    '<div class="d-flex justify-content-between align-items-start mb-1">' +
+      '<p class="small text-muted mb-0">' + (msg.fromAdmin ? 'You messaged ' : 'From ') + '<strong class="text-body">' + escapeHtml(msg.senderName) + '</strong> (' + escapeHtml(accountTypeLabel(msg.accountType)) + ') &mdash; ' + escapeHtml(whenText) + '</p>' +
+      '<button type="button" class="btn btn-admin-danger btn-sm" id="delete-message-btn">Delete conversation</button>' +
+    '</div>' +
+    '<p class="small mb-3"><a href="' + profileUrlFor(msg) + '">View account profile</a></p>' +
+    '<div class="d-flex gap-3 align-items-center mb-3">' +
+      '<div>' +
+        '<label class="form-label small mb-1" for="ticket-status-select">Status</label>' +
+        '<select class="form-select form-select-sm" id="ticket-status-select">' +
+          ['open', 'in-progress', 'resolved', 'closed'].map(function (s) {
+            return '<option value="' + s + '"' + ((msg.status || 'open') === s ? ' selected' : '') + '>' + statusLabel(s) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>' +
+      '<div>' +
+        '<label class="form-label small mb-1" for="ticket-priority-select">Priority</label>' +
+        '<select class="form-select form-select-sm" id="ticket-priority-select">' +
+          ['low', 'normal', 'high', 'urgent'].map(function (p) {
+            return '<option value="' + p + '"' + ((msg.priority || 'normal') === p ? ' selected' : '') + '>' + p.charAt(0).toUpperCase() + p.slice(1) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>' +
+      '<span class="small text-muted mt-4" id="ticket-status-save-status"></span>' +
+    '</div>' +
+    (msg.body ? '<div class="profile-info-note mb-3">' + escapeHtml(msg.body) + '</div>' : '<p class="text-muted small mb-3">No messages yet &mdash; start the conversation below.</p>') +
+    (repliesList ? '<h3 class="h6">Replies</h3>' + repliesList : '') +
+    '<h3 class="h6 mt-3">Reply</h3>' +
+    '<textarea class="form-control small" id="reply-textarea" rows="3" placeholder="Type your reply..."></textarea>' +
+    '<div class="d-flex align-items-center gap-2 mt-2">' +
+      '<button type="button" class="btn btn-admin-primary btn-sm" id="send-reply-btn">Send reply</button>' +
+      '<span class="small text-muted" id="reply-status"></span>' +
+    '</div>'
+  );
+}
+
+const AUTO_REPLY_TEXT = "Thank you for reaching out. Our admin team has received your message and will respond within 1-2 business days.";
+
+function openMessage(id) {
+  const messages = loadMessages();
+  const msg = messages.find(function (m) { return m.id === id; });
+  if (!msg) return;
+
+  let changed = false;
+
+  if (!msg.read) {
+    msg.read = true;
+    changed = true;
+  }
+
+  if (!msg.fromAdmin && !msg.autoReplied && (msg.replies || []).length === 0) {
+    msg.replies = msg.replies || [];
+    msg.replies.push({ text: AUTO_REPLY_TEXT, timestamp: new Date().toISOString(), auto: true });
+    msg.autoReplied = true;
+    changed = true;
+  }
+
+  activeMessageId = id;
+  document.getElementById('message-modal-title').textContent = msg.subject;
+  document.getElementById('message-modal-body').innerHTML = buildModalBody(msg);
+  messageModal.show();
+
+  if (changed) {
+    saveMessage(msg).then(render);
+  }
+}
+
+document.getElementById('messages-list').addEventListener('click', function (e) {
+  const row = e.target.closest('.message-row');
+  if (!row) return;
+  openMessage(Number(row.dataset.messageId));
+});
+
+document.getElementById('message-modal-body').addEventListener('change', function (e) {
+  if (e.target.id !== 'ticket-status-select' && e.target.id !== 'ticket-priority-select') return;
+  if (activeMessageId === null) return;
+
+  const messages = loadMessages();
+  const msg = messages.find(function (m) { return m.id === activeMessageId; });
+  if (!msg) return;
+
+  msg.status = document.getElementById('ticket-status-select').value;
+  msg.priority = document.getElementById('ticket-priority-select').value;
+
+  const statusEl = document.getElementById('ticket-status-save-status');
+  saveMessage(msg).then(function () {
+    render();
+    if (statusEl) {
+      statusEl.textContent = 'Saved.';
+      setTimeout(function () { statusEl.textContent = ''; }, 2000);
+    }
+  });
+});
+
+document.getElementById('message-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'delete-message-btn') return;
+  if (activeMessageId === null) return;
+  if (!confirm('Delete this conversation? This cannot be undone.')) return;
+
+  const idToDelete = activeMessageId;
+  apiRequest('/messages/' + idToDelete, { method: 'DELETE' })
+    .then(function () {
+      messagesCache = messagesCache.filter(function (m) { return m.id !== idToDelete; });
+      activeMessageId = null;
+      messageModal.hide();
+      render();
+    })
+    .catch(function (err) {
+      alert('Could not delete: ' + err.message);
+    });
+});
+
+document.getElementById('message-modal-body').addEventListener('click', function (e) {
+  if (e.target.id !== 'send-reply-btn') return;
+  if (activeMessageId === null) return;
+
+  const textarea = document.getElementById('reply-textarea');
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  const messages = loadMessages();
+  const msg = messages.find(function (m) { return m.id === activeMessageId; });
+  if (!msg) return;
+
+  msg.replies = msg.replies || [];
+  msg.replies.push({ text: text, timestamp: new Date().toISOString(), sender: 'admin' });
+
+  document.getElementById('message-modal-body').innerHTML = buildModalBody(msg);
+  saveMessage(msg).then(render);
+
+  const statusEl = document.getElementById('reply-status');
+  if (statusEl) {
+    statusEl.textContent = '(Simulated) Reply sent.';
+  }
+});
+
+function seedSampleData() {
+  Promise.all([apiRequest('/orphanages'), apiRequest('/donors'), apiRequest('/partners')])
+    .then(function (results) {
+      const orphanage = results[0].orphanages[0];
+      const donor = results[1].donors[0];
+      const partner = results[2].partners[0];
+
+      const sampleMessages = [];
+
+      if (orphanage) {
+        sampleMessages.push({
+          senderName: orphanage.name,
+          accountType: 'orphanage',
+          accountId: orphanage.id,
+          subject: 'Question about need approval',
+          body: "Hello, we submitted a new need for school fees last week but haven't heard back. Could someone confirm it's under review?",
+          timestamp: '2026-09-02T09:15:00.000Z',
+          read: false,
+          replies: [],
+        });
+      }
+
+      if (donor) {
+        sampleMessages.push({
+          senderName: donor.name,
+          accountType: 'donor',
+          accountId: donor.id,
+          subject: "Donation receipt didn't arrive",
+          body: 'Hi, I made a donation last week but never received a receipt by email. Could you check on this for me?',
+          timestamp: '2026-09-03T14:40:00.000Z',
+          read: false,
+          replies: [],
+        });
+      }
+
+      if (partner) {
+        sampleMessages.push({
+          senderName: partner.name,
+          accountType: 'partner',
+          accountId: partner.id,
+          subject: 'Update on placement case documentation',
+          body: 'We wanted to let you know additional documentation for the case submitted in August has been prepared and can be sent over if needed.',
+          timestamp: '2026-08-25T11:00:00.000Z',
+          read: true,
+          replies: [
+            { text: 'Thank you, please go ahead and send the additional documentation whenever ready.', timestamp: '2026-08-25T15:30:00.000Z' },
+          ],
+        });
+      }
+
+      if (sampleMessages.length === 0) {
+        alert('Load sample data on Orphanages, Donors, or Partner Orgs first, then load sample messages.');
+        return Promise.resolve();
+      }
+
+      return Promise.all(sampleMessages.map(function (m) {
+        return apiRequest('/messages', { method: 'POST', body: m });
+      }));
+    })
+    .then(fetchMessagesFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not load sample data: ' + err.message);
+    });
+}
+
+function clearAllData() {
+  if (!confirm('Clear all messages? This cannot be undone.')) return;
+
+  Promise.all(messagesCache.map(function (m) {
+    return apiRequest('/messages/' + m.id, { method: 'DELETE' });
+  }))
+    .then(fetchMessagesFromApi)
+    .then(render)
+    .catch(function (err) {
+      alert('Could not clear data: ' + err.message);
+    });
+}
+
+document.getElementById('seed-btn').addEventListener('click', seedSampleData);
+document.getElementById('clear-btn').addEventListener('click', clearAllData);
+document.getElementById('search-input').addEventListener('input', render);
+document.getElementById('read-filter').addEventListener('change', render);
+document.getElementById('status-filter').addEventListener('change', render);
+document.getElementById('priority-filter').addEventListener('change', render);
+
+fetchMessagesFromApi()
+  .then(function () {
+    render();
+
+    const deepLinkId = new URLSearchParams(window.location.search).get('id');
+    if (deepLinkId !== null) {
+      openMessage(Number(deepLinkId));
+    }
+  })
+  .catch(function (err) {
+    document.getElementById('empty-state').textContent = 'Could not load messages from the server: ' + err.message;
+    document.getElementById('empty-state').classList.remove('d-none');
+  });

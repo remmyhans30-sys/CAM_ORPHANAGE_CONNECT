@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donor Profile - CAM Orphanage Connect Admin</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container py-5">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+      <div>
+        <a href="donors.html" class="text-decoration-none d-block mb-2" style="color: var(--dawn-purple);">&larr; Back to donors</a>
+        <span class="admin-badge">Donors</span>
+        <h1 class="h3 mb-1">Donor Profile</h1>
+        <p class="text-muted mb-0">Review a donor's account, giving history, and support activity.</p>
+      </div>
+      <div class="d-flex gap-2 align-self-start">
+        <a href="dashboard.html" class="btn btn-admin-outline">Dashboard</a>
+        <a href="reports.html" class="btn btn-admin-outline">Reports</a>
+        <a href="messages.html" class="btn btn-admin-outline">Inbox</a>
+      </div>
+    </div>
+
+    <div id="empty-state" class="card card-admin p-5 text-center text-muted d-none">
+      No donor found. Go to the <a href="donors.html">donors list</a> and click "Review profile" on one.
+    </div>
+
+    <div id="donor-content" class="d-none">
+      <div class="card card-admin p-4 p-md-5 mb-4" id="donor-header-card"></div>
+      <div id="duplicate-risk-box" class="mb-4"></div>
+      <div class="row g-3 mb-4" id="donor-stats-strip"></div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 mb-0">Donation history</h2>
+          <button type="button" class="btn btn-admin-outline btn-sm" id="add-donation-btn">+ Add donation</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Orphanage</th>
+                <th>Need</th>
+                <th>Type</th>
+                <th>Amount / Item</th>
+                <th>Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="donation-history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Password reset requests</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date requested</th>
+                <th>Method</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="password-resets-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Failed payment attempts</h2>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody id="failed-payments-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <div class="card card-admin p-4 p-md-5 h-100">
+            <h2 class="h6 mb-3">Support tickets</h2>
+            <div id="support-tickets-list"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-admin p-4 p-md-5 h-100">
+            <h2 class="h6 mb-3">Referrals</h2>
+            <div id="referrals-panel"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6 d-flex flex-column gap-4">
+          <div class="card card-admin p-4 p-md-5">
+            <h2 class="h6 mb-3">Homes followed / supporter tiers</h2>
+            <div id="homes-followed-list"></div>
+          </div>
+          <div class="card card-admin p-4 p-md-5">
+            <h2 class="h6 mb-3">Groups joined</h2>
+            <div id="groups-joined-list"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-admin p-4 p-md-5">
+            <div id="trust-alert-box" class="mb-3"></div>
+            <h2 class="h6 mb-1">Admin notes</h2>
+            <p class="text-muted small mb-3">Private &mdash; never shown to the donor.</p>
+            <textarea class="form-control small" id="admin-notes-textarea" rows="3" placeholder="Add a private note about this donor..."></textarea>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <button type="button" class="btn btn-admin-outline btn-sm" id="save-notes-btn">Save note</button>
+              <span class="small text-muted" id="notes-save-status"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <h2 class="h6 mb-3">Activity log</h2>
+        <div id="activity-log-panel"></div>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 mb-0">Edit details</h2>
+          <span class="small text-muted" id="edit-save-status"></span>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="edit-name-input">Name</label>
+            <input type="text" class="form-control form-control-sm" id="edit-name-input">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="edit-email-input">Email</label>
+            <input type="email" class="form-control form-control-sm" id="edit-email-input">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="edit-location-input">Location</label>
+            <input type="text" class="form-control form-control-sm" id="edit-location-input">
+          </div>
+        </div>
+        <button type="button" class="btn btn-admin-outline btn-sm mt-3" id="save-edit-btn">Save details</button>
+      </div>
+
+      <div class="card card-admin p-4 p-md-5 mb-4" style="border: 1px solid var(--coral);">
+        <h2 class="h6 mb-2">Danger zone</h2>
+        <p class="text-muted small mb-3">Permanently delete this donor account and all of its records. This cannot be undone.</p>
+        <button type="button" class="btn btn-admin-danger btn-sm" id="delete-donor-btn">Delete donor account</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="add-donation-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="border-radius: 20px; border: none;">
+        <div class="modal-header">
+          <h2 class="h5 mb-0">Add Donation</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-donation-form" novalidate>
+            <div class="mb-3">
+              <label class="form-label" for="donation-type">Donation type</label>
+              <select class="form-select" id="donation-type">
+                <option value="money">Money</option>
+                <option value="item">Item</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="donation-orphanage">Orphanage</label>
+              <select class="form-select" id="donation-orphanage" required>
+                <option value="" disabled selected>Select an orphanage&hellip;</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="donation-need">Need (optional)</label>
+              <input type="text" class="form-control" id="donation-need" placeholder="e.g. New dormitory beds">
+            </div>
+
+            <div id="donation-money-fields">
+              <div class="mb-3">
+                <label class="form-label" for="donation-amount">Amount</label>
+                <input type="number" class="form-control" id="donation-amount" min="0" step="1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-method">Payment method</label>
+                <input type="text" class="form-control" id="donation-method" placeholder="e.g. MTN Mobile Money, Bank transfer">
+              </div>
+            </div>
+
+            <div id="donation-item-fields" class="d-none">
+              <div class="mb-3">
+                <label class="form-label" for="donation-item-description">Item description</label>
+                <input type="text" class="form-control" id="donation-item-description" placeholder="e.g. 50 blankets, 20 pairs of shoes">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-quantity">Quantity</label>
+                <input type="text" class="form-control" id="donation-quantity" placeholder="e.g. 50 blankets">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-item-value">Estimated value (optional)</label>
+                <input type="number" class="form-control" id="donation-item-value" min="0" step="1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="donation-delivery-method">Delivery method</label>
+                <input type="text" class="form-control" id="donation-delivery-method" placeholder="e.g. In-person drop-off, Courier">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="donation-date">Date</label>
+              <input type="date" class="form-control" id="donation-date">
+            </div>
+            <button type="submit" class="btn btn-admin-primary w-100">Save donation</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="api.js"></script>
+  <script src="donor-profile.js"></script>
+</body>
+</html>

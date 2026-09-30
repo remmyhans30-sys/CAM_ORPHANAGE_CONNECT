@@ -1,4 +1,20 @@
-const API_BASE = 'http://localhost:4000/api';
+const rememberedEmail = localStorage.getItem('rememberedAdminEmail');
+if (rememberedEmail) {
+  document.getElementById('admin-email').value = rememberedEmail;
+  document.getElementById('remember-me').checked = true;
+}
+
+document.getElementById('toggle-password-btn').addEventListener('click', function () {
+  const passwordInput = document.getElementById('admin-password');
+  const isHidden = passwordInput.type === 'password';
+  passwordInput.type = isHidden ? 'text' : 'password';
+  this.textContent = isHidden ? 'Hide' : 'Show';
+});
+
+document.getElementById('forgot-password-link').addEventListener('click', function (e) {
+  e.preventDefault();
+  alert('Please contact your system administrator to reset your password. Self-service password reset is not available yet.');
+});
 
 document.getElementById('admin-login-form').addEventListener('submit', function (e) {
   e.preventDefault();
@@ -7,7 +23,6 @@ document.getElementById('admin-login-form').addEventListener('submit', function 
   const password = document.getElementById('admin-password').value;
   const rememberMe = document.getElementById('remember-me').checked;
   const errorBox = document.getElementById('login-error');
-  const submitBtn = e.target.querySelector('button[type="submit"]');
 
   if (!email || !password) {
     errorBox.textContent = 'Please enter both email and password.';
@@ -15,31 +30,37 @@ document.getElementById('admin-login-form').addEventListener('submit', function 
     return;
   }
 
-  errorBox.classList.add('d-none');
-  submitBtn.disabled = true;
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    errorBox.textContent = 'Please enter a valid email address.';
+    errorBox.classList.remove('d-none');
+    return;
+  }
 
-  fetch(API_BASE + '/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
-    .then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok) throw new Error(data.error || 'Invalid email or password.');
-        return data;
-      });
-    })
+  errorBox.classList.add('d-none');
+
+  const submitBtn = this.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Signing in...';
+
+  apiRequest('/auth/login', { method: 'POST', body: { email: email, password: password } })
     .then(function (data) {
-      const store = rememberMe ? window.localStorage : window.sessionStorage;
-      store.setItem('cocAdminToken', data.token);
-      store.setItem('cocAdminUser', JSON.stringify(data.admin));
+      localStorage.setItem('adminToken', data.token);
+      localStorage.setItem('currentAdminEmail', data.admin.email);
+      localStorage.setItem('currentAdminRole', data.admin.role);
+      localStorage.setItem('currentAdminDisplayName', data.admin.name);
+
+      if (rememberMe) {
+        localStorage.setItem('rememberedAdminEmail', email);
+      } else {
+        localStorage.removeItem('rememberedAdminEmail');
+      }
+
       window.location.href = 'dashboard.html';
     })
     .catch(function (err) {
-      errorBox.textContent = err.message === 'Failed to fetch'
-        ? "Can't reach the server. Make sure the backend is running (see server/README.md)."
-        : err.message;
+      errorBox.textContent = err.message || 'Could not reach the server. Is the backend running?';
       errorBox.classList.remove('d-none');
       submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign in';
     });
 });
