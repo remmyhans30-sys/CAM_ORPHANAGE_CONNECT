@@ -204,3 +204,23 @@ button { font-family: inherit }
     .stat-grid { grid-template-columns: repeat(2, 1fr) }
     .field-row, .needs-grid { grid-template-columns: 1fr }
 }
+
+/* Live data states */
+.verify-badge.needs-info { background-color: rgba(245, 166, 35, 0.25); color: #92400E }
+.verify-badge.rejected { background-color: rgba(229, 72, 77, 0.15); color: var(--coral) }
+.info-note.rejected { background-color: rgba(229, 72, 77, 0.1); color: var(--coral) }
+
+.form-error {
+    display: none;
+    background-color: rgba(229, 72, 77, 0.1);
+    color: var(--coral);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+    margin: 0 0 1rem;
+}
+.form-error.show { display: block }
+
+.empty-state { grid-column: 1 / -1; text-align: center; padding: 2rem 1rem; font-size: 0.9rem; color: var(--ink); opacity: 0.6 }
+.empty-cell { text-align: center; padding: 1.5rem; opacity: 0.6 }
+.need-actions button:disabled { opacity: 0.4; cursor: not-allowed }
