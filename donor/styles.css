@@ -288,3 +288,32 @@ a {
   padding: 1.5rem 0;
   font-size: 0.9rem;
 }
+
+/* Orphanage without a photo: initials on a soft background */
+.card-orphanage .orphanage-media-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--section-bg);
+  color: var(--dawn-purple);
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.orphanage-story {
+  font-size: 0.9rem;
+  color: var(--ink);
+  opacity: 0.8;
+  margin-bottom: 1rem;
+}
+
+.need-description {
+  font-size: 0.85rem;
+  color: var(--ink);
+  opacity: 0.65;
+  margin: -0.25rem 0 0.5rem;
+}

@@ -30,7 +30,7 @@
                     <button type="button" class="portal-nav-link active" data-view="overview"><i class="bi bi-grid-1x2"></i> Overview</button>
                     <button type="button" class="portal-nav-link" data-view="profile"><i class="bi bi-person-circle"></i> Profile</button>
                     <button type="button" class="portal-nav-link" data-view="needs"><i class="bi bi-clipboard2-pulse"></i> Manage Needs</button>
-                    <button type="button" class="portal-nav-link" data-view="donations"><i class="bi bi-cash-coin"></i> Donations Received</button>
+                    <button type="button" class="portal-nav-link" data-view="donations"><i class="bi bi-cash-coin"></i> Pledges Received</button>
                     <a class="portal-nav-link logout-link" id="logout-link" href="../login/index.html"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </nav>
             </aside>
@@ -148,14 +148,14 @@
                 <!-- Donations -->
                 <section class="portal-view" id="view-donations">
                     <div class="panel">
-                        <h2>Donations Received</h2>
-                        <p class="panel-desc">Recent donations from supporters toward your needs.</p>
+                        <h2>Pledges Received</h2>
+                        <p class="panel-desc">Donors' pledges toward your needs. A pledge is a promise to give; no money moves through this site.</p>
                         <table class="donations-table">
                             <thead>
                                 <tr><th>Date</th><th>Donor</th><th>Need</th><th>Amount</th><th>Status</th></tr>
                             </thead>
-                            <tbody>
-                                <tr><td colspan="5" class="empty-cell">No donations yet. They will appear here once donors start giving to your needs.</td></tr>
+                            <tbody id="pledges-body">
+                                <tr><td colspan="5" class="empty-cell">No pledges yet. They will appear here once donors pledge to your needs.</td></tr>
                             </tbody>
                         </table>
                     </div>

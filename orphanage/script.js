@@ -343,6 +343,31 @@ async function removeNeed(need) {
     }
 }
 
+// Pledges received
+function formatDate(value) {
+    const date = new Date(String(value).replace(' ', 'T') + 'Z');
+    return isNaN(date) ? value : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function renderPledges(pledges) {
+    const body = document.getElementById('pledges-body');
+    if (pledges.length === 0) return;
+
+    body.innerHTML = '';
+    pledges.forEach(function (pledge) {
+        const row = document.createElement('tr');
+        [formatDate(pledge.createdAt), pledge.donorName, pledge.needTitle, formatFcfa(pledge.amount)].forEach(function (text) {
+            const cell = document.createElement('td');
+            cell.textContent = text;
+            row.appendChild(cell);
+        });
+        const status = document.createElement('td');
+        status.innerHTML = '<span class="donation-status completed">Pledged</span>';
+        row.appendChild(status);
+        body.appendChild(row);
+    });
+}
+
 // Initial load
 async function loadPortal() {
     try {
@@ -353,6 +378,8 @@ async function loadPortal() {
         renderStats();
         fillProfileForm();
         renderNeeds();
+        const pledgeData = await api('/pledges');
+        renderPledges(pledgeData.pledges);
     } catch (err) {
         showError(portalError, err.message);
         document.getElementById('status-note-text').textContent = 'Your profile could not be loaded.';
