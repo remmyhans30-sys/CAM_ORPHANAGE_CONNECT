@@ -133,6 +133,21 @@ h1, h2, h3, .brand-heading {
 }
 .form-error.show { display: block }
 
+.form-success {
+    display: none;
+    background-color: rgba(46, 139, 87, 0.1);
+    color: var(--dawn-purple);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+    margin: 0 0 1rem;
+}
+.form-success.show { display: block }
+
+.role-label { font-weight: 500; font-size: 0.9rem; margin: 0.25rem 0 0 }
+.role-choice i { font-size: 0.95rem }
+.role-option { margin-bottom: 1.25rem }
+
 /* Role picker (register.html) */
 .role-option { display: flex; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap }
 .role-choice {
