@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incoming Donations &amp; Visit Requests - CAM Orphanage Connect</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="admin-topbar">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <a class="brand-heading" href="index.html">CAM Orphanage Connect</a>
+      <span class="admin-badge mb-0">Admin</span>
+    </div>
+    <div class="container mt-3">
+      <h1 class="h3">Incoming Donations &amp; Visit Requests</h1>
+      <p class="text-muted mb-0">Review donations coming in and respond to visit requests from donors.</p>
+    </div>
+  </header>
+
+  <main class="container admin-page">
+
+    <ul class="nav admin-tabs nav-tabs" id="incomingTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="donations-tab" data-bs-toggle="tab" data-bs-target="#donationsPane" type="button" role="tab">Incoming Donations</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="visits-tab" data-bs-toggle="tab" data-bs-target="#visitsPane" type="button" role="tab">Visit Requests</button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+
+      <!-- Incoming donations -->
+      <div class="tab-pane fade show active" id="donationsPane" role="tabpanel">
+
+        <div class="row g-3 g-md-4 mb-4" id="donationTiles"></div>
+
+        <div class="admin-toolbar d-flex flex-wrap gap-2 align-items-center">
+          <input type="search" id="donationSearch" class="form-control" style="max-width:240px" placeholder="Search donor or need…">
+          <select id="donationOrphanageFilter" class="form-select" style="max-width:220px">
+            <option value="">All orphanages</option>
+          </select>
+        </div>
+
+        <div class="card card-admin">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-admin align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Donor</th>
+                    <th scope="col">Orphanage</th>
+                    <th scope="col">Need</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="donationsBody"></tbody>
+              </table>
+            </div>
+            <p id="donationsEmpty" class="admin-empty d-none mb-0">No donations match your search.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visit requests -->
+      <div class="tab-pane fade" id="visitsPane" role="tabpanel">
+
+        <div class="admin-toolbar d-flex flex-wrap gap-2 align-items-center">
+          <select id="visitStatusFilter" class="form-select" style="max-width:200px">
+            <option value="">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Declined">Declined</option>
+          </select>
+        </div>
+
+        <div class="card card-admin">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-admin align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Requester</th>
+                    <th scope="col">Orphanage</th>
+                    <th scope="col">Requested date</th>
+                    <th scope="col">Message</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="visitsBody"></tbody>
+              </table>
+            </div>
+            <p id="visitsEmpty" class="admin-empty d-none mb-0">No visit requests match your filter.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../shared/data.js"></script>
+  <script src="incoming.js"></script>
+</body>
+</html>
