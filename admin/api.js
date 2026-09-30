@@ -11,6 +11,9 @@ function apiRequest(path, options) {
     method: options.method || 'GET',
     headers: headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
+  }).catch(function () {
+    // The browser only says "Failed to fetch" when the server can't be reached at all.
+    throw new Error("Can't reach the server. If you're running the site on your own computer, start it with start.bat and keep its window open.");
   }).then(function (response) {
     if (response.status === 401 && path !== '/auth/login') {
       localStorage.removeItem('currentAdminEmail');
