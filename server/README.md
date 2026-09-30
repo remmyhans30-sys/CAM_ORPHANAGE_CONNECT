@@ -61,6 +61,18 @@ Authorization: Bearer <token>
 | PUT    | /api/orphanages/:id   | Update an orphanage (partial fields)  |
 | DELETE | /api/orphanages/:id   | Delete an orphanage                   |
 
+### Public accounts (login pages)
+
+Donor and orphanage accounts used by `login/`. These tokens are separate from
+admin tokens and do not work on the admin routes above.
+
+| Method | Path                       | Description                                   |
+|--------|----------------------------|-----------------------------------------------|
+| POST   | /api/users/register        | `{ fullname, email, password, role }` -> `{ token, user }` |
+| POST   | /api/users/login           | `{ email, password }` -> `{ token, user }`    |
+| POST   | /api/users/forgot-password | `{ email }` -> generic message (no email sent yet) |
+| GET    | /api/users/me              | Current user from the token (`Bearer` header) |
+
 Orphanage JSON fields match the shape already used by `admin/verification.js`
 (`name`, `location`, `story`, `status`, `contactPhone`, `documents`, `activityLog`,
 etc.) so wiring the frontend to this API later is a drop-in swap for the
