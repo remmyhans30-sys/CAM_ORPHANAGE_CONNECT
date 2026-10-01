@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - CAM Orphanage Connect</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="admin-topbar">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <a class="brand-heading" href="dashboard.html">CAM Orphanage Connect</a>
+      <span class="admin-badge mb-0">Admin</span>
+    </div>
+    <div class="container mt-3">
+      <h1 class="h3">Dashboard</h1>
+      <p class="text-muted mb-0">An overview of orphanages, children, needs, and donor activity.</p>
+    </div>
+  </header>
+
+  <main class="container admin-page">
+
+    <div class="row g-3 g-md-4 mb-4" id="dashboardTiles"></div>
+
+    <h2 class="h5 mb-3">Manage</h2>
+    <div class="row g-3 g-md-4">
+      <div class="col-md-4">
+        <a class="card card-admin dashboard-link-card" href="manage-children.html">
+          <div class="card-body">
+            <h3 class="h6 mb-1">Manage Children</h3>
+            <p class="text-muted mb-0 small">Add, edit, and remove child profiles across all orphanages.</p>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a class="card card-admin dashboard-link-card" href="manage-needs.html">
+          <div class="card-body">
+            <h3 class="h6 mb-1">Manage Needs</h3>
+            <p class="text-muted mb-0 small">Add, edit, and remove funding needs for each orphanage.</p>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a class="card card-admin dashboard-link-card" href="incoming.html">
+          <div class="card-body">
+            <h3 class="h6 mb-1">Incoming Donations &amp; Visit Requests</h3>
+            <p class="text-muted mb-0 small">Review donations and respond to visit requests from donors.</p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../shared/data.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
