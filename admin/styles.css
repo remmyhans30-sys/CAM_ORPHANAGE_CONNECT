@@ -139,6 +139,19 @@ h1, h2, h3, h4, h5, h6,
   background-color: #fff;
 }
 
+.admin-logout-link {
+  text-decoration: none;
+  color: var(--ink);
+  opacity: 0.65;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.admin-logout-link:hover {
+  opacity: 1;
+  color: var(--coral);
+}
+
 .admin-topbar .text-muted {
   color: var(--ink) !important;
   opacity: 0.65;
