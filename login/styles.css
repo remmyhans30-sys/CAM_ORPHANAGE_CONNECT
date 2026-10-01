@@ -56,6 +56,25 @@ body {
 }
 .input-group input:focus{ outline:none; border-color:var(--green); box-shadow:0 6px 18px rgba(46,139,87,0.08) }
 
+.auth-alert{
+    margin-bottom:16px;
+    padding:10px 14px;
+    border-radius:10px;
+    font-size:0.88rem;
+    text-align:left;
+}
+.auth-alert.is-hidden{ display:none }
+.auth-alert-error{
+    background:rgba(214,69,69,0.1);
+    color:#b23b3b;
+    border:1px solid rgba(214,69,69,0.25);
+}
+.auth-alert-success{
+    background:rgba(46,139,87,0.1);
+    color:var(--green-dark);
+    border:1px solid rgba(46,139,87,0.25);
+}
+
 .form-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px }
 .checkbox{ display:flex; align-items:center; gap:8px; color:var(--muted); font-size:0.9rem }
 .checkbox input{ width:16px; height:16px }

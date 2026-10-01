@@ -29,6 +29,7 @@
                     <p class="subtitle">Welcome back — sign in to continue</p>
                 </div>
                 <form class="login-form" novalidate>
+                    <div class="auth-alert auth-alert-error is-hidden" id="loginError" role="alert"></div>
                     <div class="input-group">
                         <label for="email">Email</label>
                         <input type="email" id="email" name="email" placeholder="you@domain.com" required>
@@ -38,7 +39,7 @@
                         <input type="password" id="password" name="password" placeholder="Enter your password" required>
                     </div>
                     <div class="form-row">
-                        <label class="checkbox"> Remember me</label> 
+                        <label class="checkbox"><input type="checkbox" id="rememberMe"> Remember me</label>
                         <a href="forgot-password.html" class="forgot">Forgot?</a>
                     </div>
                     <button type="submit" class="btn-primary">Sign in</button>
@@ -49,5 +50,6 @@
                 <p class="footer-note">Questions? <a href="#">Contact us</a></p>
             </div>
         </div>
+        <script src="login.js"></script>
     </body>
 </html>
