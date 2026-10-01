@@ -28,6 +28,12 @@
     return amount.toLocaleString('en-US') + ' XAF';
   }
 
+  // Shared data's image paths are authored relative to a one-level-deep
+  // page (e.g. donor/index.html); this page lives at the repo root instead.
+  function resolveImagePath(path) {
+    return path.replace(/^\.\.\//, '');
+  }
+
   function needPercent(need) {
     // Trust the shared `percent` field rather than recomputing it, so this
     // page never drifts from what other pages/teammates compute.
@@ -81,7 +87,7 @@
       '<div class="card card-orphanage">' +
         '<div class="row g-0">' +
           '<div class="col-md-3 d-none d-md-block">' +
-            '<img src="' + orphanage.image + '" alt="' + orphanage.name + '" class="orphanage-media">' +
+            '<img src="' + resolveImagePath(orphanage.image) + '" alt="' + orphanage.name + '" class="orphanage-media">' +
           '</div>' +
           '<div class="col-md-9">' +
             '<div class="card-body">' +
