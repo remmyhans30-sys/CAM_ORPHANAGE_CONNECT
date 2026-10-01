@@ -29,6 +29,7 @@
                     <p class="subtitle">Create an account to get started</p>
                 </div>
                 <form class="register-form" novalidate>
+                    <div class="auth-alert auth-alert-error is-hidden" id="registerError" role="alert"></div>
                     <div class="input-group">
                         <label for="fullname">Full Name</label>
                         <input type="text" id="fullname" name="fullname" placeholder="Enter your full name" required>
@@ -47,25 +48,26 @@
                     </div>
                     <div class="input-group">
                         <label>I am registering as:</label>
-                           <div class="role-option">
-                            <label class="role-choice"></label>
-                            <input type="radio" id="admin" name="role" value="admin" required>
-                            Admin
-                        </label>
-                        <label class="role-choice">
-                            <input type="radio" id="user" name="role" value="user" required>
-                            Donor
-                        </label>
-                        <label class="role-choice">
-                            <input type="radio" id="volunteer" name="role" value="volunteer" required>
-                            Orphanage
-                        </label>    
-                    </div>
+                        <div class="role-option">
+                            <label class="role-choice">
+                                <input type="radio" id="admin" name="role" value="admin" required>
+                                Admin
+                            </label>
+                            <label class="role-choice">
+                                <input type="radio" id="user" name="role" value="user" required>
+                                Donor
+                            </label>
+                            <label class="role-choice">
+                                <input type="radio" id="volunteer" name="role" value="volunteer" required>
+                                Orphanage
+                            </label>
+                        </div>
                     </div>
                     <button type="submit" class="btn-primary">Create Account</button>
                     <p class="back-link">Already have an account? <a href="index.html">login</a></p>
                 </form>
             </div>
         </div>
+        <script src="register.js"></script>
     </body>
 </html>

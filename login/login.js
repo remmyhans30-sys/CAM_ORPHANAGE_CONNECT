@@ -9,6 +9,7 @@
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const errorBox = document.getElementById('loginError');
+  const successBox = document.getElementById('loginSuccess');
 
   const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -19,6 +20,11 @@
 
   function hideError() {
     errorBox.classList.add('is-hidden');
+  }
+
+  if (new URLSearchParams(window.location.search).get('registered') === '1') {
+    successBox.textContent = 'Account created — please sign in.';
+    successBox.classList.remove('is-hidden');
   }
 
   form.addEventListener('submit', function (e) {
