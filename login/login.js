@@ -8,10 +8,18 @@
   const form = document.querySelector('.login-form');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
+  const rememberMeInput = document.getElementById('rememberMe');
   const errorBox = document.getElementById('loginError');
   const successBox = document.getElementById('loginSuccess');
 
   const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const REMEMBERED_EMAIL_KEY = 'camoc_remembered_email';
+
+  const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+  if (rememberedEmail) {
+    emailInput.value = rememberedEmail;
+    rememberMeInput.checked = true;
+  }
 
   function showError(message) {
     errorBox.textContent = message;
@@ -44,6 +52,13 @@
     }
 
     hideError();
+
+    if (rememberMeInput.checked) {
+      localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+    } else {
+      localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+    }
+
     window.location.href = '../donor/index.html';
   });
 })();
