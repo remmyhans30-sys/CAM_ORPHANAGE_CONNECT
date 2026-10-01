@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Static HTML/CSS/JS/Bootstrap site for CAM Orphanage Connect. These are dev-only tools for local previewing — the site itself ships no Node code and needs no build step.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/remmyhans30-sys/CAM_ORPHANAGE_CONNECT.git"
+  },
+  "keywords": ["orphanage", "donations", "cameroon", "static-site"],
   "scripts": {
     "start": "live-server --port=5500 --no-browser",
     "serve": "live-server --port=5500 --no-browser"
