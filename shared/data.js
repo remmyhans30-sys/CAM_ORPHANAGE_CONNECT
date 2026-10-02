@@ -10,7 +10,7 @@ const orphanages = [
     name: 'Hope House',
     location: 'Yaoundé',
     story: 'Hope House has cared for children in Yaoundé since 2010, focusing on education and family reunification.',
-    photo: 'images/hope-house.jpg',
+    photo: '../shared/images/hope-house.jpg',
     verificationStatus: 'verified',
     needs: [
       { title: 'School fees for 12 children', raised: 150000, goal: 300000, percent: 50 }
@@ -21,7 +21,7 @@ const orphanages = [
     name: 'Sunrise Home',
     location: 'Douala',
     story: 'Sunrise Home is a new shelter in Douala awaiting verification, serving 8 children aged 4-12.',
-    photo: 'images/sunrise-home.jpg',
+    photo: '../shared/images/sunrise-home.jpg',
     verificationStatus: 'pending',
     needs: [
       { title: 'Mattresses and bedding', raised: 20000, goal: 80000, percent: 25 }
@@ -32,7 +32,7 @@ const orphanages = [
     name: 'Grace Center',
     location: 'Bamenda',
     story: 'Grace Center has supported orphaned and vulnerable children in Bamenda for over 15 years.',
-    photo: 'images/grace-center.jpg',
+    photo: '../shared/images/grace-center.jpg',
     verificationStatus: 'verified',
     needs: [
       { title: 'Kitchen renovation', raised: 100000, goal: 100000, percent: 100 },
