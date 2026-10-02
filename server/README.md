@@ -136,6 +136,23 @@ Rules: both sides must be approved, orphanages can only start chats with verifie
 partners and donors who gave under their own name, text is limited to 2,000
 characters, and 15 messages per minute per person.
 
+### Stories, videos and social links
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /api/my-orphanage/posts | orphanage | The home's own posts, its social links and the limits |
+| POST | /api/my-orphanage/posts | verified orphanage | `{ type: 'story' or 'update' or 'gift', title, text, photo: { filename, data } }` |
+| POST | /api/my-orphanage/posts/:id/video | verified orphanage | The raw MP4 or WebM file as the body, with `Content-Type` and `X-Filename` headers |
+| DELETE | /api/my-orphanage/posts/:id/video, /posts/:id | orphanage | Remove a video, or a whole post with its files |
+| GET, PUT | /api/my-orphanage/social | orphanage | `{ links: { facebook, instagram, youtube, tiktok, x, whatsapp, website } }` (empty removes) |
+| GET | /api/browse/orphanages/:id/updates | approved donor | Posts and social links of a verified orphanage |
+| GET | /api/partner-auth/orphanages/:id/updates | verified partner | The same, for partners |
+| GET | /api/partner-auth/orphanages/:id | verified partner | One home's full profile (`partner/orphanage-view.html`), the same as donors get from `/api/browse/orphanages/:id` (built by `src/repo/profiles.js`) |
+| GET | /api/orphanages/:id/posts/:postId/video-link | admin | A short-lived link to watch a video |
+| GET | /api/files/video/:id?t=... | signed link | Plays a video (supports seeking). Without a valid signature it is refused |
+
+Video limits: `VIDEO_MAX_MB` (default 15, at most 20) per video and `ORPHANAGE_VIDEO_QUOTA_MB` (default 60) in total per orphanage.
+
 ### Visit requests and password reset
 
 | Method | Path | Auth | Description |
@@ -163,12 +180,18 @@ Email is sent with the `SMTP_*` settings in `.env` (see `.env.example`). Without
 | Method | Path                    | Auth        | Description                                             |
 |--------|-------------------------|-------------|---------------------------------------------------------|
 | GET    | /api/browse/orphanages  | approved donor | Verified orphanages and their open needs (donor page). Others get 401/403 with a `code` (`sign-in`, `pending`, `rejected`, `flagged`, `donors-only`) |
+| GET    | /api/browse/orphanages/:id | approved donor | One home's full profile (`donor/orphanage.html`): story, facts, registration number, contact person, verified date, open and fully pledged needs, and its record (`totalPledged`, `supporters`, `itemGifts`). Never its phone, email, payment account or documents |
 | POST   | /api/pledges            | approved donor | `{ needId, amount, anonymous }` — records a pledge and adds it to the need |
 | GET    | /api/pledges/mine       | donor token | The signed-in donor's pledges                           |
 
 Donors are `pending` until an admin sets their status to `active` (Donors page), and
 partners must be `verified`; partner routes for orphanages, donations and placement
 cases answer 403 `not-verified` until then.
+
+Donors and partners only ever see *listed* orphanages: verified and not flagged
+(`orphanages.listed()` / `getListed()`). A flagged home is left out of the lists, its
+profile and updates answer 404, and pledges, partner gifts, visit requests and new chats
+to it are refused until an admin removes the flag. Existing chats carry on.
 
 A pledge is a promise to give: no money is charged. Pledges start at 500 XAF and
 can't exceed what the need still requires.

@@ -281,7 +281,7 @@ function render() {
           '</h3>' +
           '<p class="profile-location">' + escapeHtml(orphanage.location) + '</p>' +
           (urgent ? '<p class="profile-urgent-badge"><i class="bi bi-stopwatch"></i> Urgent &mdash; pending ' + daysPending(orphanage) + ' days</p>' : '') +
-          (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '"><i class="bi bi-flag-fill"></i> Flagged for review</p>' : '') +
+          (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '"><i class="bi bi-flag-fill"></i> Flagged for review &middot; hidden from donors and partners</p>' : '') +
           (orphanage.status === 'needs-info' && orphanage.infoRequestMessage ? '<p class="profile-info-badge" title="' + escapeHtml(orphanage.infoRequestMessage) + '">Awaiting requested info</p>' : '') +
           (orphanage.status === 'rejected' && orphanage.rejectionReason ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.rejectionReason) + '">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</p>' : '') +
           (duplicateRisks[orphanage.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[orphanage.id].join(' | ')) + '"><i class="bi bi-exclamation-triangle-fill"></i> Duplicate contact/account risk</p>' : '') +
@@ -412,9 +412,13 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
         return (
           '<div class="profile-post">' +
             '<div class="d-flex justify-content-between align-items-start">' +
-              '<span class="profile-post-date">' + escapeHtml(post.date || '') + '</span>' +
-              '<button type="button" class="btn btn-admin-danger btn-sm remove-post-btn" data-post-index="' + post._idx + '">Remove post</button>' +
+              '<span class="profile-post-date">' + escapeHtml(post.date || '') + ' &middot; ' + escapeHtml({ story: 'Story', update: 'News', gift: 'Gift received' }[post.type] || 'Update') + '</span>' +
+              '<span class="d-flex gap-2">' +
+                (post.hasVideo ? '<button type="button" class="btn btn-admin-outline btn-sm watch-post-video-btn" data-post-id="' + post.id + '">Watch video</button>' : '') +
+                '<button type="button" class="btn btn-admin-danger btn-sm remove-post-btn" data-post-index="' + post._idx + '">Remove post</button>' +
+              '</span>' +
             '</div>' +
+            (post.title ? '<p class="small fw-semibold mb-1">' + escapeHtml(post.title) + '</p>' : '') +
             '<p class="small mb-1">' + escapeHtml(post.text || '') + '</p>' +
             (post.photoUrl ? '<img src="' + encodeURI(post.photoUrl) + '" alt="" class="profile-post-photo">' : '') +
           '</div>'
@@ -581,6 +585,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
           '<input class="form-check-input" type="checkbox" id="modal-flag-checkbox"' + (orphanage.flagged ? ' checked' : '') + '>' +
           '<label class="form-check-label small" for="modal-flag-checkbox">Flag this profile for further review</label>' +
         '</div>' +
+        '<p class="small text-muted mb-2">While flagged, the home is hidden from donors and partners: it is not listed, its profile does not open, and it takes no new pledges, gifts or visit requests. Chats that already exist carry on. Remove the flag to list it again.</p>' +
         '<textarea class="form-control small" id="modal-flag-reason" rows="2" placeholder="Reason (e.g. inconsistent documents, unreachable contact)...">' + escapeHtml(orphanage.flagReason || '') + '</textarea>' +
         '<div class="d-flex align-items-center gap-2 mt-2">' +
           '<button type="button" class="btn btn-admin-outline btn-sm" id="save-flag-btn">Save flag status</button>' +
@@ -767,6 +772,16 @@ document.getElementById('profile-modal-body').addEventListener('click', function
   orphanage.posts = (orphanage.posts || []).filter(function (_, idx) { return idx !== postIndex; });
   saveOrphanages(orphanages);
   openProfileModal(activeOrphanageId);
+});
+
+// Opens a post's video in a new tab through a short-lived link, so an admin can review it.
+document.getElementById('profile-modal-body').addEventListener('click', function (e) {
+  const button = e.target.closest('.watch-post-video-btn');
+  if (!button || activeOrphanageId === null) return;
+  const tab = window.open('', '_blank');
+  apiRequest('/orphanages/' + activeOrphanageId + '/posts/' + button.dataset.postId + '/video-link')
+    .then(function (data) { tab.location.href = data.url; })
+    .catch(function (err) { if (tab) tab.close(); alert('Could not open the video: ' + err.message); });
 });
 
 document.getElementById('profile-modal-body').addEventListener('click', function (e) {

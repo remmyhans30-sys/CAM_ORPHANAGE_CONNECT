@@ -69,6 +69,8 @@ ADMIN_EMAIL=the-admin's-email
 ADMIN_PASSWORD=a-strong-password
 SEED_SAMPLE_DATA=false
 SUPPORT_EMAIL=an-email-people-can-contact
+VIDEO_MAX_MB=8
+ORPHANAGE_VIDEO_QUOTA_MB=24
 SITE_URL=https://ACCOUNT.alwaysdata.net
 SMTP_HOST=smtp-ACCOUNT.alwaysdata.net
 SMTP_PORT=587
@@ -91,7 +93,11 @@ If the site has an **SSL** tab, turn on **Force HTTPS**. Save.
 3. Set `SITE_URL` to the site's real address, exactly as people type it, with no slash at the end. The reset links in the emails point there.
 4. Restart the site, then try "Forgot password?" with your own address.
 
-## 8. Check it
+## 8. Watch the disk space (videos)
+
+Orphanages can upload short videos. The free plan has about 100 MB of disk space in total, shared by the code, the database and every uploaded document, photo and video, so the settings above keep videos small (8 MB each, 24 MB per orphanage). If you see the disk filling up, lower `ORPHANAGE_VIDEO_QUOTA_MB`, ask homes to put longer videos on YouTube and share the link in a post, or move to a paid plan. The panel shows the space used under **Account**.
+
+## 9. Check it
 
 - Open `https://ACCOUNT.alwaysdata.net`. The home page should appear.
 - Click **Sign In**, then **Admin sign-in**, and log in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.

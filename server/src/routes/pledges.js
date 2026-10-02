@@ -31,9 +31,10 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Pledges start at ' + MIN_PLEDGE + ' XAF (whole amounts only).' });
   }
 
+  // Only listed homes take pledges: verified, and not flagged for review by an admin.
   const need = await needs.get(Number(needId));
-  const home = need ? await db.one('SELECT verification_status FROM orphanages WHERE id = ?', [need.orphanageId]) : null;
-  if (!need || !home || home.verification_status !== 'verified' || need.status !== 'open' || need.goal <= 0) {
+  const home = need ? await db.one('SELECT verification_status, is_flagged FROM orphanages WHERE id = ?', [need.orphanageId]) : null;
+  if (!need || !home || home.verification_status !== 'verified' || home.is_flagged || need.status !== 'open' || need.goal <= 0) {
     return res.status(404).json({ error: 'This need is not available.' });
   }
 

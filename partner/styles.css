@@ -543,6 +543,27 @@ h1, h2, h3, h4, h5, h6 {
 
 .status-badge.status-draft { background-color: rgba(26, 32, 53, 0.08); color: var(--ink); }
 
+/* An orphanage's full profile (orphanage-view.html) */
+.home-cover { height: 200px; background-color: var(--paper-dim); }
+.home-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.home-identity { min-width: 0; }
+.home-identity-text { min-width: 0; }
+.home-identity h1 { overflow-wrap: anywhere; }
+.home-story p { white-space: pre-line; overflow-wrap: anywhere; }
+.home-story p:last-child { margin-bottom: 0; }
+.home-facts dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--dawn-purple); font-weight: 700; }
+.home-facts dd { margin-bottom: 0.75rem; overflow-wrap: anywhere; }
+.home-facts dd:last-child { margin-bottom: 0; }
+.home-record-total { font-family: 'Bitter', Georgia, serif; font-size: 1.6rem; font-weight: 700; color: var(--dawn-purple); margin-bottom: 0; }
+.home-record-list { padding-left: 1.1rem; margin-bottom: 0; }
+.home-met-needs { list-style: none; padding: 0; margin: 0; }
+.home-met-needs li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+.home-met-needs li:last-child { border-bottom: 0; }
+.home-met-needs li::before { content: '\2713'; color: var(--dawn-purple); font-weight: 700; margin-right: -0.5rem; }
+.home-met-needs li span:first-of-type { flex: 1; }
+.home-met-amount { white-space: nowrap; opacity: 0.7; }
+@media (max-width: 575.98px) { .home-cover { height: 140px; } }
+
 /* Cameroon flag bar across the top of every page */
 body::before {
   content: '';

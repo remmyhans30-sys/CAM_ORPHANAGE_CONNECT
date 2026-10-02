@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Give - CAM Orphanage Connect</title>
+  <title>Orphanage profile - CAM Orphanage Connect</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,62 +25,89 @@
       <div class="collapse navbar-collapse" id="navMenu">
         <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
           <li class="nav-item"><a class="nav-link active" href="index.html">Give</a></li>
-          <li class="nav-item"><a class="nav-link d-none" href="messages.html" id="navMessages">Messages <span class="chat-nav-dot d-none" id="navMessagesDot"></span></a></li>
-          <li class="nav-item"><a class="nav-link d-none" href="profile.html" id="navProfile">My profile</a></li>
-          <li class="nav-item"><span class="nav-link disabled d-none" id="navUser"></span></li>
-          <li class="nav-item"><a class="nav-link" href="../login/index.html" id="navAuth">Sign in</a></li>
+          <li class="nav-item"><a class="nav-link" href="messages.html">Messages <span class="chat-nav-dot d-none" id="navMessagesDot"></span></a></li>
+          <li class="nav-item"><a class="nav-link" href="profile.html">My profile</a></li>
+          <li class="nav-item"><a class="nav-link" href="../login/index.html" id="logoutLink">Log out</a></li>
         </ul>
       </div>
     </div>
   </nav>
 
-  <header class="donor-hero">
-    <div class="container text-center">
-      <span class="section-badge">Verified orphanages in Cameroon</span>
-      <h1 class="mt-3">Give to a need you can see</h1>
-      <p class="lead-muted mx-auto">
-        Browse active needs from verified orphanages and pledge to the ones that matter to you —
-        every pledge counts toward a specific, tracked goal.
-      </p>
-    </div>
-  </header>
+  <main class="container home-profile">
+    <p class="home-back"><a href="index.html">&larr; All orphanages</a></p>
 
-  <main class="container">
+    <p id="loadingState" class="text-center text-muted py-5">Loading the profile…</p>
+    <div id="loadError" class="alert alert-danger d-none" role="alert"></div>
 
-    <section id="accessGate" class="card card-profile text-center p-4 p-md-5 d-none" aria-live="polite">
-      <h2 class="h5" id="gateTitle"></h2>
-      <p class="text-muted mb-4" id="gateMessage"></p>
-      <div class="d-flex flex-wrap justify-content-center gap-2" id="gateActions"></div>
-    </section>
+    <div id="profileContent" class="d-none">
 
-    <section class="filter-bar" aria-label="Filter orphanages" id="filterBar">
-      <div class="row g-3 align-items-center">
-        <div class="col-md-8">
-          <input type="search" id="searchInput" class="form-control" placeholder="Search orphanages or needs…">
+      <section class="card card-profile home-header">
+        <div class="home-cover" id="homeCover"></div>
+        <div class="card-body">
+          <div class="home-identity">
+            <div class="home-avatar" id="homeAvatar"></div>
+            <div class="home-identity-text">
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <h1 class="h3 mb-0" id="homeName"></h1>
+                <span class="badge-verified">Verified</span>
+              </div>
+              <p class="orphanage-location mb-0" id="homeLocation"></p>
+            </div>
+          </div>
+          <div class="home-actions">
+            <a class="btn btn-donor-primary btn-sm" href="#needs">See what they need</a>
+            <a class="btn btn-outline-secondary btn-sm" id="messageLink" href="messages.html">Message this orphanage</a>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="visitBtn">Request a visit</button>
+          </div>
         </div>
-        <div class="col-md-4">
-          <select id="locationFilter" class="form-select">
-            <option value="">All locations</option>
-          </select>
+      </section>
+
+      <div class="row g-3 home-tiles" id="homeTiles"></div>
+
+      <section class="card card-profile home-section" aria-labelledby="aboutTitle">
+        <h2 class="h5" id="aboutTitle">About this home</h2>
+        <p class="small text-muted d-none" id="storyLanguage"></p>
+        <div class="home-story" id="homeStory"></div>
+      </section>
+
+      <div class="row g-4 home-pair">
+        <div class="col-md-6">
+          <section class="card card-profile home-section h-100" aria-labelledby="trustTitle">
+            <h2 class="h5" id="trustTitle">Checked by our team</h2>
+            <dl class="home-facts" id="trustFacts"></dl>
+          </section>
+        </div>
+        <div class="col-md-6">
+          <section class="card card-profile home-section h-100" aria-labelledby="recordTitle">
+            <h2 class="h5" id="recordTitle">Support so far</h2>
+            <div id="recordPanel"></div>
+          </section>
         </div>
       </div>
-    </section>
 
-    <section id="orphanageList" class="orphanage-list" aria-live="polite">
-      <!-- Orphanage cards injected by script.js -->
-    </section>
+      <section class="card card-profile home-section" id="needs" aria-labelledby="needsTitle">
+        <h2 class="h5" id="needsTitle">What they need now</h2>
+        <p class="small text-muted">Pick a need to pledge to. A pledge is a promise to give. No money is charged on this site.</p>
+        <div id="needsList"></div>
+        <div class="d-none" id="metNeedsBlock">
+          <h3 class="h6 mt-4">Already fully pledged</h3>
+          <ul class="home-met-needs" id="metNeedsList"></ul>
+        </div>
+      </section>
 
-    <p id="loadingState" class="text-center text-muted py-5">Loading orphanages…</p>
-    <div id="loadError" class="alert alert-danger d-none" role="alert"></div>
-    <p id="emptyState" class="text-center text-muted py-5 d-none"></p>
+      <section class="card card-profile home-section" aria-labelledby="updatesTitle">
+        <h2 class="h5" id="updatesTitle">Stories, updates and videos</h2>
+        <p class="small text-muted">Shared by the home: its news, stories and thank-yous for gifts it received. Please do not copy or share photos and videos of children.</p>
+        <div id="updatesPanel"></div>
+      </section>
 
+      <section class="card card-profile home-section d-none" id="gallerySection" aria-labelledby="galleryTitle">
+        <h2 class="h5" id="galleryTitle">Photos</h2>
+        <div class="home-gallery" id="galleryList"></div>
+      </section>
+
+    </div>
   </main>
-
-  <section class="container my-5 d-none" id="myVisitsSection" aria-labelledby="myVisitsTitle">
-    <h2 class="h4" id="myVisitsTitle">My visit requests</h2>
-    <p class="text-muted">Visits are arranged and supervised by each home. Its answer appears here.</p>
-    <div id="myVisits"></div>
-  </section>
 
   <footer class="site-footer text-center">
     <div class="container">
@@ -88,7 +115,7 @@
     </div>
   </footer>
 
-  <!-- Donate modal -->
+  <!-- Donate modal (the same window as on index.html; pledge.js runs it) -->
   <div class="modal fade" id="donateModal" tabindex="-1" aria-labelledby="donateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -143,6 +170,6 @@
   <script src="../shared/visits.js"></script>
   <script src="../shared/updates.js"></script>
   <script src="pledge.js"></script>
-  <script src="script.js"></script>
+  <script src="orphanage.js"></script>
 </body>
 </html>

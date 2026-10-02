@@ -1,14 +1,14 @@
 /*
  * Donor-facing page: browse verified orphanages and their needs, and pledge to a need.
  * Needs keep the shared `need = { title, raised, goal, percent }` shape, now loaded
- * from the server instead of ../shared/data.js.
+ * from the server instead of ../shared/data.js. Each card links to the home's full
+ * profile (orphanage.html), and pledge.js runs the pledge window.
  */
 
 (function () {
   // Local copies talk to the server on this computer; the live site uses its own address.
   const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:4000' : '') + '/api';
   const SESSION_KEY = 'cocSession';
-  const MIN_PLEDGE = 500;
 
   const orphanageList = document.getElementById('orphanageList');
   const emptyState = document.getElementById('emptyState');
@@ -23,24 +23,7 @@
   const navMessages = document.getElementById('navMessages');
   const navAuth = document.getElementById('navAuth');
 
-  const donateModalEl = document.getElementById('donateModal');
-  const donateModal = new bootstrap.Modal(donateModalEl);
-  const donateForm = document.getElementById('donateForm');
-  const donateOrphanageName = document.getElementById('donateOrphanageName');
-  const donateNeedTitle = document.getElementById('donateNeedTitle');
-  const donateProgressBar = document.getElementById('donateProgressBar');
-  const donateProgressLabel = document.getElementById('donateProgressLabel');
-  const donateAmount = document.getElementById('donateAmount');
-  const pledgeAnonymous = document.getElementById('pledgeAnonymous');
-  const pledgeFields = document.getElementById('pledgeFields');
-  const signInPrompt = document.getElementById('signInPrompt');
-  const donateError = document.getElementById('donateError');
-  const donateAlert = document.getElementById('donateAlert');
-  const donateSubmit = document.getElementById('donateSubmit');
-
   let orphanages = [];
-  let activeOrphanage = null;
-  let activeNeed = null;
 
   function readSession() {
     const raw = window.sessionStorage.getItem(SESSION_KEY) || window.localStorage.getItem(SESSION_KEY);
@@ -145,6 +128,7 @@
   }
 
   function orphanageCardHtml(orphanage) {
+    const profileUrl = 'orphanage.html?id=' + orphanage.id;
     const media = orphanage.photoUrl
       ? '<img src="' + escapeHtml(orphanage.photoUrl) + '" alt="' + escapeHtml(orphanage.name) + '" class="orphanage-media">'
       : '<div class="orphanage-media-placeholder" aria-hidden="true">' + escapeHtml(initials(orphanage.name)) + '</div>';
@@ -156,15 +140,19 @@
     return (
       '<div class="card card-orphanage">' +
         '<div class="row g-0">' +
-          '<div class="col-md-3 d-none d-md-block">' + media + '</div>' +
+          '<div class="col-md-3 d-none d-md-block"><a class="orphanage-media-link" href="' + profileUrl + '" tabindex="-1" aria-hidden="true">' + media + '</a></div>' +
           '<div class="col-md-9">' +
             '<div class="card-body">' +
               '<div class="orphanage-header">' +
-                '<h2 class="h5 mb-1">' + escapeHtml(orphanage.name) + '</h2>' +
+                '<h2 class="h5 mb-1"><a class="orphanage-name-link" href="' + profileUrl + '">' + escapeHtml(orphanage.name) + '</a></h2>' +
                 '<span class="badge-verified">Verified</span>' +
               '</div>' +
+              '<a class="btn btn-outline-secondary btn-sm orphanage-profile-btn" href="' + profileUrl + '">View full profile</a>' +
               '<a class="btn btn-outline-secondary btn-sm orphanage-message-btn" href="messages.html?with=orphanage-' + orphanage.id + '">Message this orphanage</a>' +
               '<button type="button" class="btn btn-outline-secondary btn-sm orphanage-visit-btn" data-visit-orphanage="' + orphanage.id + '">Request a visit</button>' +
+              (orphanage.updatesCount > 0 || hasSocialLinks(orphanage)
+                ? '<button type="button" class="btn btn-outline-secondary btn-sm orphanage-updates-btn" data-updates-orphanage="' + orphanage.id + '">Stories &amp; videos' + (orphanage.updatesCount ? ' (' + orphanage.updatesCount + ')' : '') + '</button>'
+                : '') +
               '<p class="orphanage-location">' +
                 escapeHtml(orphanage.location || 'Cameroon') +
                 (orphanage.childrenCount ? ' · ' + escapeHtml(orphanage.childrenCount) + ' children in care' : '') +
@@ -176,6 +164,10 @@
         '</div>' +
       '</div>'
     );
+  }
+
+  function hasSocialLinks(orphanage) {
+    return Boolean(orphanage.socialLinks && Object.keys(orphanage.socialLinks).length > 0);
   }
 
   function matchesFilters(orphanage) {
@@ -208,90 +200,18 @@
     return need ? { orphanage: orphanage, need: need } : null;
   }
 
-  function showNeedProgress(need) {
-    const pct = needPercent(need);
-    donateProgressBar.style.width = pct + '%';
-    donateProgressBar.classList.toggle('is-funded', need.raised >= need.goal);
-    donateProgressLabel.textContent = formatXAF(need.raised) + ' pledged of ' + formatXAF(need.goal) + ' (' + pct + '%)';
-  }
-
-  function openDonateModal(orphanageId, needId) {
+  function openPledge(orphanageId, needId) {
     const found = findNeed(orphanageId, needId);
     if (!found) return;
-    activeOrphanage = found.orphanage;
-    activeNeed = found.need;
-
-    donateOrphanageName.textContent = activeOrphanage.name;
-    donateNeedTitle.textContent = activeNeed.title;
-    showNeedProgress(activeNeed);
-
-    donateForm.reset();
-    document.querySelectorAll('.btn-quick-amount').forEach(function (b) { b.classList.remove('active'); });
-    donateError.classList.add('d-none');
-    donateAlert.classList.add('d-none');
-
-    const signedIn = Boolean(donorSession());
-    signInPrompt.classList.toggle('d-none', signedIn);
-    pledgeFields.classList.toggle('d-none', !signedIn);
-    donateSubmit.classList.toggle('d-none', !signedIn);
-    donateSubmit.disabled = false;
-    donateAmount.required = signedIn;
-
-    donateModal.show();
-  }
-
-  async function handleDonateSubmit(e) {
-    e.preventDefault();
     const session = donorSession();
-    if (!session || !activeNeed) return;
-
-    const amount = Number(donateAmount.value);
-    const remaining = activeNeed.goal - activeNeed.raised;
-    donateError.classList.add('d-none');
-
-    if (!Number.isInteger(amount) || amount < MIN_PLEDGE) {
-      donateError.textContent = 'Pledges start at ' + formatXAF(MIN_PLEDGE) + '.';
-      donateError.classList.remove('d-none');
-      return;
-    }
-    if (amount > remaining) {
-      donateError.textContent = 'Only ' + formatXAF(remaining) + ' is still needed for this need.';
-      donateError.classList.remove('d-none');
-      return;
-    }
-
-    donateSubmit.disabled = true;
-    try {
-      let response;
-      try {
-        response = await fetch(API_BASE + '/pledges', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.token },
-          body: JSON.stringify({ needId: activeNeed.id, amount: amount, anonymous: pledgeAnonymous.checked })
-        });
-      } catch (err) {
-        throw new Error('Cannot reach the server. Please try again.');
-      }
-      const data = await response.json().catch(function () { return {}; });
-      if (response.status === 401) {
-        clearSession();
-        throw new Error('Your session has expired. Please sign in again.');
-      }
-      if (!response.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
-
-      activeNeed.raised = data.need.raised;
-      activeNeed.percent = data.need.percent;
-      showNeedProgress(activeNeed);
-      donateAlert.textContent = 'Thank you! Your pledge of ' + formatXAF(amount) + ' to ' + activeOrphanage.name + ' has been recorded.';
-      donateAlert.classList.remove('d-none');
-      pledgeFields.classList.add('d-none');
-      donateSubmit.classList.add('d-none');
-      render();
-    } catch (err) {
-      donateError.textContent = err.message;
-      donateError.classList.remove('d-none');
-      donateSubmit.disabled = false;
-    }
+    window.CocPledge.open({
+      apiBase: API_BASE,
+      token: session ? session.token : null,
+      orphanage: found.orphanage,
+      need: found.need,
+      onPledged: render,
+      onExpired: clearSession
+    });
   }
 
   // Orphanages are only shown to donors an admin has approved. Everyone else sees why.
@@ -385,6 +305,20 @@
   }
 
   orphanageList.addEventListener('click', function (e) {
+    const updatesBtn = e.target.closest('.orphanage-updates-btn');
+    if (updatesBtn && donorSession()) {
+      const home = orphanages.find(function (o) { return o.id === Number(updatesBtn.dataset.updatesOrphanage); });
+      if (home) {
+        window.CocUpdates.open({
+          apiBase: API_BASE,
+          token: donorSession().token,
+          endpoint: '/browse/orphanages/' + home.id + '/updates',
+          orphanageName: home.name,
+          onExpired: clearSession
+        });
+      }
+      return;
+    }
     const visitBtn = e.target.closest('.orphanage-visit-btn');
     if (visitBtn && donorSession()) {
       const home = orphanages.find(function (o) { return o.id === Number(visitBtn.dataset.visitOrphanage); });
@@ -399,18 +333,9 @@
     }
     const btn = e.target.closest('.donate-btn');
     if (!btn || btn.disabled) return;
-    openDonateModal(Number(btn.dataset.orphanageId), Number(btn.dataset.needId));
+    openPledge(Number(btn.dataset.orphanageId), Number(btn.dataset.needId));
   });
 
-  document.querySelectorAll('.btn-quick-amount').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      donateAmount.value = btn.dataset.amount;
-      document.querySelectorAll('.btn-quick-amount').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-    });
-  });
-
-  donateForm.addEventListener('submit', handleDonateSubmit);
   searchInput.addEventListener('input', render);
   locationFilter.addEventListener('change', render);
 

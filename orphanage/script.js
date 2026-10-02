@@ -572,6 +572,203 @@ function renderPledges(pledges) {
     });
 }
 
+// Stories, updates and videos
+let postLimits = { maxVideoMb: 15, videoQuotaMb: 60 };
+let canPost = false;
+
+function setBox(box, message) {
+    box.textContent = message || '';
+    box.classList.toggle('show', Boolean(message));
+}
+
+function readFileAsBase64(file) {
+    return new Promise(function (resolve, reject) {
+        const reader = new FileReader();
+        reader.onload = function () { resolve(String(reader.result).split(',')[1] || ''); };
+        reader.onerror = function () { reject(new Error('That file could not be read.')); };
+        reader.readAsDataURL(file);
+    });
+}
+
+// The video is sent as the raw file so a large video is not inflated by base64; the bar shows progress.
+function sendVideo(postId, file, onProgress) {
+    return new Promise(function (resolve, reject) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', API_BASE + '/posts/' + postId + '/video');
+        xhr.setRequestHeader('Authorization', 'Bearer ' + session.token);
+        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+        xhr.setRequestHeader('X-Filename', encodeURIComponent(file.name));
+        xhr.upload.onprogress = function (e) { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+        xhr.onload = function () {
+            let data = {};
+            try { data = JSON.parse(xhr.responseText); } catch (err) { /* keep empty */ }
+            if (xhr.status === 401) { clearSession(); window.location.replace('../login/index.html'); return; }
+            if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+            else reject(new Error(data.error || 'The video could not be uploaded.'));
+        };
+        xhr.onerror = function () { reject(new Error('Cannot reach the server. Please try again.')); };
+        xhr.send(file);
+    });
+}
+
+function checkVideoFile(file) {
+    if (!file) return null;
+    if (!/^video\/(mp4|webm)$/.test(file.type) && !/\.(mp4|webm)$/i.test(file.name)) return 'The video must be an MP4 or WebM file.';
+    if (file.size > postLimits.maxVideoMb * 1024 * 1024) return 'That video is too large. The limit is ' + postLimits.maxVideoMb + ' MB. Try a shorter clip.';
+    return null;
+}
+
+function showProgress(fraction, text) {
+    document.getElementById('post-progress').style.display = fraction === null ? 'none' : '';
+    if (fraction !== null) document.getElementById('post-progress-bar').style.width = Math.round(fraction * 100) + '%';
+    document.getElementById('post-progress-text').textContent = text || '';
+}
+
+function renderOwnPosts(list) {
+    const container = document.getElementById('posts-list');
+    window.CocUpdates.renderPosts(container, list, {
+        emptyText: 'You have not shared anything yet.',
+        extra: function (card, post) {
+            const actions = document.createElement('div');
+            actions.className = 'post-card-actions';
+
+            const video = document.createElement('input');
+            video.type = 'file';
+            video.accept = 'video/mp4,video/webm';
+            video.hidden = true;
+            video.addEventListener('change', async function () {
+                const problem = checkVideoFile(video.files[0]);
+                const box = document.getElementById('posts-error');
+                if (problem) { showError(box, problem); return; }
+                hideError(box);
+                try {
+                    showProgress(0, 'Uploading the video...');
+                    await sendVideo(post.id, video.files[0], function (f) { showProgress(f, 'Uploading the video... ' + Math.round(f * 100) + '%'); });
+                    showProgress(null);
+                    await loadPosts();
+                } catch (err) {
+                    showProgress(null);
+                    showError(box, err.message);
+                }
+            });
+            actions.appendChild(video);
+
+            const add = document.createElement('button');
+            add.type = 'button';
+            add.className = 'btn-outline-pill';
+            add.textContent = post.videoUrl ? 'Replace video' : 'Add a video';
+            add.addEventListener('click', function () { video.click(); });
+            actions.appendChild(add);
+
+            if (post.videoUrl) {
+                const removeVideo = document.createElement('button');
+                removeVideo.type = 'button';
+                removeVideo.className = 'btn-outline-pill';
+                removeVideo.textContent = 'Remove video';
+                removeVideo.addEventListener('click', async function () {
+                    try { await api('/posts/' + post.id + '/video', { method: 'DELETE' }); await loadPosts(); } catch (err) { showError(document.getElementById('posts-error'), err.message); }
+                });
+                actions.appendChild(removeVideo);
+            }
+
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'btn-outline-pill';
+            del.textContent = 'Delete post';
+            del.addEventListener('click', async function () {
+                if (!confirm('Delete this post? Its photo and video are deleted too.')) return;
+                try { await api('/posts/' + post.id, { method: 'DELETE' }); await loadPosts(); } catch (err) { showError(document.getElementById('posts-error'), err.message); }
+            });
+            actions.appendChild(del);
+            card.appendChild(actions);
+        }
+    });
+}
+
+const SOCIAL_FIELDS = ['website', 'facebook', 'instagram', 'youtube', 'tiktok', 'x', 'whatsapp'];
+
+function fillSocialForm(links) {
+    SOCIAL_FIELDS.forEach(function (name) { document.getElementById('social-' + name).value = (links && links[name]) || ''; });
+}
+
+async function loadPosts() {
+    const data = await api('/posts');
+    canPost = data.canPost;
+    postLimits = data.limits;
+    document.getElementById('posts-locked').style.display = canPost ? 'none' : '';
+    document.getElementById('post-submit').disabled = !canPost;
+    document.getElementById('post-video-hint').textContent = 'A short MP4 or WebM video, up to ' + postLimits.maxVideoMb + ' MB.';
+    renderOwnPosts(data.posts);
+    fillSocialForm(data.socialLinks);
+}
+
+document.getElementById('post-text').addEventListener('input', function () {
+    document.getElementById('post-count').textContent = this.value.length + ' / 2000';
+});
+
+document.getElementById('post-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const error = document.getElementById('post-error');
+    const success = document.getElementById('post-success');
+    setBox(success, '');
+    setBox(error, '');
+
+    const text = document.getElementById('post-text').value.trim();
+    const photo = document.getElementById('post-photo').files[0];
+    const video = document.getElementById('post-video').files[0];
+    if (!text) { setBox(error, 'Please write your message.'); return; }
+    if (photo && photo.size > 3 * 1024 * 1024) { setBox(error, 'The photo is too large. The limit is 3 MB.'); return; }
+    const videoProblem = checkVideoFile(video);
+    if (videoProblem) { setBox(error, videoProblem); return; }
+
+    const button = document.getElementById('post-submit');
+    button.disabled = true;
+    try {
+        const body = {
+            type: document.getElementById('post-type').value,
+            title: document.getElementById('post-title').value.trim(),
+            text: text
+        };
+        if (photo) body.photo = { filename: photo.name, data: await readFileAsBase64(photo) };
+        const created = await api('/posts', { method: 'POST', body: body });
+
+        let note = 'Your post is published.';
+        if (video) {
+            try {
+                showProgress(0, 'Uploading the video...');
+                await sendVideo(created.post.id, video, function (f) { showProgress(f, 'Uploading the video... ' + Math.round(f * 100) + '%'); });
+            } catch (err) {
+                note = 'Your post is published, but the video was not uploaded: ' + err.message + ' You can add it again from the post below.';
+            }
+            showProgress(null);
+        }
+        document.getElementById('post-form').reset();
+        document.getElementById('post-count').textContent = '0 / 2000';
+        setBox(success, note);
+        await loadPosts();
+    } catch (err) {
+        setBox(error, err.message);
+    }
+    button.disabled = !canPost;
+});
+
+document.getElementById('social-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const error = document.getElementById('social-error');
+    const success = document.getElementById('social-success');
+    setBox(error, '');
+    setBox(success, '');
+    const links = {};
+    SOCIAL_FIELDS.forEach(function (name) { links[name] = document.getElementById('social-' + name).value.trim(); });
+    try {
+        const data = await api('/social', { method: 'PUT', body: { links: links } });
+        fillSocialForm(data.socialLinks);
+        setBox(success, 'Your links are saved.');
+    } catch (err) {
+        setBox(error, err.message);
+    }
+});
+
 // Visit requests: the orphanage decides
 function visitDate(value) {
     const date = new Date(value + 'T00:00:00');
@@ -706,6 +903,7 @@ async function loadPortal() {
         renderPledges(pledgeData.pledges);
         const visitData = await api('/visits');
         renderVisits(visitData.visits);
+        await loadPosts();
     } catch (err) {
         showError(portalError, err.message);
         document.getElementById('status-note-text').textContent = 'Your profile could not be loaded.';

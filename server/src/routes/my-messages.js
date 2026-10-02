@@ -152,7 +152,8 @@ async function contactsFor(actor) {
       .map((d) => ({ type: 'donor', id: d.id, name: d.display_name, subtitle: d.location_text || 'Donor' }));
     return partnerList.concat(donorList);
   }
-  return (await orphanages.verifiedList()).map((o) => ({ type: 'orphanage', id: o.id, name: o.name, subtitle: o.location || '' }));
+  // A flagged home is not offered for new conversations; chats that already exist carry on.
+  return (await orphanages.listed()).map((o) => ({ type: 'orphanage', id: o.id, name: o.name, subtitle: o.location || '' }));
 }
 
 router.get('/contacts', async (req, res) => {

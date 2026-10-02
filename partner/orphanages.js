@@ -68,7 +68,7 @@ function renderGrid(list) {
                 '<div class="stat"><strong>' + (o.childrenCount || 0) + '</strong><span>Children</span></div>' +
                 '<div class="stat"><strong>' + (o.needsCount || 0) + '</strong><span>Active needs</span></div>' +
                 '<div class="stat"><strong>' + formatFcfa(o.totalRaised) + '</strong><span>Raised</span></div>' +
-                '<div class="stat"><strong>' + (o.followersCount || 0) + '</strong><span>Supporters</span></div>' +
+                '<div class="stat"><strong>' + (o.followersCount || 0) + '</strong><span>Followers</span></div>' +
               '</div>' +
               '<div class="profile-actions"><span class="btn btn-admin-outline btn-sm">View profile</span></div>' +
             '</div>' +

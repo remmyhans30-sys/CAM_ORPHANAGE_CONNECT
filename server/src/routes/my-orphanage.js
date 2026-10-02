@@ -5,8 +5,9 @@ const orphanages = require('../repo/orphanages');
 const needs = require('../repo/needs');
 const donations = require('../repo/donations');
 const visits = require('../repo/visits');
+const posts = require('../repo/posts');
 const common = require('../repo/common');
-const { saveUpload, deleteUpload, UploadError } = require('../uploads');
+const { saveUpload, saveVideo, deleteUpload, UploadError, MAX_VIDEO_MB, VIDEO_QUOTA_MB } = require('../uploads');
 
 // The signed-in orphanage account's own profile and needs (orphanage/ portal).
 // Status, verification and payment confirmation stay admin-only.
@@ -263,6 +264,91 @@ router.delete('/needs/:id', async (req, res) => {
 
   await needs.remove(need.id);
   res.status(204).end();
+});
+
+// --- stories, updates, gifts received, videos ------------------------------------
+
+function requireVerifiedToPost(req, res, next) {
+  if (req.orphanage.status !== 'verified') {
+    return res.status(403).json({ error: 'You can share stories and videos once the CAM Orphanage Connect team has verified your orphanage.' });
+  }
+  next();
+}
+
+const limits = { maxVideoMb: MAX_VIDEO_MB, videoQuotaMb: VIDEO_QUOTA_MB };
+
+router.get('/posts', async (req, res) => {
+  res.json({
+    posts: await posts.forOrphanage(req.orphanage.id),
+    socialLinks: req.orphanage.socialLinks,
+    canPost: req.orphanage.status === 'verified',
+    limits,
+  });
+});
+
+router.post('/posts', requireVerifiedToPost, async (req, res) => {
+  const { type, title, text, photo } = req.body || {};
+  let photoFile = null;
+  try {
+    if (photo && photo.data) {
+      photoFile = await saveUpload({ ownerUserId: req.account.id, purpose: 'photo', filename: photo.filename, data: photo.data });
+    }
+    const id = await posts.create({ orphanageId: req.orphanage.id, type, title, text, photoUploadId: photoFile && photoFile.id });
+    const post = (await posts.forOrphanage(req.orphanage.id)).find((p) => p.id === id);
+    res.status(201).json({ post });
+  } catch (err) {
+    if (photoFile) await deleteUpload(photoFile.id);
+    handleUploadError(err, res);
+  }
+});
+
+// The video is sent as the raw file (not base64), with its name in the X-Filename header.
+router.post('/posts/:id/video', requireVerifiedToPost, express.raw({ type: () => true, limit: (MAX_VIDEO_MB + 1) + 'mb' }), async (req, res) => {
+  const row = await posts.getOwn(Number(req.params.id), req.orphanage.id);
+  if (!row) return res.status(404).json({ error: 'Post not found.' });
+  const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+  let filename = 'video';
+  try { filename = decodeURIComponent(req.get('x-filename') || 'video'); } catch (err) { /* keep the default */ }
+
+  try {
+    const file = await saveVideo({ ownerUserId: req.account.id, filename, buffer });
+    const oldId = row.video_upload_id;
+    await posts.setVideo(row.id, file.id);
+    if (oldId) await deleteUpload(oldId);
+    const post = (await posts.forOrphanage(req.orphanage.id)).find((p) => p.id === row.id);
+    res.status(201).json({ post });
+  } catch (err) {
+    handleUploadError(err, res);
+  }
+});
+
+router.delete('/posts/:id/video', async (req, res) => {
+  const row = await posts.getOwn(Number(req.params.id), req.orphanage.id);
+  if (!row) return res.status(404).json({ error: 'Post not found.' });
+  if (row.video_upload_id) {
+    await posts.setVideo(row.id, null);
+    await deleteUpload(row.video_upload_id);
+  }
+  res.json({ post: (await posts.forOrphanage(req.orphanage.id)).find((p) => p.id === row.id) });
+});
+
+router.delete('/posts/:id', async (req, res) => {
+  const files = await posts.remove(Number(req.params.id), req.orphanage.id);
+  if (!files) return res.status(404).json({ error: 'Post not found.' });
+  if (files.photo) await deleteUpload(files.photo);
+  if (files.video) await deleteUpload(files.video);
+  res.status(204).end();
+});
+
+// The home's own pages elsewhere. They are shown to approved donors and verified partners.
+router.get('/social', (req, res) => {
+  res.json({ socialLinks: req.orphanage.socialLinks });
+});
+
+router.put('/social', async (req, res) => {
+  const saved = await posts.saveLinks(req.orphanage.id, (req.body || {}).links);
+  await common.logActivity('orphanage', req.orphanage.id, 'Updated social links', req.orphanage.contactEmail, req.account.id);
+  res.json({ socialLinks: saved });
 });
 
 // --- visit requests ----------------------------------------------------------

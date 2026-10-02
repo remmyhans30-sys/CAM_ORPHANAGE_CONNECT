@@ -52,6 +52,19 @@ async function pledgesToOrphanage(orphanageId) {
   );
 }
 
+// A home's giving record for its profile page: money pledged so far, how many people and
+// organisations pledged, and how many gifts of items it received. Names are never included.
+async function totalsForOrphanage(orphanageId) {
+  const row = await db.one(
+    `SELECT COALESCE(SUM(CASE WHEN donation_type = 'money' THEN amount END), 0) AS pledged,
+            COUNT(DISTINCT giver_user_id) AS supporters,
+            COALESCE(SUM(donation_type = 'item'), 0) AS item_gifts
+     FROM donations WHERE orphanage_id = ? AND status IN ('pledged', 'completed')`,
+    [orphanageId]
+  );
+  return { totalPledged: Number(row.pledged), supporters: Number(row.supporters), itemGifts: Number(row.item_gifts) };
+}
+
 async function pledgesBy(userId) {
   return db.q(
     `SELECT d.id, d.need_id, d.amount, d.is_anonymous, d.created_at, n.title AS need_title, o.name AS orphanage_name
@@ -85,4 +98,4 @@ async function setStatus(id, status) {
   await db.run('UPDATE donations SET status = ?, completed_at = IF(? = "completed", COALESCE(completed_at, ?), completed_at) WHERE id = ?', [status, status, db.sqlTime(), id]);
 }
 
-module.exports = { toDonation, forGivers, pledgesToOrphanage, pledgesBy, create, setStatus };
+module.exports = { toDonation, forGivers, pledgesToOrphanage, totalsForOrphanage, pledgesBy, create, setStatus };

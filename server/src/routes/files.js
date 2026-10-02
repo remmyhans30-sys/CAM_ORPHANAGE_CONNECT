@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const { filePathFor } = require('../uploads');
+const { filePathFor, videoLinkIsValid } = require('../uploads');
 const { userSecret } = require('../middleware/userAuth');
 
 const router = express.Router();
@@ -23,6 +23,18 @@ router.get('/photo/:id', async (req, res) => {
   const upload = ID_PATTERN.test(req.params.id) && await db.one("SELECT * FROM uploads WHERE id = ? AND purpose = 'photo' AND deleted_at IS NULL", [req.params.id]);
   if (!upload) return res.status(404).json({ error: 'File not found.' });
   res.setHeader('Cache-Control', 'public, max-age=300');
+  sendUpload(res, upload);
+});
+
+// Videos are never public: only a signed, short-lived link opens one (given out by the pages
+// that approved donors, verified partners, the owner and admins can use). Supports seeking.
+router.get('/video/:id', async (req, res) => {
+  if (!ID_PATTERN.test(req.params.id) || !videoLinkIsValid(req.params.id, req.query.t)) {
+    return res.status(403).json({ error: 'This video link has expired. Please reload the page.' });
+  }
+  const upload = await db.one("SELECT * FROM uploads WHERE id = ? AND purpose = 'video' AND deleted_at IS NULL", [req.params.id]);
+  if (!upload) return res.status(404).json({ error: 'File not found.' });
+  res.setHeader('Cache-Control', 'private, max-age=600');
   sendUpload(res, upload);
 });
 

@@ -35,11 +35,11 @@ async function forOrphanage(orphanageId) {
   return (await db.q(BASE + ' WHERE n.orphanage_id = ? ORDER BY n.id DESC', [orphanageId])).map(toNeed);
 }
 
-// Open needs of verified orphanages that donors and partners can pledge to.
-async function openForVerifiedOrphanages() {
+// Open needs of listed orphanages (verified and not flagged) that donors and partners can pledge to.
+async function openForListedOrphanages() {
   return (await db.q(
     BASE + ` JOIN orphanages o ON o.id = n.orphanage_id
-     WHERE o.verification_status = 'verified' AND n.status = 'open' ORDER BY n.id DESC`
+     WHERE o.verification_status = 'verified' AND o.is_flagged = 0 AND n.status = 'open' ORDER BY n.id DESC`
   )).map(toNeed);
 }
 
@@ -70,4 +70,4 @@ async function remove(id) {
   return result.affectedRows > 0;
 }
 
-module.exports = { list, get, forOrphanage, openForVerifiedOrphanages, create, update, remove };
+module.exports = { list, get, forOrphanage, openForListedOrphanages, create, update, remove };

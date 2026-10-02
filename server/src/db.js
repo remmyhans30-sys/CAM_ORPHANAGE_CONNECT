@@ -95,7 +95,7 @@ function dateOnly(value) {
 
 // Runs database/cam_orphanage_connect.sql when the database is missing or empty.
 // It never touches a database that already has tables.
-async function ensureDatabase() {
+async function createIfMissing() {
   const admin = await mysql.createConnection({ ...connectionSettings });
   try {
     const [found] = await admin.query('SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = ?', [DB_NAME]);
@@ -108,6 +108,33 @@ async function ensureDatabase() {
     return true;
   } finally {
     await admin.end();
+  }
+}
+
+// Creates the database when it is missing, then brings an older database up to date.
+// Returns true when it created a fresh one.
+async function ensureDatabase() {
+  const created = await createIfMissing();
+  await migrate(created);
+  return created;
+}
+
+// Changes made to the database after its first version, applied once each, in order.
+// A fresh database already includes them all, so they are only recorded as done.
+async function migrate(fresh) {
+  const fs = require('fs');
+  const path = require('path');
+  await run('CREATE TABLE IF NOT EXISTS schema_migrations (name VARCHAR(100) NOT NULL PRIMARY KEY, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+  const dir = path.join(__dirname, 'migrations');
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.js')).sort() : [];
+  for (const file of files) {
+    const migration = require(path.join(dir, file));
+    if (await one('SELECT name FROM schema_migrations WHERE name = ?', [migration.name])) continue;
+    if (!fresh) {
+      console.log('Updating the database: ' + migration.name);
+      await migration.up({ q, one, run });
+    }
+    await run('INSERT INTO schema_migrations (name) VALUES (?)', [migration.name]);
   }
 }
 

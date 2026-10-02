@@ -1,6 +1,6 @@
 # CAM Orphanage Connect: MySQL database
 
-`cam_orphanage_connect.sql` builds the whole database from nothing: 36 tables, 13 triggers and 7 views, plus the reference data (the ten regions of Cameroon, languages, currencies, payment methods, categories, admin roles).
+`cam_orphanage_connect.sql` builds the whole database from nothing: 37 tables, 14 triggers and 7 views, plus the reference data (the ten regions of Cameroon, languages, currencies, payment methods, categories, admin roles).
 
 Requires **MySQL 8.0.16 or newer** (the script uses CHECK constraints). It was tested on MySQL 8.0.46.
 
@@ -9,7 +9,7 @@ Requires **MySQL 8.0.16 or newer** (the script uses CHECK constraints). It was t
 1. Open MySQL Workbench and double-click your local connection (usually `Local instance MySQL81`). Enter the root password.
 2. **File > Open SQL Script...** and pick `database/cam_orphanage_connect.sql`.
 3. Click the lightning-bolt button (**Execute**) or press `Ctrl+Shift+Enter`.
-4. At the bottom you should see: `cam_orphanage_connect is ready | tables 36 | views 7 | triggers 13`.
+4. At the bottom you should see: `cam_orphanage_connect is ready | tables 37 | views 7 | triggers 14`.
 5. In the left **Schemas** panel, click the refresh icon. Open `cam_orphanage_connect > Tables` to browse.
 
 Running the script again **deletes and recreates** the database (it starts with `DROP DATABASE IF EXISTS`). Do not run it on a database holding real data.
@@ -77,6 +77,10 @@ Two things the website does not store, because the database works them out:
 - **The numbers on the home page.** They come from the `v_site_stats` view.
 
 Records an admin adds by hand (an orphanage, a donor or a partner without a sign-up) still need an owner login, so the site creates one that nobody can sign in to. It uses the contact email if that is free, otherwise a made-up `...@no-login.invalid` address. For real people it is better to ask them to sign up themselves.
+
+Stories, updates and videos are in `orphanage_posts` (a type, a title, an optional photo and video; only a verified orphanage may post, enforced by a trigger), and a home's own social pages in `orphanage_social_links`. The video files stay on disk like other uploads; the database keeps their details.
+
+**Changing the database later.** Changes made after the first version live in `server/src/migrations/`. The site applies each one, once, the next time it starts, and records it in `schema_migrations`, so an existing database is upgraded without losing data. A brand new database already includes them. When you add a migration, put the same change in `cam_orphanage_connect.sql` too.
 
 Visit requests (`visit_requests`) and password reset links (`password_reset_tokens`, stored only as a fingerprint) are used by the site too.
 

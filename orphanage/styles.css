@@ -259,6 +259,12 @@ button { font-family: inherit }
 .doc-empty { opacity: 0.6; background: none !important; padding-left: 0 !important }
 
 
+.upload-progress-track { height: 10px; border-radius: 999px; background: #e3e9e5; overflow: hidden }
+.upload-progress-bar { height: 100%; width: 0; background: #12804A; transition: width 0.2s }
+.post-card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem }
+.post-card-actions button { font-size: 0.85rem }
+.form-success { display: none; background: rgba(46, 139, 87, 0.12); color: var(--dawn-purple, #1f6b45); border-radius: 10px; padding: 0.6rem 0.8rem; margin: 0.6rem 0; font-size: 0.9rem }
+.form-success.show { display: block }
 .visit-card { border: 1px solid var(--line, #dfe6e1); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.8rem; background: #fff }
 .visit-card-head { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; justify-content: space-between; align-items: center; margin-bottom: 0.3rem }
 .visit-card p { margin: 0.25rem 0; font-size: 0.9rem }

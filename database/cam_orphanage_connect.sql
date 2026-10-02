@@ -114,7 +114,7 @@ CREATE TABLE users (
 CREATE TABLE uploads (
   id             CHAR(32) NOT NULL COMMENT 'random hex id, also the file name on disk',
   owner_user_id  BIGINT UNSIGNED NOT NULL,
-  purpose        ENUM('document','photo') NOT NULL COMMENT 'documents are private, photos are public',
+  purpose        ENUM('document','photo','video') NOT NULL COMMENT 'documents are private, photos are public, videos are shown only to approved viewers',
   original_name  VARCHAR(255) NOT NULL,
   mime_type      VARCHAR(100) NOT NULL,
   size_bytes     INT UNSIGNED NOT NULL,
@@ -124,7 +124,7 @@ CREATE TABLE uploads (
   PRIMARY KEY (id),
   KEY ix_uploads_owner (owner_user_id),
   KEY ix_uploads_sha256 (sha256),
-  CONSTRAINT ck_uploads_size CHECK (size_bytes > 0 AND size_bytes <= 3145728),
+  CONSTRAINT ck_uploads_size CHECK (size_bytes > 0 AND ((purpose = 'video' AND size_bytes <= 20971520) OR (purpose <> 'video' AND size_bytes <= 3145728))),
   CONSTRAINT fk_uploads_owner FOREIGN KEY (owner_user_id) REFERENCES users (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB COMMENT='Metadata of every uploaded file (the files themselves stay on disk)';
 
@@ -253,17 +253,31 @@ CREATE TABLE orphanage_photos (
 CREATE TABLE orphanage_posts (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   orphanage_id    BIGINT UNSIGNED NOT NULL,
+  post_type       ENUM('story','update','gift') NOT NULL DEFAULT 'update' COMMENT 'story, news update, or a thank-you for a gift the home received',
+  title           VARCHAR(150) NULL,
   body            TEXT NOT NULL,
   photo_upload_id CHAR(32) NULL,
+  video_upload_id CHAR(32) NULL,
   hidden_at       DATETIME NULL COMMENT 'set by an admin to hide a post',
   hidden_by       BIGINT UNSIGNED NULL,
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY ix_orphanage_posts_orphanage (orphanage_id, created_at),
+  CONSTRAINT ck_orphanage_posts_body CHECK (CHAR_LENGTH(body) BETWEEN 1 AND 2000),
   CONSTRAINT fk_orphanage_posts_orphanage FOREIGN KEY (orphanage_id) REFERENCES orphanages (id) ON DELETE CASCADE,
   CONSTRAINT fk_orphanage_posts_photo FOREIGN KEY (photo_upload_id) REFERENCES uploads (id) ON DELETE SET NULL,
+  CONSTRAINT fk_orphanage_posts_video FOREIGN KEY (video_upload_id) REFERENCES uploads (id) ON DELETE SET NULL,
   CONSTRAINT fk_orphanage_posts_hider FOREIGN KEY (hidden_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='News and updates an orphanage shares';
+
+CREATE TABLE orphanage_social_links (
+  orphanage_id BIGINT UNSIGNED NOT NULL,
+  platform     ENUM('website','facebook','instagram','youtube','tiktok','x','whatsapp') NOT NULL,
+  url          VARCHAR(300) NOT NULL,
+  PRIMARY KEY (orphanage_id, platform),
+  CONSTRAINT ck_social_https CHECK (url LIKE 'https://%'),
+  CONSTRAINT fk_social_orphanage FOREIGN KEY (orphanage_id) REFERENCES orphanages (id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='The orphanage''s own pages elsewhere, shown to approved donors and verified partners';
 
 CREATE TABLE visit_requests (
   id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -818,6 +832,14 @@ END$$
 
 -- Messaging: a direct chat is between an orphanage and a donor or partner; a support thread is
 -- between one member and the team; staff messages come from admins only.
+-- Only a verified orphanage may publish posts.
+CREATE TRIGGER trg_posts_verified BEFORE INSERT ON orphanage_posts FOR EACH ROW
+BEGIN
+  IF IFNULL((SELECT verification_status FROM orphanages WHERE id = NEW.orphanage_id), '') <> 'verified' THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only a verified orphanage can post updates';
+  END IF;
+END$$
+
 CREATE TRIGGER trg_donations_total_insert AFTER INSERT ON donations FOR EACH ROW
 BEGIN
   IF NEW.need_id IS NOT NULL AND NEW.donation_type = 'money' AND NEW.status IN ('pledged', 'completed') THEN

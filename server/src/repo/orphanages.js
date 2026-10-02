@@ -1,6 +1,7 @@
 const db = require('../db');
 const { HttpError } = require('../errors');
 const common = require('./common');
+const posts = require('./posts');
 
 // Orphanages as the pages see them (camelCase, status 'needs-info', lists inside), stored in
 // orphanages + orphanage_payment_accounts + orphanage_photos + orphanage_posts +
@@ -22,9 +23,13 @@ async function hydrate(rows) {
   (await db.q('SELECT orphanage_id, upload_id FROM orphanage_photos WHERE orphanage_id IN (?) ORDER BY sort_order, id', [ids]))
     .forEach((r) => gallery.get(r.orphanage_id).push(common.photoUrlOf(r.upload_id)));
 
-  const posts = new Map(ids.map((id) => [id, []]));
-  (await db.q('SELECT orphanage_id, body, photo_upload_id, created_at FROM orphanage_posts WHERE orphanage_id IN (?) AND hidden_at IS NULL ORDER BY id', [ids]))
-    .forEach((r) => posts.get(r.orphanage_id).push({ date: db.dateOnly(r.created_at), text: r.body, photoUrl: common.photoUrlOf(r.photo_upload_id) }));
+  const postsByHome = new Map(ids.map((id) => [id, []]));
+  (await db.q('SELECT id, orphanage_id, post_type, title, body, photo_upload_id, video_upload_id, created_at FROM orphanage_posts WHERE orphanage_id IN (?) AND hidden_at IS NULL ORDER BY id', [ids]))
+    .forEach((r) => postsByHome.get(r.orphanage_id).push({
+      id: r.id, type: r.post_type, title: r.title, date: db.dateOnly(r.created_at), text: r.body,
+      photoUrl: common.photoUrlOf(r.photo_upload_id), hasVideo: Boolean(r.video_upload_id),
+    }));
+  const socialLinks = await posts.linksFor(ids);
 
   const payment = new Map();
   (await db.q(
@@ -68,11 +73,14 @@ async function hydrate(rows) {
       appealDate: appeal ? db.dateOnly(appeal.created_at) : null,
       infoRequestMessage: o.info_request_message,
       submittedDate: db.dateOnly(o.submitted_at),
+      verifiedDate: o.verification_status === 'verified' ? db.dateOnly(o.decided_at) : null,
+      joinedDate: db.dateOnly(o.created_at),
       blurFaces: Boolean(o.blur_faces),
       showFullNames: Boolean(o.show_full_names),
       documents: documents.get(o.id),
       gallery: gallery.get(o.id),
-      posts: posts.get(o.id),
+      posts: postsByHome.get(o.id),
+      socialLinks: socialLinks.get(o.id),
       activityLog: activity.get(o.id),
       ownerUserId: o.owner_user_id,
     };
@@ -93,10 +101,20 @@ async function getByOwner(userId) {
   return rows[0] || null;
 }
 
-async function verifiedList() {
-  return hydrate(await db.q(BASE + " WHERE o.verification_status = 'verified' ORDER BY o.name ASC"));
+// "Listed" homes are verified and not flagged: the ones donors and partners can see and give to.
+// A home an admin flags for review is hidden from them until the flag is removed.
+const LISTED = "o.verification_status = 'verified' AND o.is_flagged = 0";
+
+async function listed() {
+  return hydrate(await db.q(BASE + ' WHERE ' + LISTED + ' ORDER BY o.name ASC'));
 }
 
+async function getListed(id) {
+  const rows = await hydrate(await db.q(BASE + ' WHERE o.id = ? AND ' + LISTED, [id]));
+  return rows[0] || null;
+}
+
+// Verified, flagged or not. Conversations that already exist keep going while a home is flagged.
 async function getVerified(id) {
   const rows = await hydrate(await db.q(BASE + " WHERE o.id = ? AND o.verification_status = 'verified'", [id]));
   return rows[0] || null;
@@ -260,14 +278,20 @@ async function saveAppeal(id, body, actor) {
 // Posts an admin removed are hidden, not erased.
 async function savePosts(id, incoming, actor) {
   const visible = await db.q('SELECT id, body, created_at FROM orphanage_posts WHERE orphanage_id = ? AND hidden_at IS NULL ORDER BY id', [id]);
+  const byId = incoming.every((p) => p && p.id);
+  const keepIds = new Set(incoming.map((p) => p && Number(p.id)));
   const wanted = incoming.map((p) => (p && p.text) + '|' + (p && p.date));
   for (const row of visible) {
-    const key = row.body + '|' + db.dateOnly(row.created_at);
-    const at = wanted.indexOf(key);
-    if (at === -1) {
-      await db.run('UPDATE orphanage_posts SET hidden_at = ?, hidden_by = ? WHERE id = ?', [db.sqlTime(), actor && actor.isAdmin ? actor.userId : null, row.id]);
+    let keep;
+    if (byId) {
+      keep = keepIds.has(row.id);
     } else {
-      wanted[at] = null;
+      const at = wanted.indexOf(row.body + '|' + db.dateOnly(row.created_at));
+      keep = at !== -1;
+      if (keep) wanted[at] = null;
+    }
+    if (!keep) {
+      await db.run('UPDATE orphanage_posts SET hidden_at = ?, hidden_by = ? WHERE id = ?', [db.sqlTime(), actor && actor.isAdmin ? actor.userId : null, row.id]);
     }
   }
 }
@@ -294,6 +318,6 @@ async function setPhoto(orphanageId, column, uploadId) {
 }
 
 module.exports = {
-  STATUS_OUT, list, get, getByOwner, verifiedList, getVerified, ensureForUser, createByAdmin, save, remove,
+  STATUS_OUT, list, get, getByOwner, listed, getListed, getVerified, ensureForUser, createByAdmin, save, remove,
   markSubmitted, attachDocument, setPhoto,
 };

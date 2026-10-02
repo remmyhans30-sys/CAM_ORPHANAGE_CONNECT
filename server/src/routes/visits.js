@@ -33,7 +33,7 @@ member.get('/mine', async (req, res) => {
 
 member.post('/', requireApproved, async (req, res) => {
   const body = req.body || {};
-  const orphanage = await orphanages.getVerified(Number(body.orphanageId));
+  const orphanage = await orphanages.getListed(Number(body.orphanageId) || 0);
   if (!orphanage) throw new HttpError(404, 'This orphanage is not available.');
 
   await visits.create({

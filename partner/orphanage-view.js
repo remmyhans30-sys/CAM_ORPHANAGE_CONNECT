@@ -26,18 +26,93 @@ function getOrphanageId() {
   return params.get('id');
 }
 
-function renderOrphanage(orphanage, needs) {
+function plural(count, one, many) {
+  return Number(count).toLocaleString('en-US') + ' ' + (count === 1 ? one : many);
+}
+
+function prettyDate(value, withDay) {
+  const d = new Date(String(value) + 'T00:00:00');
+  if (isNaN(d)) return value;
+  return d.toLocaleDateString('en-GB', withDay === false ? { month: 'long', year: 'numeric' } : { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// The same profile donors see (GET /partner-auth/orphanages/:id): the home's story and facts, what the
+// CAM Orphanage Connect team checked, the support it has had so far, and its needs. Its phone, email
+// and payment account are not shown: partners reach a home through messages and visit requests.
+function renderProfile(profile) {
+  const orphanage = profile.orphanage;
+  const needs = profile.needs;
+  document.title = orphanage.name + ' - CAM Orphanage Connect';
+
+  // A photo that cannot be shown falls back to the initials, a cover photo to nothing.
   const avatar = document.getElementById('orphanage-avatar');
+  avatar.textContent = initials(orphanage.name);
   if (orphanage.photoUrl) {
+    const img = document.createElement('img');
+    img.alt = '';
+    img.addEventListener('error', function () {
+      avatar.classList.remove('has-photo');
+      avatar.textContent = initials(orphanage.name);
+    });
+    img.src = orphanage.photoUrl;
+    avatar.textContent = '';
     avatar.classList.add('has-photo');
-    avatar.innerHTML = '<img src="' + encodeURI(orphanage.photoUrl) + '" alt="">';
-  } else {
-    avatar.textContent = initials(orphanage.name);
+    avatar.appendChild(img);
+  }
+  const cover = document.getElementById('orphanage-cover');
+  if (orphanage.coverPhotoUrl) {
+    const img = document.createElement('img');
+    img.alt = '';
+    img.addEventListener('error', function () { cover.classList.add('d-none'); });
+    img.src = orphanage.coverPhotoUrl;
+    cover.appendChild(img);
+    cover.classList.remove('d-none');
   }
 
   document.getElementById('orphanage-name').textContent = orphanage.name || '—';
-  document.getElementById('orphanage-location').textContent = orphanage.location || '—';
-  document.getElementById('orphanage-story').textContent = orphanage.story || 'No story shared yet.';
+  document.getElementById('orphanage-location').textContent = (orphanage.location || 'Cameroon') +
+    (orphanage.foundedYear ? ' · Caring for children since ' + orphanage.foundedYear : '');
+
+  const story = document.getElementById('orphanage-story');
+  const paragraphs = String(orphanage.story || '').split(/\n{2,}/).map(function (p) { return p.trim(); }).filter(Boolean);
+  story.innerHTML = paragraphs.length ? '' : '<p class="text-muted mb-0">This home has not written its story yet.</p>';
+  paragraphs.forEach(function (text) {
+    const p = document.createElement('p');
+    p.textContent = text;
+    story.appendChild(p);
+  });
+  const language = document.getElementById('orphanage-story-language');
+  language.textContent = orphanage.storyLanguage === 'fr' ? 'Written by the home in French.' : '';
+  language.classList.toggle('d-none', orphanage.storyLanguage !== 'fr');
+
+  const facts = [
+    ['Verified', 'By the CAM Orphanage Connect team' + (orphanage.verifiedDate ? ' on ' + prettyDate(orphanage.verifiedDate) : '')],
+    ['Registration number', orphanage.registrationNumber],
+    ['Contact person', orphanage.contactName],
+    ['Payment account', orphanage.paymentAccountChecked ? 'Confirmed by our team as the home\'s own account, not a personal one' : null],
+    ['On this site since', orphanage.joinedDate ? prettyDate(orphanage.joinedDate, false) : null],
+  ];
+  document.getElementById('trust-facts').innerHTML = facts
+    .filter(function (fact) { return fact[1]; })
+    .map(function (fact) { return '<dt>' + escapeHtml(fact[0]) + '</dt><dd>' + escapeHtml(String(fact[1])) + '</dd>'; })
+    .join('');
+
+  const record = profile.record;
+  const lines = [];
+  if (profile.metNeeds.length) lines.push(plural(profile.metNeeds.length, 'need fully pledged', 'needs fully pledged'));
+  if (record.itemGifts) lines.push(plural(record.itemGifts, 'gift of items', 'gifts of items'));
+  lines.push(orphanage.updatesCount ? plural(orphanage.updatesCount, 'story or update shared', 'stories and updates shared') : 'No stories or updates shared yet');
+  document.getElementById('record-panel').innerHTML =
+    (record.supporters
+      ? '<p class="home-record-total">' + escapeHtml(formatFcfa(record.totalPledged)) + '</p>' +
+        '<p class="small text-muted">pledged or given so far by ' + escapeHtml(plural(record.supporters, 'supporter', 'supporters')) + '</p>'
+      : '<p class="mb-3">No pledges yet.</p>') +
+    '<ul class="home-record-list">' + lines.map(function (line) { return '<li>' + escapeHtml(line) + '</li>'; }).join('') + '</ul>';
+
+  document.getElementById('met-needs-block').classList.toggle('d-none', profile.metNeeds.length === 0);
+  document.getElementById('met-needs-list').innerHTML = profile.metNeeds.map(function (n) {
+    return '<li><span>' + escapeHtml(n.title) + '</span><span class="home-met-amount">' + escapeHtml(formatFcfa(n.goal)) + '</span></li>';
+  }).join('');
 
   const stats = [
     { label: 'Children', value: orphanage.childrenCount || 0 },
@@ -64,39 +139,33 @@ function renderOrphanage(orphanage, needs) {
       '&need=' + encodeURIComponent(n.title) + '&openDonation=1';
     return (
       '<div class="mb-3">' +
-        '<div class="d-flex justify-content-between align-items-center small mb-1">' +
+        '<div class="d-flex flex-wrap justify-content-between align-items-center gap-1 small mb-1">' +
           '<span class="fw-semibold">' + escapeHtml(n.title) + '</span>' +
           '<span class="text-muted">' + formatFcfa(n.raised) + ' of ' + formatFcfa(n.goal) + '</span>' +
         '</div>' +
+        (n.description ? '<p class="small text-muted mb-1">' + escapeHtml(n.description) + '</p>' : '') +
         '<div class="progress finance-progress mb-2"><div class="progress-bar" style="width: ' + percent + '%"></div></div>' +
         '<a href="' + donateUrl + '" class="btn btn-admin-outline btn-sm">Donate to this need</a>' +
       '</div>'
     );
   }).join('');
 
-  const galleryPanel = document.getElementById('gallery-panel');
   const gallery = orphanage.gallery || [];
-  galleryPanel.innerHTML = gallery.length
+  document.getElementById('gallery-card').classList.toggle('d-none', gallery.length === 0);
+  document.getElementById('gallery-panel').innerHTML = gallery.length
     ? '<div class="profile-gallery-grid">' +
         gallery.map(function (url) {
           return '<img src="' + encodeURI(url) + '" alt="" class="profile-gallery-thumb">';
         }).join('') +
       '</div>'
-    : '<p class="text-muted small mb-0">No gallery photos uploaded.</p>';
+    : '';
 
-  const postsPanel = document.getElementById('posts-panel');
-  const posts = (orphanage.posts || []).slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
-  postsPanel.innerHTML = posts.length
-    ? posts.map(function (post) {
-        return (
-          '<div class="profile-post">' +
-            '<span class="profile-post-date">' + escapeHtml(post.date || '') + '</span>' +
-            '<p class="small mb-1 mt-1">' + escapeHtml(post.text || '') + '</p>' +
-            (post.photoUrl ? '<img src="' + encodeURI(post.photoUrl) + '" alt="" class="profile-post-photo">' : '') +
-          '</div>'
-        );
-      }).join('')
-    : '<p class="text-muted small mb-0">No updates posted yet.</p>';
+  window.CocUpdates.mount(document.getElementById('posts-panel'), {
+    apiBase: API_BASE,
+    token: localStorage.getItem('partnerToken'),
+    endpoint: '/partner-auth/orphanages/' + encodeURIComponent(orphanage.id) + '/updates',
+    onExpired: function () { localStorage.removeItem('partnerToken'); window.location.href = 'index.html'; }
+  });
 }
 
 function renderFavoriteButton(favoriteOrphanageIds) {
@@ -111,10 +180,10 @@ const orphanageId = getOrphanageId();
 if (!orphanageId) {
   document.getElementById('empty-state').classList.remove('d-none');
 } else {
-  Promise.all([apiRequest('/partner-auth/orphanages/' + orphanageId), apiRequest('/partner-auth/me')])
+  Promise.all([apiRequest('/partner-auth/orphanages/' + encodeURIComponent(orphanageId)), apiRequest('/partner-auth/me')])
     .then(function (results) {
       document.getElementById('orphanage-content').classList.remove('d-none');
-      renderOrphanage(results[0].orphanage, results[0].needs);
+      renderProfile(results[0]);
       renderFavoriteButton(results[1].partner.favoriteOrphanageIds || []);
       document.getElementById('message-orphanage-link').href = 'messages.html?with=orphanage-' + encodeURIComponent(orphanageId);
       const visitName = results[0].orphanage.name;

@@ -6,6 +6,7 @@ const { authenticatePartner } = require('../middleware/partnerAuth');
 const partners = require('../repo/partners');
 const orphanages = require('../repo/orphanages');
 const needs = require('../repo/needs');
+const profiles = require('../repo/profiles');
 const donations = require('../repo/donations');
 const support = require('../repo/support');
 const common = require('../repo/common');
@@ -91,7 +92,7 @@ router.post('/register', async (req, res) => {
 
   const id = await partners.register({ name: name.trim(), email: normalizedEmail, passwordHash: bcrypt.hashSync(password, 10) });
   const partner = await partners.get(id);
-  await common.logActivity('partner', id, 'Confirmed being 18 or older and agreed to the terms of use (version 1)', reviewerOf(partner), partner.ownerUserId);
+  await common.logActivity('partner', id, 'Confirmed being 18 or older and agreed to the terms of use (version 2)', reviewerOf(partner), partner.ownerUserId);
   res.status(201).json({ token: issueToken(partner), partner: partnerProfile(partner) });
 });
 
@@ -263,29 +264,34 @@ function toPublicOrphanage(o) {
     photoUrl: o.photoUrl,
     coverPhotoUrl: o.coverPhotoUrl,
     gallery: o.gallery,
-    posts: o.posts,
+    socialLinks: o.socialLinks,
   };
 }
 
 router.get('/orphanages', authenticatePartner, requireVerified, async (req, res) => {
-  const homes = await orphanages.verifiedList();
+  const homes = await orphanages.listed();
   const result = [];
   for (const home of homes) {
     const list = await needs.forOrphanage(home.id);
     const orphanage = toPublicOrphanage(home);
-    orphanage.needsCount = list.length;
+    orphanage.needsCount = list.filter((n) => n.status === 'open' && n.raised < n.goal).length;
     orphanage.totalRaised = list.reduce((sum, n) => sum + n.raised, 0);
     result.push(orphanage);
   }
   res.json({ orphanages: result });
 });
 
+// One home's full profile (partner/orphanage-view.html), the same as donors see.
 router.get('/orphanages/:id', authenticatePartner, requireVerified, async (req, res) => {
-  const home = await orphanages.getVerified(Number(req.params.id));
-  if (!home) return res.status(404).json({ error: 'Orphanage not found.' });
+  const profile = await profiles.forSupporters(req.params.id);
+  if (!profile) return res.status(404).json({ error: 'Orphanage not found.' });
+  res.json(profile);
+});
 
-  const list = (await needs.forOrphanage(home.id)).map((n) => ({ id: n.id, title: n.title, goal: n.goal, raised: n.raised, percent: n.percent, date: n.date }));
-  res.json({ orphanage: toPublicOrphanage(home), needs: list });
+router.get('/orphanages/:id/updates', authenticatePartner, requireVerified, async (req, res) => {
+  const updates = await profiles.updatesFor(req.params.id);
+  if (!updates) return res.status(404).json({ error: 'Orphanage not found.' });
+  res.json(updates);
 });
 
 // ---- the conversation with the CAM team ---------------------------------------
@@ -349,7 +355,7 @@ router.post('/donations', authenticatePartner, requireVerified, loadPartner, asy
   const partner = req.me;
   const body = req.body || {};
   const type = body.type === 'item' ? 'item' : 'money';
-  const orphanage = await orphanages.getVerified(Number(body.orphanageId));
+  const orphanage = await orphanages.getListed(Number(body.orphanageId) || 0);
   if (!orphanage) return res.status(400).json({ error: 'Please select a valid orphanage.' });
 
   const date = body.date || new Date().toISOString().slice(0, 10);
@@ -402,7 +408,7 @@ router.post('/placement-cases', authenticatePartner, requireVerified, loadPartne
 });
 
 router.post('/orphanages/:id/favorite', authenticatePartner, requireVerified, loadPartner, async (req, res) => {
-  const orphanage = await orphanages.getVerified(Number(req.params.id));
+  const orphanage = await orphanages.getListed(Number(req.params.id) || 0);
   if (!orphanage) return res.status(404).json({ error: 'Orphanage not found.' });
 
   await partners.toggleFavourite(req.me.ownerUserId, orphanage.id);

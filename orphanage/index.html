@@ -11,6 +11,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
         <link rel="stylesheet" href="../shared/chat.css">
+        <link rel="stylesheet" href="../shared/updates.css">
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
@@ -33,6 +34,7 @@
                     <button type="button" class="portal-nav-link active" data-view="overview"><i class="bi bi-grid-1x2"></i> Overview</button>
                     <button type="button" class="portal-nav-link" data-view="profile"><i class="bi bi-person-circle"></i> Profile</button>
                     <button type="button" class="portal-nav-link" data-view="needs"><i class="bi bi-clipboard2-pulse"></i> Manage Needs</button>
+                    <button type="button" class="portal-nav-link" data-view="posts"><i class="bi bi-camera-video"></i> Stories &amp; Videos</button>
                     <button type="button" class="portal-nav-link" data-view="donations"><i class="bi bi-cash-coin"></i> Pledges Received</button>
                     <button type="button" class="portal-nav-link" data-view="visits"><i class="bi bi-calendar-heart"></i> Visit Requests <span class="nav-dot" id="visits-dot" style="display:none"></span></button>
                     <button type="button" class="portal-nav-link" data-view="messages"><i class="bi bi-chat-dots"></i> Messages <span class="nav-dot" id="messages-dot" style="display:none"></span></button>
@@ -115,7 +117,7 @@
                         <div class="panel-head">
                             <div>
                                 <h2>Orphanage Profile</h2>
-                                <p class="panel-desc">This information is shown to donors once your profile is verified.</p>
+                                <p class="panel-desc">Once your profile is verified, approved donors and partners can see it. Your contact phone, email and payment account stay private: only you and the CAM Orphanage Connect team see them.</p>
                             </div>
                             <button type="button" class="btn-outline-pill" id="edit-profile-btn"><i class="bi bi-pencil"></i> Edit</button>
                         </div>
@@ -264,6 +266,81 @@
                         </table>
                     </div>
                 </section>
+                <!-- Stories, updates and videos -->
+                <section class="portal-view" id="view-posts">
+                    <div class="panel">
+                        <h2>Share a story, an update or a video</h2>
+                        <p class="panel-desc">Show approved donors and verified partners what is happening at your home: a story, news, a thank-you for a gift you received, with a photo or a short video.</p>
+                        <div class="info-note" id="posts-locked" style="display:none">
+                            <i class="bi bi-info-circle"></i>
+                            <div>You can share stories and videos once the CAM Orphanage Connect team has verified your orphanage. You can already add your social pages below.</div>
+                        </div>
+                        <form id="post-form" novalidate>
+                            <div class="field">
+                                <label for="post-type">What are you sharing?</label>
+                                <select id="post-type">
+                                    <option value="update">A news update</option>
+                                    <option value="story">A story about our home</option>
+                                    <option value="gift">A gift we received (say thank you)</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="post-title">Title (optional)</label>
+                                <input type="text" id="post-title" maxlength="150" placeholder="For example: 20 new mattresses arrived">
+                            </div>
+                            <div class="field">
+                                <label for="post-text">Your message</label>
+                                <textarea id="post-text" maxlength="2000" rows="5" placeholder="Write in your own words. Say who helped and what it means for the children."></textarea>
+                                <p class="upload-hint" id="post-count">0 / 2000</p>
+                            </div>
+                            <div class="field">
+                                <label for="post-photo">Photo (optional)</label>
+                                <input type="file" id="post-photo" accept="image/jpeg,image/png,image/webp">
+                                <p class="upload-hint">JPG, PNG or WebP, up to 3 MB.</p>
+                            </div>
+                            <div class="field">
+                                <label for="post-video">Video (optional)</label>
+                                <input type="file" id="post-video" accept="video/mp4,video/webm">
+                                <p class="upload-hint" id="post-video-hint">A short MP4 or WebM video.</p>
+                            </div>
+                            <div class="info-note draft">
+                                <i class="bi bi-shield-check"></i>
+                                <div><strong>Protect the children.</strong> Do not show a child's full name, identity documents or medical details. Only show a child's face if you have the right to, and keep your "blur faces" privacy setting in mind. Only approved donors and verified partners can watch, and the CAM team can remove anything unsafe.</div>
+                            </div>
+                            <div class="upload-progress" id="post-progress" style="display:none">
+                                <div class="upload-progress-track"><div class="upload-progress-bar" id="post-progress-bar"></div></div>
+                                <p class="upload-hint" id="post-progress-text"></p>
+                            </div>
+                            <div class="form-error" id="post-error"></div>
+                            <div class="form-success" id="post-success"></div>
+                            <button type="submit" class="btn-primary-pill" id="post-submit"><i class="bi bi-send"></i> Publish</button>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <h2>Your posts</h2>
+                        <div class="form-error" id="posts-error"></div>
+                        <div id="posts-list"><p class="empty-cell">You have not shared anything yet.</p></div>
+                    </div>
+
+                    <div class="panel">
+                        <h2>Your social pages</h2>
+                        <p class="panel-desc">Where else can people follow your home? These links are shown to approved donors and verified partners next to your updates. Leave a box empty to remove it.</p>
+                        <form id="social-form" novalidate>
+                            <div class="field"><label for="social-website">Website</label><input type="text" id="social-website" placeholder="https://yourhome.org"></div>
+                            <div class="field"><label for="social-facebook">Facebook page</label><input type="text" id="social-facebook" placeholder="https://facebook.com/yourhome"></div>
+                            <div class="field"><label for="social-instagram">Instagram</label><input type="text" id="social-instagram" placeholder="https://instagram.com/yourhome"></div>
+                            <div class="field"><label for="social-youtube">YouTube channel</label><input type="text" id="social-youtube" placeholder="https://youtube.com/@yourhome"></div>
+                            <div class="field"><label for="social-tiktok">TikTok</label><input type="text" id="social-tiktok" placeholder="https://tiktok.com/@yourhome"></div>
+                            <div class="field"><label for="social-x">X (Twitter)</label><input type="text" id="social-x" placeholder="https://x.com/yourhome"></div>
+                            <div class="field"><label for="social-whatsapp">WhatsApp (phone number or link)</label><input type="text" id="social-whatsapp" placeholder="+237 6XX XXX XXX"></div>
+                            <div class="form-error" id="social-error"></div>
+                            <div class="form-success" id="social-success"></div>
+                            <button type="submit" class="btn-primary-pill" id="social-submit"><i class="bi bi-check2"></i> Save links</button>
+                        </form>
+                    </div>
+                </section>
+
                 <!-- Visit requests -->
                 <section class="portal-view" id="view-visits">
                     <div class="panel">
@@ -313,6 +390,7 @@
 
         <script src="../shared/chat.js"></script>
         <script src="../shared/chat-api.js"></script>
+        <script src="../shared/updates.js"></script>
         <script src="script.js"></script>
     </body>
 </html>

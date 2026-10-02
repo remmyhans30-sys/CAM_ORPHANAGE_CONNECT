@@ -47,6 +47,10 @@ Everyone signs up on the same page, then completes a profile. The admin only see
 
 **Nobody browses orphanages until an admin approves them.** A new donor stays "Awaiting approval" until an admin approves them on the Donors page; a partner must be "Verified". Until then, visitors, pending donors and unverified partners see a message instead of the orphanages, and the server refuses to send the data.
 
+**A home an admin flags for review is hidden** from donors and partners until the flag is removed (Verification page, "Flag for review"): it drops out of their lists, its profile and posts do not open, and it takes no new pledges, partner gifts or visit requests. Chats that already exist carry on, and admins still see everything.
+
+**Donors and partners can read a home's full profile before giving.** On the donors' Give page, the orphanage's name or **View full profile** opens `donor/orphanage.html`; partners open a home from **Browse Orphanages** (`partner/orphanage-view.html`). Both show the same information: the home's photos and story, children in care, capacity and year founded, what the team checked (verified date, registration number, contact person, and whether the payment account was confirmed), its support so far (money pledged, number of supporters, needs already fully pledged), its open needs (with **Pledge** for donors, **Donate to this need** for partners), and its stories, videos and social pages. The home's phone, email and payment account are never shown: supporters use **Message this orphanage** and **Request a visit**.
+
 Documents (PDF, JPG or PNG, up to 3 MB) are private: only the owner and admins can open them. Photos are public.
 
 ## Messages
@@ -57,6 +61,17 @@ Documents (PDF, JPG or PNG, up to 3 MB) are private: only the owner and admins c
 - Messages are plain text up to 2,000 characters, and sending too fast is slowed down.
 
 Everyone uses the same chat window (conversation list on the left, messages on the right, unread dots): orphanages under **Messages** in the portal, donors in the **Messages** menu, partners under **Messages** in their portal, and admins in the **Support Center** (one thread per profile, with status and priority) and the **Chat Monitor**.
+
+## Stories, videos and social pages
+
+Verified orphanages get a **Stories & Videos** tab in their portal. They can post:
+
+- **a story** about the home, **a news update**, or **a thank-you for a gift they received** (so supporters see what the home has been given),
+- each with a title, up to 2,000 characters of text, an optional photo (JPG, PNG or WebP, 3 MB) and an optional short **video** (MP4 or WebM, 15 MB by default). A home can keep 60 MB of video in total, and post up to 10 times a day. Videos upload with a progress bar.
+
+They can also list their **social pages** (website, Facebook, Instagram, YouTube, TikTok, X, WhatsApp). Only plain `https` links to the right site are accepted, so a link can never run code.
+
+Who sees it: only approved donors (the **Stories & videos** button on an orphanage card) and verified partners (the orphanage page), never the public. Videos play through a signed link that expires after 30 minutes, so a video's address cannot be shared. Admins review posts and can watch a video from the orphanage's review screen, and removing a post hides it from supporters. The limits can be lowered with `VIDEO_MAX_MB` and `ORPHANAGE_VIDEO_QUOTA_MB` (see `DEPLOY.md`, the free plan has little disk space).
 
 ## Visit requests
 
@@ -88,8 +103,8 @@ Sign-up requires ticking that the person is 18 or older and agrees to the terms 
 | `index.html` and the other pages in the root | The public website: home, how it works, pages for donors, orphanages and partners, about, FAQ, contact, safeguarding and privacy, terms, photo credits |
 | `assets/` | `site.css` and `site.js` (shared design, header, footer and live numbers) and `img/` (photographs) |
 | `login/` | Sign in, sign up, forgot password, choose a new password |
-| `donor/` | Donor page: verified orphanages, their needs, and pledges |
-| `shared/` | The chat window (`chat.js`, `chat.css`, `chat-api.js`) and the visit-request form and list (`visits.js`, `visits.css`), used by the portals and admin |
+| `donor/` | Donor pages: verified orphanages and their needs, each home's full profile (`orphanage.html`), the pledge window (`pledge.js`), messages and the donor's own profile |
+| `shared/` | The chat window (`chat.js`), the visit-request form (`visits.js`) and the stories-and-videos viewer (`updates.js`), with their styles, used by the portals and admin |
 | `orphanage/` | Orphanage portal: profile, needs, verification status |
 | `admin/` | Admin panel: dashboard, verification, donors, finance and more |
 | `partner/` | Partner portal: profile and verification, browse orphanages, messages |

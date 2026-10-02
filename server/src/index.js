@@ -115,7 +115,8 @@ app.use((err, req, res, next) => {
     return res.status(refusal.status).json({ error: refusal.message, ...refusal.extra });
   }
   if (err.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'That file is too large. The limit is 3 MB.' });
+    const video = /\/video$/.test(req.path);
+    return res.status(413).json({ error: video ? 'That video is too large.' : 'That file is too large. The limit is 3 MB.' });
   }
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'That request could not be read.' });

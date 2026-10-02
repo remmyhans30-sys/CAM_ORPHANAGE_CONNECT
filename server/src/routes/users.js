@@ -19,7 +19,7 @@ const ROLE_IN = { user: 'donor', volunteer: 'orphanage' };
 const ROLE_OUT = { donor: 'user', orphanage: 'volunteer' };
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Written into the account's history when someone signs up, as a record of what they agreed to.
-const TERMS_NOTE = 'Confirmed being 18 or older and agreed to the terms of use (version 1)';
+const TERMS_NOTE = 'Confirmed being 18 or older and agreed to the terms of use (version 2)';
 
 function toPublicUser(row) {
   return { id: row.id, fullname: row.display_name, email: row.email, role: ROLE_OUT[row.role] };
