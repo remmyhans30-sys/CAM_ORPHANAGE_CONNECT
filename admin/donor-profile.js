@@ -83,7 +83,7 @@ function renderDuplicateRisk(donor) {
   const risk = computeDuplicateRisk(donor);
 
   box.innerHTML = risk
-    ? '<div class="profile-info-note profile-info-note-danger">&#9888; ' + escapeHtml(risk) + '</div>'
+    ? '<div class="profile-info-note profile-info-note-danger"><i class="bi bi-exclamation-triangle-fill"></i> ' + escapeHtml(risk) + '</div>'
     : '';
 }
 
@@ -131,8 +131,8 @@ function renderHeaderCard(donor) {
         '<div>' +
           '<div class="d-flex align-items-center gap-2 flex-wrap mb-1">' +
             '<h2 class="h5 mb-0">' + escapeHtml(donor.name) + '</h2>' +
-            '<span class="donor-status-badge status-' + donor.status + '">' + (donor.status === 'flagged' ? 'Flagged' : 'Active') + '</span>' +
-            (donor.vip ? '<span class="vip-tag">&#9733; VIP donor</span>' : '') +
+            '<span class="donor-status-badge status-' + donor.status + '">' + ({ pending: 'Awaiting approval', active: 'Active', flagged: 'Flagged', rejected: 'Rejected' }[donor.status] || 'Active') + '</span>' +
+            (donor.vip ? '<span class="vip-tag"><i class="bi bi-star-fill"></i> VIP donor</span>' : '') +
           '</div>' +
           '<p class="text-muted small mb-1">' + escapeHtml(donor.email || '&mdash;') + '</p>' +
           '<div class="d-flex flex-wrap gap-3 small text-muted">' +
@@ -146,7 +146,12 @@ function renderHeaderCard(donor) {
       '</div>' +
       '<div class="d-flex gap-2 align-self-start">' +
         '<button type="button" class="btn btn-admin-primary btn-sm" id="message-donor-btn">Message donor</button>' +
-        '<button type="button" class="btn btn-admin-danger btn-sm" id="flag-account-btn">' + (donor.status === 'flagged' ? 'Unflag account' : 'Flag account') + '</button>' +
+        (donor.status === 'pending'
+          ? '<button type="button" class="btn btn-admin-primary btn-sm" id="approve-donor-btn">Approve donor</button>' +
+            '<button type="button" class="btn btn-admin-danger btn-sm" id="reject-donor-btn">Reject</button>'
+          : donor.status === 'rejected'
+            ? '<button type="button" class="btn btn-admin-primary btn-sm" id="approve-donor-btn">Approve donor</button>'
+            : '<button type="button" class="btn btn-admin-danger btn-sm" id="flag-account-btn">' + (donor.status === 'flagged' ? 'Unflag account' : 'Flag account') + '</button>') +
       '</div>' +
     '</div>';
 }
@@ -335,7 +340,7 @@ function renderTrustAlertBox(donor) {
     ? 'Trust flag: ' + summary + (hasChargebacks ? ' ' + donor.chargebacksCount + ' chargeback(s)/dispute(s) on record.' : '')
     : 'No trust flags on this account. ' + summary;
 
-  box.innerHTML = '<div class="flag-alert">&#9888; ' + escapeHtml(message) + '</div>';
+  box.innerHTML = '<div class="flag-alert"><i class="bi bi-exclamation-triangle-fill"></i> ' + escapeHtml(message) + '</div>';
 }
 
 function renderAdminNotes(donor) {
@@ -399,6 +404,30 @@ document.getElementById('donor-header-card').addEventListener('click', function 
 
   if (e.target.id === 'message-donor-btn') {
     openOrCreateMessageThread('donor', donor.id, donor.name);
+  }
+
+  if (e.target.id === 'approve-donor-btn') {
+    donor.status = 'active';
+    donor.flagReason = '';
+    logActivity(donor, 'Approved donor account');
+    saveDonor(donor);
+    render();
+    return;
+  }
+
+  if (e.target.id === 'reject-donor-btn') {
+    const reason = prompt('Why is this donor not approved? The donor will see this reason.');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Please provide a reason.');
+      return;
+    }
+    donor.status = 'rejected';
+    donor.flagReason = reason.trim();
+    logActivity(donor, 'Rejected donor account: ' + reason.trim());
+    saveDonor(donor);
+    render();
+    return;
   }
 
   if (e.target.id === 'flag-account-btn') {

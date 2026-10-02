@@ -121,38 +121,6 @@ function render() {
   }).join('');
 }
 
-function seedSampleData() {
-  const samplePrograms = [
-    { name: 'Back to School Support', category: 'Education', status: 'active', description: 'Covers school fees, uniforms, and supplies for children across partner orphanages each new academic year.', fundingGoal: 2000000, amountRaised: 850000, childrenBenefiting: 120 },
-    { name: 'Community Health Checkups', category: 'Health', status: 'active', description: 'Quarterly visits from partner clinics to screen and treat common childhood illnesses.', fundingGoal: 800000, amountRaised: 800000, childrenBenefiting: 90 },
-    { name: 'Nutrition & Meal Program', category: 'Nutrition', status: 'planned', description: 'Proposed program to fund balanced daily meals at orphanages reporting food insecurity.', fundingGoal: 1200000, amountRaised: 0, childrenBenefiting: 60 },
-  ];
-
-  Promise.all(samplePrograms.map(function (p) {
-    return apiRequest('/programs', { method: 'POST', body: p });
-  }))
-    .then(fetchProgramsFromApi)
-    .then(render)
-    .catch(function (err) {
-      alert('Could not load sample data: ' + err.message);
-    });
-}
-
-function clearAllData() {
-  if (!confirm('Clear all programs? This cannot be undone.')) return;
-
-  Promise.all(programsCache.map(function (p) {
-    return apiRequest('/programs/' + p.id, { method: 'DELETE' });
-  }))
-    .then(fetchProgramsFromApi)
-    .then(render)
-    .catch(function (err) {
-      alert('Could not clear data: ' + err.message);
-    });
-}
-
-document.getElementById('seed-btn').addEventListener('click', seedSampleData);
-document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('search-input').addEventListener('input', render);
 document.getElementById('category-filter').addEventListener('change', render);
 document.getElementById('status-filter').addEventListener('change', render);

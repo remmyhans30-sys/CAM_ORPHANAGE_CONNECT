@@ -182,7 +182,8 @@ document.getElementById('donations-tbody').addEventListener('click', function (e
         (isItem
           ? '<option value="completed"' + (d.status === 'completed' ? ' selected' : '') + '>Delivered</option>' +
             '<option value="refunded"' + (d.status === 'refunded' ? ' selected' : '') + '>Returned</option>'
-          : '<option value="completed"' + (d.status === 'completed' ? ' selected' : '') + '>Completed</option>' +
+          : '<option value="pledged"' + (d.status === 'pledged' ? ' selected' : '') + '>Pledged</option>' +
+            '<option value="completed"' + (d.status === 'completed' ? ' selected' : '') + '>Completed</option>' +
             '<option value="refunded"' + (d.status === 'refunded' ? ' selected' : '') + '>Refunded</option>') +
       '</select>' +
       '<button type="button" class="btn btn-admin-primary btn-sm" id="save-status-btn" data-row="' + rowId + '">Save status</button> ' +

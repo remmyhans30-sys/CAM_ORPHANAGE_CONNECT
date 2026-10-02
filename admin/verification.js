@@ -161,7 +161,7 @@ function logEvent(orphanage, action) {
 }
 
 function matchesFilter(orphanage, filter) {
-  if (filter === 'all') return orphanage.status !== 'rejected';
+  if (filter === 'all') return orphanage.status !== 'rejected' && orphanage.status !== 'draft';
   if (filter === 'flagged') return Boolean(orphanage.flagged);
   if (filter === 'urgent') return isUrgent(orphanage);
   return orphanage.status === filter;
@@ -191,7 +191,8 @@ function updateFilterTabs(allOrphanages) {
 let currentOrphanages = [];
 
 function render() {
-  const allOrphanages = loadOrphanages();
+  // Orphanages still filling in their profile ('draft') are not ready for review yet.
+  const allOrphanages = loadOrphanages().filter(function (o) { return o.status !== 'draft'; });
   const needs = loadNeeds();
   const grid = document.getElementById('profile-grid');
   const emptyState = document.getElementById('empty-state');
@@ -279,11 +280,11 @@ function render() {
             (isVerified ? '<span class="verify-check-inline" title="Verified">' + CHECK_SVG + '</span>' : '') +
           '</h3>' +
           '<p class="profile-location">' + escapeHtml(orphanage.location) + '</p>' +
-          (urgent ? '<p class="profile-urgent-badge">&#9201; Urgent &mdash; pending ' + daysPending(orphanage) + ' days</p>' : '') +
-          (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '">&#9873; Flagged for review</p>' : '') +
+          (urgent ? '<p class="profile-urgent-badge"><i class="bi bi-stopwatch"></i> Urgent &mdash; pending ' + daysPending(orphanage) + ' days</p>' : '') +
+          (orphanage.flagged ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.flagReason || '') + '"><i class="bi bi-flag-fill"></i> Flagged for review</p>' : '') +
           (orphanage.status === 'needs-info' && orphanage.infoRequestMessage ? '<p class="profile-info-badge" title="' + escapeHtml(orphanage.infoRequestMessage) + '">Awaiting requested info</p>' : '') +
           (orphanage.status === 'rejected' && orphanage.rejectionReason ? '<p class="profile-flag-badge" title="' + escapeHtml(orphanage.rejectionReason) + '">Rejected: ' + escapeHtml(orphanage.rejectionReason) + '</p>' : '') +
-          (duplicateRisks[orphanage.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[orphanage.id].join(' | ')) + '">&#9888; Duplicate contact/account risk</p>' : '') +
+          (duplicateRisks[orphanage.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[orphanage.id].join(' | ')) + '"><i class="bi bi-exclamation-triangle-fill"></i> Duplicate contact/account risk</p>' : '') +
           '<div class="profile-stats">' +
             '<div class="stat"><strong>' + (orphanage.childrenCount || 0) + '</strong><span>Children</span></div>' +
             '<div class="stat"><strong>' + orphanageNeeds.length + '</strong><span>Active needs</span></div>' +
@@ -297,179 +298,6 @@ function render() {
 
     grid.appendChild(col);
   });
-}
-
-function seedSampleData() {
-  const sampleOrphanages = [
-    {
-      _sampleId: 1,
-      name: "Hope Children's Home",
-      location: 'Buea, Southwest Region',
-      registrationNumber: 'MINAS/2022/00123',
-      story: 'A home for children in Buea providing shelter, education, and care since 2012.',
-      storyLanguage: 'en',
-      status: 'verified',
-      childrenCount: 32,
-      followersCount: 128,
-      foundedYear: 2012,
-      capacity: 40,
-      contactName: 'Grace Ebong',
-      contactPhone: '+237 677 123 456',
-      contactEmail: 'contact@hopechildrenshome.org',
-      termsAgreed: true,
-      documents: ['registration-certificate.pdf', 'director-id.pdf'],
-      photoUrl: 'https://picsum.photos/seed/hope-avatar/200/200',
-      coverPhotoUrl: 'https://picsum.photos/seed/hope-cover/600/200',
-      gallery: [
-        'https://picsum.photos/seed/hope-gallery-1/300/300',
-        'https://picsum.photos/seed/hope-gallery-2/300/300',
-        'https://picsum.photos/seed/hope-gallery-3/300/300',
-        'https://picsum.photos/seed/hope-gallery-4/300/300',
-      ],
-      posts: [
-        { date: '2026-08-20', text: 'Thank you to everyone who donated toward our new dormitory beds — installation starts next week!', photoUrl: 'https://picsum.photos/seed/hope-post-1/400/250' },
-        { date: '2026-07-05', text: 'Our children celebrated the end of the school term with a small graduation ceremony.' },
-      ],
-      paymentProvider: 'MTN Mobile Money',
-      paymentAccountName: "Hope Children's Home",
-      paymentAccountNumber: '677 123 456',
-      paymentAccountConfirmed: true,
-    },
-    {
-      _sampleId: 2,
-      name: "Foyer de l'Espérance",
-      location: 'Yaoundé, Centre Region',
-      registrationNumber: 'MINAS/2023/00456',
-      story: "Un foyer pour enfants à Yaoundé offrant un abri sûr et un accompagnement scolaire.",
-      storyLanguage: 'fr',
-      status: 'pending',
-      submittedDate: '2026-08-10',
-      childrenCount: 18,
-      followersCount: 9,
-      foundedYear: 2019,
-      capacity: 25,
-      contactName: 'Jean-Paul Mbarga',
-      contactPhone: '+237 699 234 567',
-      contactEmail: 'contact@foyerdelesperance.org',
-      termsAgreed: false,
-      documents: [],
-    },
-    {
-      _sampleId: 3,
-      name: 'Grace Orphanage',
-      location: 'Bamenda, Northwest Region',
-      registrationNumber: 'MINAS/2021/00789',
-      story: 'Serving vulnerable children in Bamenda with housing, meals, and schooling support.',
-      storyLanguage: 'en',
-      status: 'verified',
-      childrenCount: 27,
-      followersCount: 76,
-      foundedYear: 2015,
-      capacity: 35,
-      contactName: 'Comfort Ngwa',
-      contactPhone: '+237 675 345 678',
-      contactEmail: 'contact@graceorphanage.org',
-      termsAgreed: true,
-      documents: ['registration-certificate.pdf'],
-      photoUrl: 'https://picsum.photos/seed/grace-avatar/200/200',
-      activityLog: [
-        { reviewer: 'admin@camorphanage.org', tier: 'needs-info', timestamp: '2026-07-10T09:15:00.000Z' },
-        { reviewer: 'admin@camorphanage.org', tier: 'verified', timestamp: '2026-07-18T14:02:00.000Z' },
-      ],
-    },
-    {
-      _sampleId: 4,
-      name: 'Orphelinat Bethel',
-      location: 'Douala, Littoral Region',
-      registrationNumber: 'MINAS/2020/00234',
-      story: "Un orphelinat à Douala qui accueille des enfants depuis 2008.",
-      storyLanguage: 'fr',
-      status: 'rejected',
-      rejectionReason: 'Registration certificate photo was blurry and could not be verified against government records.',
-      appealMessage: "We have re-scanned and re-submitted our registration certificate. Please review again — the original document is valid.",
-      appealDate: '2026-08-28',
-      childrenCount: 15,
-      followersCount: 22,
-      foundedYear: 2008,
-      capacity: 20,
-      contactName: 'Marie Fotso',
-      contactPhone: '+237 655 456 789',
-      contactEmail: 'contact@orphelinatbethel.org',
-      termsAgreed: true,
-      documents: ['registration-certificate.pdf'],
-    },
-    {
-      _sampleId: 5,
-      name: 'Little Angels Home',
-      location: 'Limbe, Southwest Region',
-      registrationNumber: 'MINAS/2024/00567',
-      story: 'A newly registered home in Limbe caring for orphaned and abandoned children.',
-      storyLanguage: 'en',
-      status: 'pending',
-      submittedDate: '2026-08-30',
-      childrenCount: 12,
-      followersCount: 3,
-      foundedYear: 2023,
-      capacity: 20,
-      contactName: 'Peter Ekema',
-      contactPhone: '+237 655 456 789',
-      contactEmail: 'contact@littleangelshome.org',
-      termsAgreed: true,
-      documents: ['registration-certificate.pdf', 'proof-of-address.pdf'],
-      photoUrl: 'https://picsum.photos/seed/angels-avatar/200/200',
-      coverPhotoUrl: 'https://picsum.photos/seed/angels-cover/600/200',
-      paymentProvider: 'Orange Money',
-      paymentAccountName: 'Peter Ekema',
-      paymentAccountNumber: '680 567 890',
-      paymentAccountConfirmed: false,
-    },
-  ];
-
-  Promise.all(sampleOrphanages.map(function (o) {
-    const payload = Object.assign({}, o);
-    delete payload._sampleId;
-    return apiRequest('/orphanages', { method: 'POST', body: payload })
-      .then(function (result) { return { sampleId: o._sampleId, realId: result.orphanage.id }; });
-  }))
-    .then(function (idMappings) {
-      const idMap = {};
-      idMappings.forEach(function (m) { idMap[m.sampleId] = m.realId; });
-
-      const sampleNeeds = [
-        { title: 'New dormitory beds', raised: 320000, goal: 500000, percent: 64, orphanageId: idMap[1], date: '2026-08-10' },
-        { title: 'School fees for 10 children', raised: 150000, goal: 400000, percent: 38, orphanageId: idMap[1], date: '2026-06-01' },
-        { title: 'Fournitures scolaires', raised: 60000, goal: 200000, percent: 30, orphanageId: idMap[2], date: '2026-08-25' },
-        { title: 'Kitchen renovation', raised: 480000, goal: 480000, percent: 100, orphanageId: idMap[3], date: '2026-05-14' },
-        { title: 'Water borehole', raised: 90000, goal: 600000, percent: 15, orphanageId: idMap[5], date: '2026-08-30' },
-      ];
-
-      return Promise.all(sampleNeeds.map(function (n) {
-        return apiRequest('/needs', { method: 'POST', body: n });
-      }));
-    })
-    .then(function () {
-      return Promise.all([fetchOrphanagesFromApi(), fetchNeedsFromApi()]);
-    })
-    .then(render)
-    .catch(function (err) {
-      alert('Could not load sample data: ' + err.message);
-    });
-}
-
-function clearAllData() {
-  if (!confirm('Clear all orphanages and needs data? This cannot be undone.')) return;
-
-  Promise.all(orphanagesCache.map(function (o) {
-    return apiRequest('/orphanages/' + o.id, { method: 'DELETE' });
-  }))
-    .then(function () {
-      // The backend cascades: deleting each orphanage also deletes its needs.
-      return Promise.all([fetchOrphanagesFromApi(), fetchNeedsFromApi()]);
-    })
-    .then(render)
-    .catch(function (err) {
-      alert('Could not clear data: ' + err.message);
-    });
 }
 
 function csvField(value) {
@@ -501,8 +329,6 @@ document.getElementById('export-csv-btn').addEventListener('click', function () 
   downloadCsv('orphanages.csv', rows);
 });
 
-document.getElementById('seed-btn').addEventListener('click', seedSampleData);
-document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('search-input').addEventListener('input', render);
 
 document.getElementById('filter-tabs').addEventListener('click', function (e) {
@@ -531,7 +357,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
   risks = risks || [];
   const docs = orphanage.documents || [];
   const docsList = docs.length
-    ? '<ul class="mb-0">' + docs.map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
+    ? '<ul class="mb-0">' + docs.map(function (d) { return '<li>' + documentLabelHtml(d) + '</li>'; }).join('') + '</ul>'
     : '<p class="profile-docs-missing mb-0">No verification documents uploaded</p>';
 
   const sortedNeeds = orphanageNeeds.slice().sort(function (a, b) { return new Date(b.date || 0) - new Date(a.date || 0); });
@@ -661,7 +487,7 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
           '</div>'
         : '') +
       (risks.length
-        ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger">&#9888; ' + risks.map(escapeHtml).join('<br>') + '</div></div>'
+        ? '<div class="col-12"><div class="profile-info-note profile-info-note-danger"><i class="bi bi-exclamation-triangle-fill"></i> ' + risks.map(escapeHtml).join('<br>') + '</div></div>'
         : '') +
       '<div class="col-12">' +
         '<dl class="row mb-0 small">' +

@@ -155,50 +155,6 @@ function render() {
   }).join('');
 }
 
-function seedSampleData() {
-  const orphanages = loadOrphanages();
-  if (orphanages.length === 0) {
-    alert('Load or add orphanages first, then load sample needs.');
-    return;
-  }
-  const sampleNeeds = orphanages.slice(0, 3).map(function (o, i) {
-    const goal = [500000, 900000, 300000][i] || 400000;
-    const raised = [200000, 900000, 50000][i] || 0;
-    return {
-      title: ['New dormitory beds', 'Kitchen renovation', 'School supplies'][i] || 'General support',
-      goal: goal,
-      raised: raised,
-      percent: goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0,
-      orphanageId: o.id,
-      date: new Date().toISOString().slice(0, 10),
-    };
-  });
-
-  Promise.all(sampleNeeds.map(function (n) {
-    return apiRequest('/needs', { method: 'POST', body: n });
-  }))
-    .then(fetchNeedsFromApi)
-    .then(render)
-    .catch(function (err) {
-      alert('Could not load sample data: ' + err.message);
-    });
-}
-
-function clearAllData() {
-  if (!confirm('Clear all needs? This cannot be undone.')) return;
-
-  Promise.all(needsCache.map(function (n) {
-    return apiRequest('/needs/' + n.id, { method: 'DELETE' });
-  }))
-    .then(fetchNeedsFromApi)
-    .then(render)
-    .catch(function (err) {
-      alert('Could not clear data: ' + err.message);
-    });
-}
-
-document.getElementById('seed-btn').addEventListener('click', seedSampleData);
-document.getElementById('clear-btn').addEventListener('click', clearAllData);
 document.getElementById('search-input').addEventListener('input', render);
 document.getElementById('orphanage-filter').addEventListener('change', render);
 document.getElementById('status-filter').addEventListener('change', render);
@@ -247,14 +203,11 @@ document.getElementById('need-form').addEventListener('submit', function (e) {
 
   const editId = document.getElementById('need-id').value;
   const goal = Number(document.getElementById('need-goal').value) || 0;
-  const raised = Number(document.getElementById('need-raised').value) || 0;
 
   const data = {
     title: document.getElementById('need-title').value.trim(),
     orphanageId: document.getElementById('need-orphanage-select').value,
     goal: goal,
-    raised: raised,
-    percent: goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0,
   };
 
   if (!editId) {

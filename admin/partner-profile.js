@@ -56,7 +56,8 @@ function renderOrphanageMessages(partner) {
     const messagesHtml = t.messages.map(function (m) {
       const when = new Date(m.timestamp);
       const whenText = isNaN(when.getTime()) ? m.timestamp : when.toLocaleString();
-      const label = m.sender === 'partner' ? escapeHtml(partner.name) : 'You (on behalf of orphanage)';
+      const label = m.sender === 'partner' ? escapeHtml(partner.name)
+        : (m.sender === 'orphanage' ? escapeHtml(t.orphanageName) : 'CAM team');
       return (
         '<div class="mb-2">' +
           '<div class="small text-muted">' + label + ' &mdash; ' + escapeHtml(whenText) + '</div>' +
@@ -69,9 +70,9 @@ function renderOrphanageMessages(partner) {
       '<div class="profile-post mb-3" data-thread-id="' + t.id + '">' +
         '<p class="small mb-2"><strong>' + escapeHtml(t.orphanageName) + '</strong></p>' +
         messagesHtml +
-        '<textarea class="form-control form-control-sm small mt-2 orphanage-reply-textarea" rows="2" placeholder="Reply on behalf of the orphanage..."></textarea>' +
+        '<textarea class="form-control form-control-sm small mt-2 orphanage-reply-textarea" rows="2" placeholder="Step in as the CAM Orphanage Connect team..."></textarea>' +
         '<div class="d-flex align-items-center gap-2 mt-2">' +
-          '<button type="button" class="btn btn-admin-outline btn-sm orphanage-reply-btn" data-thread-id="' + t.id + '">Send reply</button>' +
+          '<button type="button" class="btn btn-admin-outline btn-sm orphanage-reply-btn" data-thread-id="' + t.id + '">Send as team</button>' +
           '<span class="small text-muted orphanage-reply-status"></span>' +
         '</div>' +
       '</div>'
@@ -170,7 +171,7 @@ function renderHeaderCard(partner) {
             '<span class="status-badge status-' + partner.verificationStatus + '">' + escapeHtml(statusLabel(partner.verificationStatus)) + '</span>' +
             '<span class="tier-tag tier-friend">' + escapeHtml(partner.orgType) + '</span>' +
             '<span class="tier-tag ' + (partner.tier === 'Verified Referrer' ? 'tier-sustainer' : 'tier-champion') + '">' + escapeHtml(partner.tier) + '</span>' +
-            (isUrgent(partner) ? '<span class="profile-urgent-badge">&#9201; Urgent &mdash; pending ' + daysPending(partner) + ' days</span>' : '') +
+            (isUrgent(partner) ? '<span class="profile-urgent-badge"><i class="bi bi-stopwatch"></i> Urgent &mdash; pending ' + daysPending(partner) + ' days</span>' : '') +
           '</div>' +
           '<div class="d-flex flex-wrap gap-3 small text-muted">' +
             '<span>Contact: ' + escapeHtml(partner.contactName || '&mdash;') + '</span>' +
@@ -198,7 +199,7 @@ function renderOnboardingChecklist(partner) {
   panel.innerHTML = items.map(function (item) {
     return (
       '<div class="d-flex align-items-center gap-2 mb-1">' +
-        '<span>' + (item.done ? '&#9989;' : '&#9744;') + '</span>' +
+        '<span>' + (item.done ? '<i class="bi bi-check-circle-fill"></i>' : '<i class="bi bi-square"></i>') + '</span>' +
         '<span class="small' + (item.done ? '' : ' text-muted') + '">' + escapeHtml(item.label) + '</span>' +
       '</div>'
     );
@@ -309,7 +310,7 @@ function renderPlacementReferrals(partner) {
   if (partner.tier === 'Sponsor') {
     panel.innerHTML =
       '<div class="profile-info-note">' +
-        '&#128274; This organization is on the <strong>Sponsor</strong> tier and cannot submit placement cases. ' +
+        '<i class="bi bi-lock-fill"></i> This organization is on the <strong>Sponsor</strong> tier and cannot submit placement cases. ' +
         'Upgrade to <strong>Verified Referrer</strong> tier to enable placement referrals.' +
       '</div>';
     return;
@@ -376,7 +377,7 @@ function renderDuplicateRisk(partner) {
   const risk = computeDuplicateRisk(partner);
 
   box.innerHTML = risk
-    ? '<div class="profile-info-note profile-info-note-danger">&#9888; ' + escapeHtml(risk) + '</div>'
+    ? '<div class="profile-info-note profile-info-note-danger"><i class="bi bi-exclamation-triangle-fill"></i> ' + escapeHtml(risk) + '</div>'
     : '';
 }
 
@@ -402,7 +403,7 @@ function renderVerificationDocuments(partner) {
     '<p class="text-muted small mb-2">Required to verify: registration certificate, tax clearance certificate, and a government ID for the contact person.</p>';
 
   const docsList = hasDocs
-    ? requiredNote + '<ul class="mb-3 small">' + docs.map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
+    ? requiredNote + '<ul class="mb-3 small">' + docs.map(function (d) { return '<li>' + documentLabelHtml(d) + '</li>'; }).join('') + '</ul>'
     : requiredNote + '<p class="profile-docs-missing small mb-3">No verification documents uploaded yet.</p>';
 
   const sanctionsCheck =

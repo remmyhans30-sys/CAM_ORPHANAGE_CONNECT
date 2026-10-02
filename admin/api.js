@@ -36,3 +36,47 @@ function apiRequest(path, options) {
     });
   });
 }
+
+
+// Uploaded documents are private, so they are fetched with the admin's login and
+// opened from memory instead of through a plain link.
+function documentLabelHtml(doc) {
+  function esc(value) {
+    const div = document.createElement('div');
+    div.textContent = value === null || value === undefined ? '' : String(value);
+    return div.innerHTML;
+  }
+  if (typeof doc === 'string') return esc(doc);
+
+  const size = doc.size ? ' <span class="text-muted">(' + Math.max(1, Math.round(doc.size / 1024)) + ' KB)</span>' : '';
+  return '<a href="#" data-open-document="' + esc(doc.id) + '" data-document-name="' + esc(doc.name) + '">' + esc(doc.name) + '</a>' + size;
+}
+
+document.addEventListener('click', function (e) {
+  const link = e.target.closest('[data-open-document]');
+  if (!link) return;
+  e.preventDefault();
+
+  const token = localStorage.getItem('adminToken');
+  const opened = window.open('', '_blank');
+  fetch(API_BASE + '/files/document/' + encodeURIComponent(link.dataset.openDocument), {
+    headers: token ? { Authorization: 'Bearer ' + token } : {},
+  })
+    .then(function (response) {
+      if (!response.ok) throw new Error('File not found');
+      return response.blob();
+    })
+    .then(function (blob) {
+      const url = URL.createObjectURL(blob);
+      if (opened) {
+        opened.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    })
+    .catch(function () {
+      if (opened) opened.close();
+      alert('Could not open "' + (link.dataset.documentName || 'this document') + '". It may have been removed.');
+    });
+});

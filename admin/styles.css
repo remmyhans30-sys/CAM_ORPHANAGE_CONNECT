@@ -10,14 +10,14 @@
 }
 
 body {
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
   background-color: var(--paper);
   color: var(--ink);
 }
 
 h1, h2, h3, h4, h5, h6,
 .brand-heading {
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   color: var(--dawn-purple);
 }
 
@@ -47,7 +47,7 @@ h1, h2, h3, h4, h5, h6,
 
 /* Login screen */
 .admin-login-wrapper {
-  min-height: 100vh;
+  min-height: calc(100vh - 6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -215,7 +215,7 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-weight: 600;
   font-size: 1.25rem;
   overflow: hidden;
@@ -290,7 +290,7 @@ h1, h2, h3, h4, h5, h6,
 
 .profile-stats .stat strong {
   display: block;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   color: var(--dawn-purple);
   font-size: 0.95rem;
 }
@@ -509,7 +509,7 @@ h1, h2, h3, h4, h5, h6,
 
 .stat-tile strong {
   display: block;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   color: var(--dawn-purple);
   font-size: 1.1rem;
 }
@@ -615,7 +615,7 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-weight: 600;
   font-size: 1rem;
   flex-shrink: 0;
@@ -677,7 +677,7 @@ h1, h2, h3, h4, h5, h6,
   display: inline-block;
   background-color: var(--dawn-purple);
   color: #fff;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-weight: 700;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
@@ -687,7 +687,7 @@ h1, h2, h3, h4, h5, h6,
 
 .dashboard-shell {
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100vh - 6px);
 }
 
 .dashboard-sidebar {
@@ -706,7 +706,7 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-weight: 700;
   margin-bottom: 2rem;
   font-size: 0.95rem;
@@ -847,7 +847,7 @@ h1, h2, h3, h4, h5, h6,
 .dashboard-stat-icon.gold { background-color: var(--gold); color: var(--ink); }
 
 .dashboard-stat-value {
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-size: 1.35rem;
   color: var(--ink);
   line-height: 1.1;
@@ -975,3 +975,33 @@ h1, h2, h3, h4, h5, h6,
     display: none !important;
   }
 }
+
+
+.donor-status-badge.status-pending {
+  background-color: rgba(245, 166, 35, 0.3);
+  color: #92400E;
+}
+
+.donor-status-badge.status-rejected {
+  background-color: rgba(26, 32, 53, 0.1);
+  color: var(--ink);
+}
+
+/* Cameroon flag bar across the top of every page */
+body::before {
+  content: '';
+  display: block;
+  height: 6px;
+  background: linear-gradient(90deg, #12804A 0 33.34%, #C0392B 33.34% 66.67%, #E9B93A 66.67% 100%);
+}
+
+/* Phones: header button rows wrap instead of running off the screen */
+@media (max-width: 640px) {
+  .d-flex.gap-2 { flex-wrap: wrap }
+  .dashboard-topbar { padding: 0.75rem 1rem; gap: 0.5rem }
+  #admin-email-label { display: none }
+}
+
+/* Admin login links use the brand green */
+.admin-login-card a { color: var(--dawn-purple) }
+.admin-login-card a:hover { color: var(--ink) }
