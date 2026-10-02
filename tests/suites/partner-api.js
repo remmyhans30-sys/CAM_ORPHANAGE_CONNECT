@@ -61,4 +61,9 @@ const PNG = b64(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 
   out('21 resubmitted:', r.body.partner.verificationStatus + ' docs=' + r.body.partner.documents.length);
   await call('/partners/' + row.id, 'PUT', { verificationStatus: 'verified', sanctionsScreened: true, termsAgreed: true }, admin.token);
   out('22 pledge locked once verified:', (await call('/partner-auth/me', 'PUT', { pledgeDescription: 'Match everything', pledgeLimit: 99999999 }, token)).body.error);
+  await call('/partners/' + row.id, 'PUT', { adminNotes: 'Private note for the team', flagReason: 'Checking their papers' }, admin.token);
+  const own = (await call('/partner-auth/me', 'GET', null, token)).body.partner;
+  const leaked = ['adminNotes', 'flagReason', 'activityLog'].filter((k) => k in own);
+  out('23 the partner does not get the team\'s notes or history:', leaked.length ? 'LEAKED ' + leaked.join(', ') : 'none sent');
+  if (leaked.length) { console.error('TEST FAILED: the partner can read ' + leaked.join(', ')); process.exit(1); }
 })().catch((e) => { console.error('TEST FAILED', e); process.exit(1); });

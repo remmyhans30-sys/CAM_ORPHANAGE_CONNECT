@@ -43,8 +43,11 @@ function checklistFor(p) {
   ];
 }
 
+// The partner's own record. The team's private notes, the reason for a flag and the review history
+// (with the admins' addresses) stay with the team.
 function partnerProfile(p) {
-  return { ...p, documents: p.documents.map((d) => ({ id: d.id, name: d.name, size: d.size })), checklist: checklistFor(p) };
+  const { adminNotes, flagReason, activityLog, ...own } = p;
+  return { ...own, documents: p.documents.map((d) => ({ id: d.id, name: d.name, size: d.size })), checklist: checklistFor(p) };
 }
 
 // Orphanage details, donations to orphanages and placement cases are only for partners an
