@@ -14,13 +14,13 @@ html, body { height: 100% }
 
 body {
     margin: 0;
-    font-family: 'Work Sans', sans-serif;
+    font-family: 'Source Sans 3', system-ui, sans-serif;
     background-color: var(--paper-dim);
     color: var(--ink);
 }
 
 h1, h2, h3, .brand-heading {
-    font-family: 'Baloo 2', sans-serif;
+    font-family: 'Bitter', Georgia, serif;
     color: var(--dawn-purple);
 }
 
@@ -191,7 +191,7 @@ h1, h2, h3, .brand-heading {
 .login-hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(8, 20, 14, 0.55) 0%, rgba(7, 36, 22, 0.78) 55%, rgba(5, 46, 26, 0.94) 100%);
+    background: linear-gradient(180deg, rgba(8, 20, 14, 0.38) 0%, rgba(7, 36, 22, 0.62) 45%, rgba(5, 40, 24, 0.9) 100%);
 }
 .login-hero-content {
     position: relative;
@@ -207,7 +207,7 @@ h1, h2, h3, .brand-heading {
 .brand-lockup { display: flex; align-items: center; gap: 0.75rem }
 .brand-heart { width: 44px; height: 44px; flex-shrink: 0; display: block }
 .brand-heart-lg { width: 56px; height: 56px }
-.brand-word { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 1.1rem; line-height: 1.25; color: #fff; margin: 0 }
+.brand-word { font-family: 'Bitter', Georgia, serif; font-weight: 700; font-size: 1.1rem; line-height: 1.25; color: #fff; margin: 0 }
 .brand-word b, .brand-word span { display: block; color: #6be79a; font-weight: 700 }
 .brand-tag { font-size: 0.78rem; color: rgba(255, 255, 255, 0.75); margin: 0.15rem 0 0 }
 
@@ -222,12 +222,12 @@ h1, h2, h3, .brand-heading {
 .feature-icon.f-blue { background-color: var(--teal) }
 .feature-icon.f-gold { background-color: var(--gold) }
 .feature-icon.f-purple { background-color: #8b5cf6 }
-.feature-item strong { font-family: 'Baloo 2', sans-serif; font-size: 0.95rem; color: #fff }
+.feature-item strong { font-family: 'Bitter', Georgia, serif; font-size: 0.95rem; color: #fff }
 .feature-item span { font-size: 0.78rem; color: rgba(255, 255, 255, 0.7) }
 
 .hero-location { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.85rem; color: rgba(255, 255, 255, 0.85) }
 .hero-location i { margin-top: 0.2rem }
-.hero-location strong { display: block; font-family: 'Baloo 2', sans-serif; font-weight: 600 }
+.hero-location strong { display: block; font-family: 'Bitter', Georgia, serif; font-weight: 600 }
 .hero-location span { color: rgba(255, 255, 255, 0.65); font-size: 0.8rem }
 
 .login-panel {
@@ -287,3 +287,14 @@ h1, h2, h3, .brand-heading {
     .login-hero { display: none }
     .login-panel { min-height: 100vh }
 }
+
+
+/* Brand marks link back to the home page */
+a.brand-lockup, a.panel-brand { text-decoration: none; color: inherit }
+a.brand-lockup:hover, a.panel-brand:hover { opacity: 0.9 }
+.login-hero { background-color: #0A4D32; background-repeat: no-repeat }
+
+/* Agreement to the terms on the sign-up form */
+.consent-line { display: flex; gap: 0.6rem; align-items: flex-start; margin: 0.9rem 0 0.4rem; font-size: 0.88rem; line-height: 1.4; color: var(--ink, #1f2a24); cursor: pointer }
+.consent-line input { width: 1.1rem; height: 1.1rem; margin-top: 0.15rem; flex: none; accent-color: #12804A }
+.consent-line a { color: #12804A; text-decoration: underline }

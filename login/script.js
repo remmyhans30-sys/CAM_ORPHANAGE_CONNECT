@@ -16,12 +16,24 @@ document.querySelectorAll('.toggle-password').forEach(function (btn) {
 
 // Accounts live in the backend (server/). Start it with `npm start` inside server/.
 // Local copies talk to the server on this computer; the live site uses its own address.
-const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:4000' : '') + '/api/users';
+const API_ROOT = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:4000' : '') + '/api';
+const API_BASE = API_ROOT + '/users';
+const PARTNER_API = API_ROOT + '/partner-auth';
 const SESSION_KEY = 'cocSession';
 
-function destinationForRole(role) {
+function destinationForRole(role, isNewAccount) {
     if (role === 'volunteer') return '../orphanage/index.html';
-    return '../donor/index.html';
+    return isNewAccount ? '../donor/profile.html' : '../donor/index.html';
+}
+
+// The partner portal reads its own login keys, so partners are stored the way it expects.
+function startPartnerSession(partner, token) {
+    window.localStorage.setItem('partnerToken', token);
+    window.localStorage.setItem('partnerEmail', partner.email);
+}
+
+function destinationForPartner(partner) {
+    return partner.verificationStatus === 'draft' ? '../partner/profile.html' : '../partner/dashboard.html';
 }
 
 function startSession(user, token, remember) {
@@ -44,10 +56,10 @@ function setLoading(form, loading) {
     button.style.opacity = loading ? '0.7' : '';
 }
 
-async function postJson(path, body) {
+async function postJson(path, body, base) {
     let response;
     try {
-        response = await fetch(API_BASE + path, {
+        response = await fetch((base || API_BASE) + path, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
@@ -58,7 +70,9 @@ async function postJson(path, body) {
 
     const data = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong. Please try again.');
+        const error = new Error(data.error || 'Something went wrong. Please try again.');
+        error.status = response.status;
+        throw error;
     }
     return data;
 }
@@ -83,7 +97,17 @@ if (loginForm) {
         hideFormError(loginError);
         setLoading(loginForm, true);
         try {
-            const data = await postJson('/login', { email: email, password: password });
+            let data;
+            try {
+                data = await postJson('/login', { email: email, password: password });
+            } catch (err) {
+                // Not a donor or orphanage account: partners have their own accounts.
+                if (err.status !== 401) throw err;
+                const partnerData = await postJson('/login', { email: email, password: password }, PARTNER_API);
+                startPartnerSession(partnerData.partner, partnerData.token);
+                window.location.href = destinationForPartner(partnerData.partner);
+                return;
+            }
             startSession(data.user, data.token, remember);
             window.location.href = destinationForRole(data.user.role);
         } catch (err) {
@@ -96,6 +120,22 @@ if (loginForm) {
 // Register form
 const registerForm = document.querySelector('.register-form');
 const registerError = document.getElementById('register-error');
+
+if (registerForm) {
+    const NAME_LABELS = { user: 'Your full name', volunteer: 'Orphanage name', partner: 'Organization name' };
+    registerForm.querySelectorAll('input[name="role"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            document.getElementById('fullname').placeholder = NAME_LABELS[radio.value];
+        });
+    });
+
+    // Links from the public pages preselect the account type: register.html?role=user|volunteer|partner
+    const presetRadio = registerForm.querySelector('input[name="role"][value="' + (new URLSearchParams(window.location.search).get('role') || '') + '"]');
+    if (presetRadio) {
+        presetRadio.checked = true;
+        document.getElementById('fullname').placeholder = NAME_LABELS[presetRadio.value];
+    }
+}
 
 if (registerForm) {
     registerForm.addEventListener('submit', async function (e) {
@@ -123,13 +163,23 @@ if (registerForm) {
             showFormError(registerError, 'Password must be at least 6 characters.');
             return;
         }
+        if (!document.getElementById('accept-terms').checked) {
+            showFormError(registerError, 'Please confirm that you are 18 or older and agree to the terms of use.');
+            return;
+        }
 
         hideFormError(registerError);
         setLoading(registerForm, true);
         try {
-            const data = await postJson('/register', { fullname: fullname, email: email, password: password, role: roleInput.value });
+            if (roleInput.value === 'partner') {
+                const partnerData = await postJson('/register', { name: fullname, email: email, password: password, acceptTerms: true }, PARTNER_API);
+                startPartnerSession(partnerData.partner, partnerData.token);
+                window.location.href = '../partner/profile.html';
+                return;
+            }
+            const data = await postJson('/register', { fullname: fullname, email: email, password: password, role: roleInput.value, acceptTerms: true });
             startSession(data.user, data.token, true);
-            window.location.href = destinationForRole(data.user.role);
+            window.location.href = destinationForRole(data.user.role, true);
         } catch (err) {
             showFormError(registerError, err.message);
             setLoading(registerForm, false);
@@ -165,5 +215,54 @@ if (forgotForm) {
             showFormError(forgotError, err.message);
         }
         setLoading(forgotForm, false);
+    });
+}
+
+// Reset password form (the page opened from the link in the email)
+const resetForm = document.querySelector('.reset-password-form');
+if (resetForm) {
+    const resetError = document.getElementById('reset-error');
+    const resetSuccess = document.getElementById('reset-success');
+    const resetToken = new URLSearchParams(window.location.search).get('token') || '';
+    // Keep the secret token out of the address bar and the browser history.
+    window.history.replaceState(null, '', window.location.pathname);
+
+    if (!/^[0-9a-f]{64}$/.test(resetToken)) {
+        showFormError(resetError, 'This reset link is not valid. Please ask for a new one.');
+        resetForm.querySelector('button[type="submit"]').disabled = true;
+    }
+
+    resetForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const password = document.getElementById('new-password').value;
+        const confirm = document.getElementById('confirm-new-password').value;
+        resetSuccess.classList.remove('show');
+
+        if (password.length < 6) {
+            showFormError(resetError, 'Password must be at least 6 characters.');
+            return;
+        }
+        if (password !== confirm) {
+            showFormError(resetError, 'The two passwords do not match.');
+            return;
+        }
+
+        hideFormError(resetError);
+        setLoading(resetForm, true);
+        try {
+            const data = await postJson('/reset-password', { token: resetToken, password: password });
+            resetSuccess.innerHTML = '';
+            resetSuccess.appendChild(document.createTextNode(data.message + ' '));
+            const link = document.createElement('a');
+            link.href = 'index.html';
+            link.textContent = 'Go to sign in';
+            resetSuccess.appendChild(link);
+            resetSuccess.classList.add('show');
+            resetForm.reset();
+            resetForm.querySelector('button[type="submit"]').disabled = true;
+        } catch (err) {
+            showFormError(resetError, err.message);
+            setLoading(resetForm, false);
+        }
     });
 }
