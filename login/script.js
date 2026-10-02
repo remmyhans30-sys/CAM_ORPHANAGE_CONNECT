@@ -266,3 +266,43 @@ if (resetForm) {
         }
     });
 }
+
+// Confirm email page (the link in the email sent at sign-up). It takes a click, so mail
+// programs that open links by themselves to check them do not confirm anything.
+const confirmButton = document.getElementById('confirm-email-btn');
+if (confirmButton) {
+    const confirmError = document.getElementById('confirm-error');
+    const confirmSuccess = document.getElementById('confirm-success');
+    const confirmToken = new URLSearchParams(window.location.search).get('token') || '';
+    window.history.replaceState(null, '', window.location.pathname);
+    const NEXT_PAGE = {
+        donor: ['../donor/profile.html', 'Go to my profile'],
+        orphanage: ['../orphanage/index.html', 'Go to my portal'],
+        partner: ['../partner/profile.html', 'Go to my profile']
+    };
+
+    if (!/^\d+\.\d+\.[0-9a-f]{64}$/.test(confirmToken)) {
+        showFormError(confirmError, 'This confirmation link is not valid. Sign in and ask for a new one.');
+        confirmButton.disabled = true;
+    }
+
+    confirmButton.addEventListener('click', async function () {
+        hideFormError(confirmError);
+        confirmButton.disabled = true;
+        try {
+            const data = await postJson('/confirm-email', { token: confirmToken }, API_ROOT + '/account');
+            const next = NEXT_PAGE[data.role] || ['index.html', 'Go to sign in'];
+            confirmSuccess.innerHTML = '';
+            confirmSuccess.appendChild(document.createTextNode(data.message + ' '));
+            const link = document.createElement('a');
+            link.href = next[0];
+            link.textContent = next[1];
+            confirmSuccess.appendChild(link);
+            confirmSuccess.classList.add('show');
+            confirmButton.style.display = 'none';
+        } catch (err) {
+            showFormError(confirmError, err.message);
+            confirmButton.disabled = false;
+        }
+    });
+}

@@ -37,6 +37,7 @@ function toProfile(donor) {
     joinDate: donor.joinDate,
     status: donor.status,
     statusReason: donor.status === 'rejected' || donor.status === 'flagged' ? donor.flagReason : null,
+    needsEmailConfirmation: donor.needsEmailConfirmation,
     totalGiven: donor.totalGiven,
     donationsCount: donor.donationsCount,
   };

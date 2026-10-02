@@ -250,6 +250,11 @@ button { font-family: inherit }
 .checklist li.done i { color: var(--dawn-purple); opacity: 1 }
 .checklist li.done span { text-decoration: line-through; opacity: 0.55 }
 .checklist .tag { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 100px; background: var(--paper-dim); opacity: 0.8 }
+.checklist li.has-action { flex-wrap: wrap }
+.checklist li.has-action > span { flex: 1 1 0; min-width: 0 }
+.checklist .email-confirm-resend { flex-basis: 100%; padding-left: 1.6rem }
+.checklist .email-confirm-resend .btn-outline-pill { padding: 0.35rem 0.9rem; font-size: 0.8rem }
+.checklist .email-confirm-resend i { font-size: inherit; color: inherit; opacity: 1 }
 .btn-primary-pill:disabled { opacity: 0.45; cursor: not-allowed }
 
 .upload-row { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.1rem }

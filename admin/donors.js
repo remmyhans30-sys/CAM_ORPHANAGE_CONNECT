@@ -108,6 +108,9 @@ function render() {
           '</div>' +
         '</div>' +
         '<p class="text-muted small mb-1">' + escapeHtml(donor.email || '') + '</p>' +
+        (donor.status === 'pending' && donor.needsEmailConfirmation
+          ? '<p class="small text-warning-emphasis mb-1"><i class="bi bi-envelope-exclamation"></i> Email not confirmed yet</p>'
+          : '') +
         '<p class="text-muted small mb-3">' + escapeHtml(donor.location || '') + '</p>' +
         (duplicateRisks[donor.id] ? '<p class="profile-flag-badge" title="' + escapeHtml(duplicateRisks[donor.id]) + '"><i class="bi bi-exclamation-triangle-fill"></i> Duplicate account risk</p>' : '') +
         '<a href="donor-profile.html?id=' + encodeURIComponent(donor.id) + '" class="btn btn-admin-primary btn-sm mt-auto">' + (donor.status === 'pending' ? 'Review and approve' : 'Review profile') + '</a>' +

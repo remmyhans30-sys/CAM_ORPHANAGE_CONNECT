@@ -2,6 +2,7 @@ const db = require('../db');
 const { HttpError } = require('../errors');
 const common = require('./common');
 const posts = require('./posts');
+const emailConfirmation = require('../emailConfirmation');
 
 // Orphanages as the pages see them (camelCase, status 'needs-info', lists inside), stored in
 // orphanages + orphanage_payment_accounts + orphanage_photos + orphanage_posts +
@@ -10,7 +11,9 @@ const posts = require('./posts');
 const STATUS_OUT = { draft: 'draft', pending: 'pending', needs_info: 'needs-info', verified: 'verified', rejected: 'rejected' };
 const STATUS_IN = { draft: 'draft', pending: 'pending', 'needs-info': 'needs_info', needs_info: 'needs_info', verified: 'verified', rejected: 'rejected' };
 
-const BASE = `SELECT o.*, (SELECT COUNT(*) FROM follows f WHERE f.orphanage_id = o.id) AS followers FROM orphanages o`;
+const BASE = `SELECT o.*, (SELECT COUNT(*) FROM follows f WHERE f.orphanage_id = o.id) AS followers,
+         ow.email_verified_at AS owner_email_verified_at, LEFT(ow.password_hash, 10) = '${emailConfirmation.NO_LOGIN}' AS owner_no_login
+  FROM orphanages o LEFT JOIN users ow ON ow.id = o.owner_user_id`;
 
 async function hydrate(rows) {
   if (rows.length === 0) return [];
@@ -83,6 +86,9 @@ async function hydrate(rows) {
       socialLinks: socialLinks.get(o.id),
       activityLog: activity.get(o.id),
       ownerUserId: o.owner_user_id,
+      // The account's email address; verification waits until it is confirmed (see emailConfirmation.js).
+      emailConfirmed: Boolean(o.owner_email_verified_at),
+      needsEmailConfirmation: emailConfirmation.waiting(o.owner_email_verified_at, Boolean(o.owner_no_login)),
     };
   });
 }
@@ -164,6 +170,9 @@ const SCALARS = {
 async function save(id, body, actor) {
   const current = await db.one('SELECT * FROM orphanages WHERE id = ?', [id]);
   if (!current) return null;
+  if (Object.prototype.hasOwnProperty.call(body, 'status') && STATUS_IN[body.status] === 'verified' && current.verification_status !== 'verified') {
+    await emailConfirmation.checkBeforeApproval(current.owner_user_id, 'orphanage');
+  }
 
   await db.tx(async () => {
     const sets = {};

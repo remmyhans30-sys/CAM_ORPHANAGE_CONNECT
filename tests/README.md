@@ -10,7 +10,7 @@ These tests use the site the way people do: they sign up, get approved, pledge, 
 | `pledge-journey`, `race` | Pledging, where to send the gift, "Mark as received", and that a need is never over-filled |
 | `posts-*`, `flag-hide` | Stories and videos, social links, homes hidden while flagged |
 | `visits-*`, `chat-*` | Visit requests and messages |
-| `reset`, `notify` | Password reset and notification emails |
+| `reset`, `notify`, `email-confirm` | Password reset, notification emails, and confirming the email address before an account can be approved |
 | `public-flow`, `site-audit` | The public pages, and every page at phone, tablet and laptop width (no sideways scrolling, no errors) |
 
 ## What you need

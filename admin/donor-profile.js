@@ -32,6 +32,8 @@ function saveDonor(donor) {
   return apiRequest('/donors/' + donor.id, { method: 'PUT', body: donor })
     .catch(function (err) {
       alert('Could not save changes to the server: ' + err.message);
+      // Show what is really saved, not the change the server refused.
+      return fetchDonorsFromApi().then(render);
     });
 }
 
@@ -121,6 +123,10 @@ function anniversaryMarker(joinDate) {
 
 function renderHeaderCard(donor) {
   const card = document.getElementById('donor-header-card');
+  // Approval waits until the donor has opened the link we emailed them.
+  const waitsForEmail = donor.needsEmailConfirmation && (donor.status === 'pending' || donor.status === 'rejected');
+  const approveBtn = '<button type="button" class="btn btn-admin-primary btn-sm" id="approve-donor-btn"' +
+    (waitsForEmail ? ' disabled title="Waiting for the donor to confirm their email address"' : '') + '>Approve donor</button>';
 
   card.innerHTML =
     '<div class="d-flex flex-wrap justify-content-between align-items-center gap-3">' +
@@ -134,7 +140,11 @@ function renderHeaderCard(donor) {
             '<span class="donor-status-badge status-' + donor.status + '">' + ({ pending: 'Awaiting approval', active: 'Active', flagged: 'Flagged', rejected: 'Rejected' }[donor.status] || 'Active') + '</span>' +
             (donor.vip ? '<span class="vip-tag"><i class="bi bi-star-fill"></i> VIP donor</span>' : '') +
           '</div>' +
-          '<p class="text-muted small mb-1">' + escapeHtml(donor.email || '&mdash;') + '</p>' +
+          '<p class="text-muted small mb-1">' + escapeHtml(donor.email || '&mdash;') +
+            (donor.emailConfirmed
+              ? ' <span class="text-success"><i class="bi bi-patch-check"></i> confirmed</span>'
+              : ' <span class="text-warning-emphasis">(not confirmed yet)</span>') +
+          '</p>' +
           '<div class="d-flex flex-wrap gap-3 small text-muted">' +
             '<span>Joined ' + escapeHtml(donor.joinDate || '&mdash;') + '</span>' +
             '<span>' + escapeHtml(donor.location || '&mdash;') + '</span>' +
@@ -147,13 +157,16 @@ function renderHeaderCard(donor) {
       '<div class="d-flex gap-2 align-self-start">' +
         '<button type="button" class="btn btn-admin-primary btn-sm" id="message-donor-btn">Message donor</button>' +
         (donor.status === 'pending'
-          ? '<button type="button" class="btn btn-admin-primary btn-sm" id="approve-donor-btn">Approve donor</button>' +
-            '<button type="button" class="btn btn-admin-danger btn-sm" id="reject-donor-btn">Reject</button>'
+          ? approveBtn + '<button type="button" class="btn btn-admin-danger btn-sm" id="reject-donor-btn">Reject</button>'
           : donor.status === 'rejected'
-            ? '<button type="button" class="btn btn-admin-primary btn-sm" id="approve-donor-btn">Approve donor</button>'
+            ? approveBtn
             : '<button type="button" class="btn btn-admin-danger btn-sm" id="flag-account-btn">' + (donor.status === 'flagged' ? 'Unflag account' : 'Flag account') + '</button>') +
       '</div>' +
-    '</div>';
+    '</div>' +
+    (waitsForEmail
+      ? '<p class="small text-muted mt-3 mb-0"><i class="bi bi-envelope-exclamation"></i> This donor has not confirmed their email address yet. ' +
+        'You can approve the account once they have opened the link we emailed them (they can ask for a new one when they sign in).</p>'
+      : '');
 }
 
 function renderStatsStrip(donor) {

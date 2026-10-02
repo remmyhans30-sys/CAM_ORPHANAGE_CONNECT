@@ -8,6 +8,7 @@ const visits = require('../repo/visits');
 const posts = require('../repo/posts');
 const common = require('../repo/common');
 const notify = require('../notify');
+const emailConfirmation = require('../emailConfirmation');
 const { saveUpload, saveVideo, deleteUpload, UploadError, MAX_VIDEO_MB, VIDEO_QUOTA_MB } = require('../uploads');
 
 // The signed-in orphanage account's own profile and needs (orphanage/ portal).
@@ -40,7 +41,10 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // What the admin needs before a profile can be reviewed. 'required' ones block submission.
 function checklistFor(o) {
   const filled = (v) => v !== null && v !== undefined && String(v).trim() !== '';
-  return [
+  const email = emailConfirmation.required()
+    ? [{ key: 'emailConfirmed', label: 'Confirm your email address (open the link we emailed you)', required: true, done: o.emailConfirmed }]
+    : [];
+  return email.concat([
     { key: 'name', label: 'Orphanage name', required: true, done: filled(o.name) },
     { key: 'location', label: 'Location (city / region)', required: true, done: filled(o.location) },
     { key: 'registrationNumber', label: 'Official registration number', required: true, done: filled(o.registrationNumber) },
@@ -52,7 +56,7 @@ function checklistFor(o) {
     { key: 'termsAgreed', label: 'Agree to the terms', required: true, done: Boolean(o.termsAgreed) },
     { key: 'photoUrl', label: 'Profile photo', required: false, done: filled(o.photoUrl) },
     { key: 'paymentAccount', label: 'Payment account for donations', required: false, done: filled(o.paymentAccountNumber) },
-  ];
+  ]);
 }
 
 function toProfile(o) {

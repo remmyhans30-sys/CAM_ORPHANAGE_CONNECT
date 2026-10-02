@@ -84,14 +84,16 @@ SMTP_FROM=CAM Orphanage Connect <the-mailbox-address-from-step-7>
 
 If the site has an **SSL** tab, turn on **Force HTTPS**. Save.
 
-## 7. Set up email (password reset)
+## 7. Set up email (confirmation, password reset, notifications)
 
-"Forgot password?" emails people a link, and the site emails people about things that concern them (account approved, verification decisions, new pledges, gifts received, visit requests and answers), so it needs a mailbox to send from. Until you do this step, the forgot-password page tells people to contact the team instead, and no notifications are sent.
+New accounts get a link to confirm their email address, "Forgot password?" emails people a link, and the site emails people about things that concern them (account approved, verification decisions, new pledges, gifts received, visit requests and answers), so it needs a mailbox to send from. Until you do this step, nobody is asked to confirm their address, the forgot-password page tells people to contact the team instead, and no notifications are sent. Once it is done, admins can approve an account only after its address is confirmed.
 
 1. In the alwaysdata panel go to **Emails > Mailboxes** and add a mailbox, for example `noreply@ACCOUNT.alwaysdata.net`, with a strong password.
 2. Put its address and password in the environment settings of the site (step 6): `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_FROM`. The server address for `SMTP_HOST` is shown on the Emails page (it looks like `smtp-ACCOUNT.alwaysdata.net`, port 587).
-3. Set `SITE_URL` to the site's real address, exactly as people type it, with no slash at the end. The reset links in the emails point there.
-4. Restart the site, then try "Forgot password?" with your own address.
+3. Set `SITE_URL` to the site's real address, exactly as people type it, with no slash at the end. The links in the emails point there.
+4. Restart the site, then try "Forgot password?" with your own address, and sign up a test account to see the confirmation email arrive.
+
+Accounts that signed up before this step have no confirmed address yet. Approved ones keep working; anyone still waiting for approval is asked to confirm first, and can get a link with **Send the link again** on their page.
 
 ## 8. Watch the disk space (videos)
 

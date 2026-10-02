@@ -9,6 +9,7 @@ const passwordReset = require('../repo/passwordReset');
 const common = require('../repo/common');
 const mailer = require('../mailer');
 const loginGuard = require('../loginGuard');
+const emailConfirmation = require('../emailConfirmation');
 
 const router = express.Router();
 
@@ -70,6 +71,7 @@ router.post('/register', async (req, res) => {
     }
     return created;
   });
+  emailConfirmation.sendLater(user.id);
   res.status(201).json({ token: issueToken(user), user: toPublicUser(user) });
 });
 

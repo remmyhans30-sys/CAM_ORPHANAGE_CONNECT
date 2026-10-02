@@ -2,12 +2,14 @@ const db = require('../db');
 const { HttpError } = require('../errors');
 const common = require('./common');
 const donations = require('./donations');
+const emailConfirmation = require('../emailConfirmation');
 
 // Donors as the pages see them. A donor's id is their user id; the details live in
 // users + donor_profiles, the gifts in donations, and the history in audit_log.
 
 const BASE = `
-  SELECT u.id, u.display_name, u.email, u.created_at AS joined_at, p.*, m.name AS payment_name,
+  SELECT u.id, u.display_name, u.email, u.created_at AS joined_at, u.email_verified_at,
+         LEFT(u.password_hash, 10) = '${emailConfirmation.NO_LOGIN}' AS no_login, p.*, m.name AS payment_name,
          (SELECT COUNT(*) FROM follows f WHERE f.user_id = u.id) AS follow_count,
          (SELECT COUNT(*) FROM recurring_gifts r WHERE r.giver_user_id = u.id AND r.status = 'active') AS recurring_count,
          ref.display_name AS referrer_name
@@ -48,6 +50,9 @@ async function hydrate(rows) {
       id: d.id,
       name: d.display_name,
       email: d.email,
+      emailConfirmed: Boolean(d.email_verified_at),
+      // Still has to open the link we emailed; approval waits for it (see emailConfirmation.js).
+      needsEmailConfirmation: emailConfirmation.waiting(d.email_verified_at, Boolean(d.no_login)),
       joinDate: db.dateOnly(d.joined_at),
       location: d.location_text,
       preferredPayment: d.payment_name,
@@ -104,6 +109,14 @@ const ACCESS_MESSAGES = {
 async function accessFor(user) {
   const donor = await ensureForUser(user);
   if (donor.status === 'active') return { ok: true, donor };
+  if (donor.status === 'pending' && donor.needsEmailConfirmation) {
+    return {
+      ok: false,
+      code: 'confirm-email',
+      error: 'Please confirm your email address first: open the link we sent to ' + donor.email + '. The CAM Orphanage Connect team can approve your account once it is confirmed.',
+      donor,
+    };
+  }
   const code = ACCESS_MESSAGES[donor.status] ? donor.status : 'pending';
   return { ok: false, code, error: ACCESS_MESSAGES[code], donor };
 }
@@ -120,6 +133,10 @@ const CURRENCY_ALIASES = { FCFA: 'XAF', CFA: 'XAF', XAF: 'XAF', EUR: 'EUR', USD:
 async function save(id, body, actor) {
   const current = await db.one('SELECT u.*, p.approval_status FROM users u JOIN donor_profiles p ON p.user_id = u.id WHERE u.id = ?', [id]);
   if (!current) return null;
+  // Approving (not lifting a flag) waits for the donor's email address to be confirmed.
+  if (body.status === 'active' && ['pending', 'rejected'].includes(current.approval_status)) {
+    await emailConfirmation.checkBeforeApproval(id, 'donor');
+  }
 
   await db.tx(async () => {
     const userSets = {};

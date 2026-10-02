@@ -13,6 +13,7 @@ const common = require('../repo/common');
 const { saveUpload, deleteUpload, UploadError } = require('../uploads');
 const chat = require('../chat');
 const loginGuard = require('../loginGuard');
+const emailConfirmation = require('../emailConfirmation');
 
 const router = express.Router();
 
@@ -30,7 +31,10 @@ function issueToken(partner) {
 // What the admin needs before a partner can be reviewed. 'required' ones block submission.
 function checklistFor(p) {
   const filled = (v) => v !== null && v !== undefined && String(v).trim() !== '';
-  return [
+  const email = emailConfirmation.required()
+    ? [{ key: 'emailConfirmed', label: 'Confirm your email address (open the link we emailed you)', required: true, done: p.emailConfirmed }]
+    : [];
+  return email.concat([
     { key: 'name', label: 'Organization name', required: true, done: filled(p.name) },
     { key: 'orgType', label: 'Type of organization', required: true, done: filled(p.orgType) },
     { key: 'country', label: 'Country', required: true, done: filled(p.country) },
@@ -40,7 +44,7 @@ function checklistFor(p) {
     { key: 'logoUrl', label: 'Organization logo', required: false, done: filled(p.logoUrl) },
     { key: 'sponsoredByBlurb', label: 'Short "Sponsored by" message for the public page', required: false, done: filled(p.sponsoredByBlurb) },
     { key: 'pledge', label: 'Matching pledge you propose', required: false, done: Boolean(p.pledge) },
-  ];
+  ]);
 }
 
 // The partner's own record. The team's private notes, the reason for a flag and the review history
@@ -97,6 +101,7 @@ router.post('/register', async (req, res) => {
   const id = await partners.register({ name: name.trim(), email: normalizedEmail, passwordHash: bcrypt.hashSync(password, 10) });
   const partner = await partners.get(id);
   await common.logActivity('partner', id, 'Confirmed being 18 or older and agreed to the terms of use (version 2)', reviewerOf(partner), partner.ownerUserId);
+  emailConfirmation.sendLater(partner.ownerUserId);
   res.status(201).json({ token: issueToken(partner), partner: partnerProfile(partner) });
 });
 

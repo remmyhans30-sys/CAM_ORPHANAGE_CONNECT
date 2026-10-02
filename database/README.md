@@ -82,6 +82,6 @@ Stories, updates and videos are in `orphanage_posts` (a type, a title, an option
 
 **Changing the database later.** Changes made after the first version live in `server/src/migrations/`. The site applies each one, once, the next time it starts, and records it in `schema_migrations`, so an existing database is upgraded without losing data. A brand new database already includes them. When you add a migration, put the same change in `cam_orphanage_connect.sql` too.
 
-Visit requests (`visit_requests`) and password reset links (`password_reset_tokens`, stored only as a fingerprint) are used by the site too.
+Visit requests (`visit_requests`) and password reset links (`password_reset_tokens`, stored only as a fingerprint) are used by the site too. `users.email_verified_at` records when someone confirmed their email address with the link sent at sign-up; the trigger on `users` clears it when the address changes, so a new address has to be confirmed again.
 
 Deleting is blocked for anything that has donations (donors, partners, orphanages, needs): the money history is kept. Admins can flag or reject them instead.

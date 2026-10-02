@@ -40,6 +40,7 @@ const myMessagesRoutes = require('./routes/my-messages');
 const siteRoutes = require('./routes/site');
 const visitRoutes = require('./routes/visits');
 const adminConversationRoutes = require('./routes/admin-conversations');
+const accountRoutes = require('./routes/account');
 
 const app = express();
 // Behind the host's proxy the real visitor address is in the forwarded header (used to slow down repeated requests).
@@ -71,6 +72,7 @@ app.use('/api/site', siteRoutes);
 app.use('/api/visits', visitRoutes.member);
 app.use('/api/visit-requests', visitRoutes.admin);
 app.use('/api/conversations', adminConversationRoutes);
+app.use('/api/account', accountRoutes);
 
 // The website itself: every top-level folder/file of the project except server/
 // (which holds .env and the database) and dotfiles. The list is exact, so encoded

@@ -275,6 +275,11 @@ function renderChecklist() {
         li.className = item.done ? 'done' : '';
         li.innerHTML = '<i class="bi ' + (item.done ? 'bi-check-circle-fill' : 'bi-circle') + '"></i><span></span>' + (item.required ? '' : '<em class="tag">optional</em>');
         li.querySelector('span').textContent = item.label;
+        // The email link may be lost or expired: offer a new one.
+        if (item.key === 'emailConfirmed' && !item.done) {
+            li.classList.add('has-action');
+            li.appendChild(window.CocEmailConfirm.resendControl(API_BASE.replace(/\/my-orphanage$/, ''), session.token, 'btn-outline-pill'));
+        }
         list.appendChild(li);
     });
 

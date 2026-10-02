@@ -32,6 +32,8 @@ function savePartner(partner) {
     })
     .catch(function (err) {
       alert('Could not save changes to the server: ' + err.message);
+      // Show what is really saved, not the change the server refused.
+      return fetchPartnerFromApi().then(render);
     });
 }
 
@@ -190,6 +192,7 @@ function renderHeaderCard(partner) {
 function renderOnboardingChecklist(partner) {
   const panel = document.getElementById('onboarding-checklist');
   const items = [
+    { label: 'Email address confirmed', done: Boolean(partner.emailConfirmed) },
     { label: 'Documents submitted', done: (partner.documents || []).length > 0 },
     { label: 'Verified', done: partner.verificationStatus === 'verified' },
     { label: 'Pledge configured', done: Boolean(partner.pledge) },
@@ -415,7 +418,10 @@ function renderVerificationDocuments(partner) {
   const isActionable = partner.verificationStatus === 'pending' || partner.verificationStatus === 'needs-info';
   const isVerified = partner.verificationStatus === 'verified';
   const isSponsor = partner.tier === 'Sponsor';
-  const canVerify = hasDocs && partner.sanctionsScreened;
+  const canVerify = hasDocs && partner.sanctionsScreened && !partner.needsEmailConfirmation;
+  const verifyBlocked = partner.needsEmailConfirmation
+    ? 'Waiting for the organization to confirm its email address'
+    : 'Upload documents and confirm sanctions screening first';
 
   const decisionNote =
     (partner.verificationStatus === 'needs-info' && partner.infoRequestMessage
@@ -432,7 +438,7 @@ function renderVerificationDocuments(partner) {
   const decisionButtons = isActionable
     ? '<button type="button" class="btn btn-admin-danger btn-sm" id="reject-org-btn">Reject</button>' +
       '<button type="button" class="btn btn-admin-outline btn-sm" id="request-info-btn">Request more info</button>' +
-      '<button type="button" class="btn btn-admin-primary btn-sm" id="mark-verified-btn"' + (canVerify ? '' : ' disabled title="Upload documents and confirm sanctions screening first"') + '>Mark as verified</button>'
+      '<button type="button" class="btn btn-admin-primary btn-sm" id="mark-verified-btn"' + (canVerify ? '' : ' disabled title="' + verifyBlocked + '"') + '>Mark as verified</button>'
     : '';
 
   const tierBtn = !isVerified

@@ -54,7 +54,8 @@
     <section id="accessGate" class="card card-profile text-center p-4 p-md-5 d-none" aria-live="polite">
       <h2 class="h5" id="gateTitle"></h2>
       <p class="text-muted mb-4" id="gateMessage"></p>
-      <div class="d-flex flex-wrap justify-content-center gap-2" id="gateActions"></div>
+      <div class="d-flex flex-wrap justify-content-center align-items-start gap-2" id="gateActions"></div>
+      <p class="small text-muted mt-3 mb-0" id="gateResult" role="status"></p>
     </section>
 
     <section class="filter-bar" aria-label="Filter orphanages" id="filterBar">
@@ -147,6 +148,7 @@
   <script src="../shared/chat-api.js"></script>
   <script src="../shared/visits.js"></script>
   <script src="../shared/updates.js"></script>
+  <script src="../shared/email-confirm.js"></script>
   <script src="pledge.js"></script>
   <script src="script.js"></script>
 </body>

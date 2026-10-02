@@ -222,6 +222,11 @@
         message: 'Orphanage profiles are shown to approved donors. Create a donor account or sign in. Once the CAM Orphanage Connect team approves your account, you can browse and give.',
         actions: [['Sign in', '../login/index.html', 'btn-donor-primary'], ['Create a donor account', '../login/register.html', 'btn-outline-secondary']]
       },
+      'confirm-email': {
+        title: 'Confirm your email address',
+        message: message,
+        actions: [['Complete my profile', 'profile.html', 'btn-outline-secondary']]
+      },
       pending: {
         title: 'Your account is waiting for approval',
         message: message,
@@ -241,6 +246,12 @@
     document.getElementById('gateMessage').textContent = view.message;
     const actions = document.getElementById('gateActions');
     actions.innerHTML = '';
+    const session = donorSession();
+    const gateResult = document.getElementById('gateResult');
+    gateResult.textContent = '';
+    if (code === 'confirm-email' && session) {
+      actions.appendChild(window.CocEmailConfirm.resendControl(API_BASE, session.token, 'btn btn-donor-primary', gateResult));
+    }
     view.actions.forEach(function (action) {
       const link = document.createElement('a');
       link.className = 'btn ' + action[2];

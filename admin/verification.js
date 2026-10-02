@@ -22,6 +22,8 @@ function saveOrphanages(orphanages) {
   return apiRequest('/orphanages/' + orphanage.id, { method: 'PUT', body: orphanage })
     .catch(function (err) {
       alert('Could not save changes to the server: ' + err.message);
+      // Show what is really saved, not the change the server refused.
+      return fetchOrphanagesFromApi().then(render);
     });
 }
 
@@ -505,6 +507,9 @@ function buildModalBody(orphanage, orphanageNeeds, raised, risks) {
           '<dt class="col-5">Contact</dt><dd class="col-7">' + escapeHtml(orphanage.contactName || '&mdash;') + '</dd>' +
           '<dt class="col-5">Phone</dt><dd class="col-7">' + escapeHtml(orphanage.contactPhone || '&mdash;') + '</dd>' +
           '<dt class="col-5">Email</dt><dd class="col-7">' + escapeHtml(orphanage.contactEmail || '&mdash;') + '</dd>' +
+          '<dt class="col-5">Account email confirmed</dt><dd class="col-7">' + (orphanage.emailConfirmed
+            ? 'Yes'
+            : '<span class="text-danger">Not confirmed yet</span>' + (orphanage.needsEmailConfirmation ? ' (needed before you can approve)' : '')) + '</dd>' +
           '<dt class="col-5">Terms agreed</dt><dd class="col-7">' + (orphanage.termsAgreed ? 'Yes' : '<span class="text-danger">No / not recorded</span>') + '</dd>' +
         '</dl>' +
       '</div>' +
@@ -597,13 +602,15 @@ function buildModalFooter(orphanage) {
   }
 
   const hasDocs = (orphanage.documents || []).length > 0;
+  const blocked = !hasDocs ? 'Upload verification documents before approving'
+    : (orphanage.needsEmailConfirmation ? 'Waiting for the home to confirm its email address' : '');
   return (
     messageBtn +
     deleteBtn +
     '<button type="button" class="btn btn-admin-danger modal-reject-btn">Reject</button>' +
     '<button type="button" class="btn btn-admin-outline modal-request-info-btn">Request more info</button>' +
     '<button type="button" class="btn btn-admin-primary modal-approve-btn"' +
-      (hasDocs ? '' : ' disabled title="Upload verification documents before approving"') +
+      (blocked ? ' disabled title="' + blocked + '"' : '') +
       '>Approve</button>'
   );
 }
@@ -813,7 +820,6 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
   if (e.target.classList.contains('modal-approve-btn')) {
     orphanage.status = 'verified';
     logActivity(orphanage, 'verified');
-    logEvent(orphanage, '(Simulated) Notified applicant by email/SMS: application verified');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
@@ -829,7 +835,6 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
     orphanage.status = 'rejected';
     orphanage.rejectionReason = reason.trim();
     logActivity(orphanage, 'rejected');
-    logEvent(orphanage, '(Simulated) Notified applicant by email/SMS: application rejected');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();
@@ -845,7 +850,6 @@ document.getElementById('profile-modal-footer').addEventListener('click', functi
     orphanage.status = 'needs-info';
     orphanage.infoRequestMessage = message.trim();
     logActivity(orphanage, 'needs-info');
-    logEvent(orphanage, '(Simulated) Notified applicant by email/SMS: more info requested');
     saveOrphanages(orphanages);
     profileModal.hide();
     render();

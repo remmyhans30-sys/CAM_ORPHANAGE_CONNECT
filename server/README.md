@@ -161,7 +161,7 @@ characters, and 15 messages per minute per person.
 
 Video limits: `VIDEO_MAX_MB` (default 15, at most 20) per video and `ORPHANAGE_VIDEO_QUOTA_MB` (default 60) in total per orphanage.
 
-### Visit requests and password reset
+### Visit requests, password reset and email confirmation
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -173,8 +173,10 @@ Video limits: `VIDEO_MAX_MB` (default 15, at most 20) per video and `ORPHANAGE_V
 | GET | /api/visit-requests | admin | Every request, read-only |
 | POST | /api/users/forgot-password | none | `{ email }` emails a reset link (same answer for every address) |
 | POST | /api/users/reset-password | none | `{ token, password }` choose a new password with the emailed link |
+| POST | /api/account/confirm-email | none | `{ token }` confirms the email address with the link sent at sign-up (`src/emailConfirmation.js`) |
+| POST | /api/account/confirm-email/resend | donor, orphanage, partner | Sends a new confirmation link (at most 3 an hour) |
 
-Email is sent with the `SMTP_*` settings in `.env` (see `.env.example`). Without them a local run prints the reset link in the server window, and the live site (`NODE_ENV=production`) tells people to contact the team.
+Email is sent with the `SMTP_*` settings in `.env` (see `.env.example`). Without them a local run prints the reset and confirmation links in the server window, and the live site (`NODE_ENV=production`) tells people to contact the team and does not ask for email confirmation. Until an account's address is confirmed, approving the donor or verifying the orphanage or partner is refused (`EMAIL_CONFIRMATION=off` turns this off).
 
 ### Public website data
 

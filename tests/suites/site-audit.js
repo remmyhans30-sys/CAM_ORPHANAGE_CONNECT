@@ -35,7 +35,7 @@ const WIDTHS = [360, 768, 1280];
   };
 
   const PAGES = [
-    ['visitor', ['login/reset-password.html', 'index.html', 'how-it-works.html', 'for-donors.html', 'for-orphanages.html', 'for-partners.html', 'about.html', 'faq.html', 'contact.html', 'safeguarding.html', 'terms.html', 'credits.html', 'login/index.html', 'login/register.html', 'login/register.html?role=partner', 'login/forgot-password.html', 'admin/index.html', 'partner/index.html']],
+    ['visitor', ['login/reset-password.html', 'index.html', 'how-it-works.html', 'for-donors.html', 'for-orphanages.html', 'for-partners.html', 'about.html', 'faq.html', 'contact.html', 'safeguarding.html', 'terms.html', 'credits.html', 'login/index.html', 'login/register.html', 'login/register.html?role=partner', 'login/forgot-password.html', 'login/confirm-email.html', 'admin/index.html', 'partner/index.html']],
     ['donor', ['donor/index.html', 'donor/orphanage.html?id=' + oid, 'donor/profile.html', 'donor/messages.html']],
     ['orphanage', ['orphanage/index.html']],
     ['partner', ['partner/dashboard.html', 'partner/profile.html', 'partner/orphanages.html', 'partner/orphanage-view.html?id=' + oid, 'partner/messages.html']],

@@ -115,6 +115,22 @@
     if (!view) return;
     note.className = 'alert ' + view[0];
     note.textContent = view[1];
+    renderEmailNote(donor);
+  }
+
+  // Until the donor opens the link we emailed, the team cannot approve the account.
+  function renderEmailNote(donor) {
+    const note = document.getElementById('emailNote');
+    note.classList.toggle('d-none', !donor.needsEmailConfirmation);
+    if (!donor.needsEmailConfirmation) return;
+    note.innerHTML = '';
+    const text = document.createElement('p');
+    text.className = 'mb-2';
+    text.textContent = donor.status === 'pending'
+      ? 'Please confirm your email address first: open the link we sent to ' + donor.email + ' (or get a new one below). The team can approve your account once it is confirmed.'
+      : 'Please confirm your email address (' + donor.email + ') so that emails from the site reach you: get a link with the button below.';
+    note.appendChild(text);
+    note.appendChild(window.CocEmailConfirm.resendControl(API_ROOT, session.token, 'btn btn-sm btn-outline-primary'));
   }
 
   function formatXAF(amount) {

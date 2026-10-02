@@ -3,6 +3,7 @@ const { HttpError } = require('../errors');
 const common = require('./common');
 const donations = require('./donations');
 const donors = require('./donors');
+const emailConfirmation = require('../emailConfirmation');
 
 // Partner organizations as the pages see them. The login lives in users (role partner), the
 // organization in partner_organizations, with documents, pledges, sponsorships and referrals
@@ -15,7 +16,8 @@ const TIER_IN = { Sponsor: 'sponsor', 'Verified Referrer': 'verified_referrer' }
 const CASE_OUT = { pending: 'pending', accepted: 'reviewed', declined: 'reviewed', placed: 'reviewed', closed: 'reviewed' };
 
 const BASE = `
-  SELECT p.*, u.email, u.status AS login_status, t.name AS org_type
+  SELECT p.*, u.email, u.status AS login_status, t.name AS org_type,
+         u.email_verified_at, LEFT(u.password_hash, 10) = '${emailConfirmation.NO_LOGIN}' AS no_login
   FROM partner_organizations p
   JOIN users u ON u.id = p.owner_user_id
   LEFT JOIN organization_types t ON t.id = p.organization_type_id`;
@@ -101,6 +103,9 @@ async function hydrate(rows) {
       favoriteOrphanageIds: favourites.get(p.owner_user_id),
       termsAgreed: Boolean(p.terms_accepted_at),
       ownerUserId: p.owner_user_id,
+      // Verification waits until the account's email address is confirmed (see emailConfirmation.js).
+      emailConfirmed: Boolean(p.email_verified_at),
+      needsEmailConfirmation: emailConfirmation.waiting(p.email_verified_at, Boolean(p.no_login)),
     };
   });
 }
@@ -154,6 +159,9 @@ async function orgTypeId(name) {
 async function save(id, body, actor) {
   const current = await db.one('SELECT * FROM partner_organizations WHERE id = ?', [id]);
   if (!current) return null;
+  if (body.verificationStatus !== undefined && STATUS_IN[body.verificationStatus] === 'verified' && current.verification_status !== 'verified') {
+    await emailConfirmation.checkBeforeApproval(current.owner_user_id, 'partner');
+  }
 
   await db.tx(async () => {
     const sets = {};

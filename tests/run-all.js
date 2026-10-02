@@ -9,10 +9,12 @@ const site = require('./helpers/site');
 const browser = require('./helpers/browser');
 
 // Suites run in groups, each with the site restarted on an empty database and its own settings.
+// Only the last group asks new accounts to confirm their email address; the others switch that off,
+// so their accounts can be approved straight away.
 const GROUPS = [
   {
     title: 'Main suites',
-    env: { VIDEO_MAX_MB: '2', ORPHANAGE_VIDEO_QUOTA_MB: '5' }, // small video limits keep the video tests quick
+    env: { VIDEO_MAX_MB: '2', ORPHANAGE_VIDEO_QUOTA_MB: '5', EMAIL_CONFIRMATION: 'off' }, // small video limits keep the video tests quick
     suites: [
       'flag-hide', 'pledge-journey', 'profile-api', 'orphanage-api', 'donor-api', 'gate-api', 'partner-api', 'chat-api',
       'visits-api', 'posts-api', 'admin-crud', 'race', 'partner-profile-ui', 'profile-ui', 'orphanage-ui', 'donor-ui',
@@ -21,13 +23,18 @@ const GROUPS = [
   },
   {
     title: 'Sign-in limits (a 6-second wait instead of 15 minutes)',
-    env: { LOGIN_LOCK_MINUTES: '0.1', LOGIN_MAX_PER_ADDRESS: '40', LOGIN_MAX_PER_EMAIL: '8' },
+    env: { LOGIN_LOCK_MINUTES: '0.1', LOGIN_MAX_PER_ADDRESS: '40', LOGIN_MAX_PER_EMAIL: '8', EMAIL_CONFIRMATION: 'off' },
     suites: ['login-guard'],
   },
   {
     title: 'Emails (caught by a local mail server, nothing is really sent)',
-    env: { SMTP_HOST: '127.0.0.1', SMTP_PORT: '2525' },
+    env: { SMTP_HOST: '127.0.0.1', SMTP_PORT: '2525', EMAIL_CONFIRMATION: 'off' },
     suites: ['reset', 'notify'],
+  },
+  {
+    title: 'Email confirmation (switched on, as on the live site)',
+    env: { SMTP_HOST: '127.0.0.1', SMTP_PORT: '2525' },
+    suites: ['email-confirm'],
   },
 ];
 

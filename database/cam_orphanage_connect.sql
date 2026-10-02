@@ -749,9 +749,13 @@ BEGIN
   SET NEW.email = LOWER(TRIM(NEW.email));
 END$$
 
+-- A new email address has to be confirmed again.
 CREATE TRIGGER trg_users_email_update BEFORE UPDATE ON users FOR EACH ROW
 BEGIN
   SET NEW.email = LOWER(TRIM(NEW.email));
+  IF CAST(NEW.email AS BINARY) <> CAST(OLD.email AS BINARY) THEN
+    SET NEW.email_verified_at = NULL;
+  END IF;
 END$$
 
 -- Each profile table may only point at a login of the matching kind.

@@ -64,12 +64,21 @@ function renderChecklist() {
     : done + ' of ' + required.length + ' required items done. The team reviews your organization once you submit it.';
 
   document.getElementById('checklist').innerHTML = items.map(function (item) {
-    return '<li class="d-flex gap-2 align-items-center small mb-1' + (item.done ? ' text-muted' : '') + '">' +
+    return '<li class="d-flex gap-2 align-items-center small mb-1' + (item.done ? ' text-muted' : '') + '" data-key="' + escapeHtml(item.key) + '">' +
       '<i class="bi ' + (item.done ? 'bi-check-circle-fill text-success' : 'bi-circle') + '"></i>' +
       '<span' + (item.done ? ' style="text-decoration: line-through;"' : '') + '>' + escapeHtml(item.label) + '</span>' +
       (item.required ? '' : '<span class="badge text-bg-light">optional</span>') +
       '</li>';
   }).join('');
+  // The email link may be lost or expired: offer a new one, on its own line under the item.
+  if (items.some(function (i) { return i.key === 'emailConfirmed' && !i.done; })) {
+    const li = document.querySelector('#checklist li[data-key="emailConfirmed"]');
+    const control = window.CocEmailConfirm.resendControl(API_BASE, localStorage.getItem('partnerToken'), 'btn btn-sm btn-outline-primary');
+    control.className += ' w-100 ps-4';
+    li.classList.add('flex-wrap');
+    li.querySelector('span').style.cssText = 'flex: 1 1 0; min-width: 0;';
+    li.appendChild(control);
+  }
 
   const submitBtn = document.getElementById('submit-review-btn');
   submitBtn.style.display = editable ? '' : 'none';

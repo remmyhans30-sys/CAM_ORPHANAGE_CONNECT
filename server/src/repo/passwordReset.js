@@ -75,7 +75,11 @@ async function resetPassword(token, newPassword) {
     );
     if (!row) throw new HttpError(400, 'This reset link has expired or was already used. Please ask for a new one.');
 
-    await db.run('UPDATE users SET password_hash = ?, failed_login_count = 0, locked_until = NULL WHERE id = ?', [bcrypt.hashSync(newPassword, 10), row.user_id]);
+    // The link reached this inbox, so it also confirms the email address.
+    await db.run(
+      'UPDATE users SET password_hash = ?, failed_login_count = 0, locked_until = NULL, email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?',
+      [bcrypt.hashSync(newPassword, 10), db.sqlTime(), row.user_id]
+    );
     // This link and any older ones stop working.
     await db.run('UPDATE password_reset_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [db.sqlTime(), row.user_id]);
     return row.email;

@@ -90,7 +90,7 @@ async function start(extra) {
     ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.password, SEED_SAMPLE_DATA: 'false', SUPPORT_EMAIL: '',
     DB_HOST: settings.host, DB_PORT: String(settings.port), DB_USER: settings.user, DB_PASSWORD: settings.password, DB_NAME: settings.database,
     UPLOAD_DIR: uploads, SITE_URL: SITE,
-    SMTP_HOST: '', SMTP_PORT: '', SMTP_USER: '', SMTP_PASSWORD: '', SMTP_FROM: '',
+    SMTP_HOST: '', SMTP_PORT: '', SMTP_USER: '', SMTP_PASSWORD: '', SMTP_FROM: '', EMAIL_CONFIRMATION: '',
     VIDEO_MAX_MB: '', ORPHANAGE_VIDEO_QUOTA_MB: '',
     LOGIN_MAX_ATTEMPTS: '', LOGIN_MAX_PER_EMAIL: '', LOGIN_MAX_PER_ADDRESS: '', LOGIN_LOCK_MINUTES: '',
   }, extra || {});
