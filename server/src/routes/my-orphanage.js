@@ -1,121 +1,218 @@
 const express = require('express');
 const db = require('../db');
 const { authenticateUser } = require('../middleware/userAuth');
-const { ensureOrphanageForUser } = require('../orphanageAccounts');
+const orphanages = require('../repo/orphanages');
+const needs = require('../repo/needs');
+const donations = require('../repo/donations');
+const visits = require('../repo/visits');
+const common = require('../repo/common');
+const { saveUpload, deleteUpload, UploadError } = require('../uploads');
 
 // The signed-in orphanage account's own profile and needs (orphanage/ portal).
-// Status, verification and payment fields stay admin-only.
+// Status, verification and payment confirmation stay admin-only.
 const router = express.Router();
 router.use(authenticateUser);
 
-router.use((req, res, next) => {
+router.use(async (req, res, next) => {
   if (req.user.role !== 'volunteer') {
     return res.status(403).json({ error: 'Only orphanage accounts can use the portal.' });
   }
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  const user = await db.one("SELECT * FROM users WHERE id = ? AND role = 'orphanage'", [req.user.id]);
   if (!user) {
     return res.status(401).json({ error: 'Account no longer exists.' });
   }
-  req.orphanage = ensureOrphanageForUser(user);
+  req.account = user;
+  req.orphanage = await orphanages.ensureForUser(user);
   next();
 });
 
-const PROFILE_FIELDS = {
-  name: 'name',
-  location: 'location',
-  foundedYear: 'founded_year',
-  childrenCount: 'children_count',
-  contactName: 'contact_name',
-  contactPhone: 'contact_phone',
-  story: 'story',
-};
-const NUMBER_COLUMNS = new Set(['founded_year', 'children_count']);
+const PROFILE_FIELDS = [
+  'name', 'location', 'registrationNumber', 'foundedYear', 'capacity', 'childrenCount', 'contactName', 'contactPhone',
+  'contactEmail', 'story', 'storyLanguage', 'paymentProvider', 'paymentAccountName', 'paymentAccountNumber', 'termsAgreed',
+];
+const NUMBER_FIELDS = new Set(['foundedYear', 'childrenCount', 'capacity']);
+const MAX_DOCUMENTS = 8;
+const STORY_LANGUAGES = ['en', 'fr'];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function rowToProfile(row) {
+// What the admin needs before a profile can be reviewed. 'required' ones block submission.
+function checklistFor(o) {
+  const filled = (v) => v !== null && v !== undefined && String(v).trim() !== '';
+  return [
+    { key: 'name', label: 'Orphanage name', required: true, done: filled(o.name) },
+    { key: 'location', label: 'Location (city / region)', required: true, done: filled(o.location) },
+    { key: 'registrationNumber', label: 'Official registration number', required: true, done: filled(o.registrationNumber) },
+    { key: 'childrenCount', label: 'Number of children in care', required: true, done: Number(o.childrenCount) > 0 },
+    { key: 'contactName', label: 'Contact person', required: true, done: filled(o.contactName) },
+    { key: 'contactPhone', label: 'Contact phone', required: true, done: filled(o.contactPhone) },
+    { key: 'story', label: 'Your story (what you do and who you care for)', required: true, done: filled(o.story) },
+    { key: 'documents', label: 'At least one verification document (e.g. registration certificate)', required: true, done: o.documents.length > 0 },
+    { key: 'termsAgreed', label: 'Agree to the terms', required: true, done: Boolean(o.termsAgreed) },
+    { key: 'photoUrl', label: 'Profile photo', required: false, done: filled(o.photoUrl) },
+    { key: 'paymentAccount', label: 'Payment account for donations', required: false, done: filled(o.paymentAccountNumber) },
+  ];
+}
+
+function toProfile(o) {
   return {
-    id: row.id,
-    name: row.name,
-    location: row.location,
-    foundedYear: row.founded_year,
-    childrenCount: row.children_count,
-    contactName: row.contact_name,
-    contactPhone: row.contact_phone,
-    contactEmail: row.contact_email,
-    story: row.story,
-    status: row.status,
-    infoRequestMessage: row.info_request_message,
-    rejectionReason: row.rejection_reason,
+    id: o.id,
+    name: o.name,
+    location: o.location,
+    registrationNumber: o.registrationNumber,
+    foundedYear: o.foundedYear,
+    capacity: o.capacity,
+    childrenCount: o.childrenCount,
+    contactName: o.contactName,
+    contactPhone: o.contactPhone,
+    contactEmail: o.contactEmail,
+    story: o.story,
+    storyLanguage: o.storyLanguage,
+    paymentProvider: o.paymentProvider,
+    paymentAccountName: o.paymentAccountName,
+    paymentAccountNumber: o.paymentAccountNumber,
+    termsAgreed: o.termsAgreed,
+    photoUrl: o.photoUrl,
+    coverPhotoUrl: o.coverPhotoUrl,
+    documents: o.documents.map((d) => ({ id: d.id, name: d.name, size: d.size })),
+    status: o.status,
+    infoRequestMessage: o.infoRequestMessage,
+    rejectionReason: o.rejectionReason,
+    checklist: checklistFor(o),
   };
 }
 
-function rowToNeed(row) {
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    goal: row.goal,
-    raised: row.raised,
-    percent: row.percent,
-    date: row.date,
-  };
+function toNeed(n) {
+  return { id: n.id, title: n.title, description: n.description, goal: n.goal, raised: n.raised, percent: n.percent, date: n.date };
 }
 
-function listNeeds(orphanageId) {
-  return db.prepare('SELECT * FROM needs WHERE orphanage_id = ? ORDER BY id DESC').all(orphanageId).map(rowToNeed);
-}
-
-function appendActivity(orphanage, action) {
-  const log = JSON.parse(orphanage.activity_log || '[]');
-  log.push({ action: action, reviewer: orphanage.contact_email, timestamp: new Date().toISOString() });
-  return JSON.stringify(log);
-}
+const actorOf = (req) => ({ userId: req.account.id, email: req.account.email, isAdmin: false });
 
 function parseGoal(value) {
   const goal = Number(value);
   return Number.isInteger(goal) && goal > 0 ? goal : null;
 }
 
-router.get('/', (req, res) => {
-  res.json({ orphanage: rowToProfile(req.orphanage), needs: listNeeds(req.orphanage.id) });
+router.get('/', async (req, res) => {
+  res.json({ orphanage: toProfile(req.orphanage), needs: (await needs.forOrphanage(req.orphanage.id)).map(toNeed) });
 });
 
-router.put('/', (req, res) => {
+router.put('/', async (req, res) => {
   const body = req.body || {};
-  const sets = [];
-  const values = [];
+  const changes = {};
 
-  for (const key of Object.keys(PROFILE_FIELDS)) {
+  for (const key of PROFILE_FIELDS) {
     if (!Object.prototype.hasOwnProperty.call(body, key)) continue;
-    const column = PROFILE_FIELDS[key];
     let value = typeof body[key] === 'string' ? body[key].trim() : body[key];
 
-    if (NUMBER_COLUMNS.has(column)) {
+    if (typeof value === 'string' && value.length > 4000) {
+      return res.status(400).json({ error: 'One of the fields is too long.' });
+    }
+    if (NUMBER_FIELDS.has(key)) {
       value = value === '' || value === null ? null : Number(value);
       if (value !== null && (!Number.isInteger(value) || value < 0)) {
-        return res.status(400).json({ error: 'Founded year and children in care must be whole numbers.' });
+        return res.status(400).json({ error: 'Founded year, capacity and children in care must be whole numbers.' });
+      }
+      if (key === 'foundedYear' && value !== null && (value < 1800 || value > new Date().getFullYear())) {
+        return res.status(400).json({ error: 'Please enter a valid founding year.' });
       }
     }
-    if (column === 'name' && !value) {
+    if (key === 'name' && !value) {
       return res.status(400).json({ error: 'Orphanage name cannot be empty.' });
     }
+    if (key === 'storyLanguage' && value && !STORY_LANGUAGES.includes(value)) {
+      return res.status(400).json({ error: 'Story language must be English or French.' });
+    }
+    if (key === 'contactEmail' && value && !EMAIL_PATTERN.test(value)) {
+      return res.status(400).json({ error: 'Please enter a valid contact email address.' });
+    }
+    if (key === 'location' && typeof value === 'string' && value.length > 150) {
+      return res.status(400).json({ error: 'The location is too long (150 characters at most).' });
+    }
+    if (key === 'termsAgreed') value = Boolean(value);
 
-    sets.push(column + ' = ?');
-    values.push(value === '' ? null : value);
+    changes[key] = value === '' ? null : value;
   }
 
-  if (sets.length === 0) {
+  if (Object.keys(changes).length === 0) {
     return res.status(400).json({ error: 'Nothing to update.' });
   }
 
-  sets.push("activity_log = ?", "updated_at = datetime('now')");
-  values.push(appendActivity(req.orphanage, 'Profile updated by orphanage'));
-
-  db.prepare('UPDATE orphanages SET ' + sets.join(', ') + ' WHERE id = ?').run(...values, req.orphanage.id);
-  const updated = db.prepare('SELECT * FROM orphanages WHERE id = ?').get(req.orphanage.id);
-  res.json({ orphanage: rowToProfile(updated) });
+  changes.activityLog = req.orphanage.activityLog.concat([
+    { action: 'Profile updated by orphanage', reviewer: req.orphanage.contactEmail, timestamp: new Date().toISOString() },
+  ]);
+  const updated = await orphanages.save(req.orphanage.id, changes, actorOf(req));
+  res.json({ orphanage: toProfile(updated) });
 });
 
-router.post('/needs', (req, res) => {
+// --- documents and photos -------------------------------------------------
+
+function handleUploadError(err, res) {
+  if (err instanceof UploadError) return res.status(400).json({ error: err.message });
+  throw err;
+}
+
+router.post('/documents', async (req, res) => {
+  if (req.orphanage.documents.length >= MAX_DOCUMENTS) {
+    return res.status(400).json({ error: 'You can upload up to ' + MAX_DOCUMENTS + ' documents. Remove one first.' });
+  }
+  try {
+    const file = await saveUpload({ ownerUserId: req.account.id, purpose: 'document', filename: req.body && req.body.filename, data: req.body && req.body.data });
+    await orphanages.attachDocument(req.orphanage.id, file.id);
+    await common.logActivity('orphanage', req.orphanage.id, 'Uploaded document: ' + file.name, req.orphanage.contactEmail, req.account.id);
+    res.status(201).json({ orphanage: toProfile(await orphanages.get(req.orphanage.id)) });
+  } catch (err) {
+    handleUploadError(err, res);
+  }
+});
+
+router.delete('/documents/:id', async (req, res) => {
+  const doc = req.orphanage.documents.find((d) => d.id === req.params.id);
+  if (!doc) return res.status(404).json({ error: 'Document not found.' });
+
+  await deleteUpload(doc.id);
+  await common.logActivity('orphanage', req.orphanage.id, 'Removed document: ' + doc.name, req.orphanage.contactEmail, req.account.id);
+  res.json({ orphanage: toProfile(await orphanages.get(req.orphanage.id)) });
+});
+
+function photoRoute(column, urlKey, label) {
+  return async (req, res) => {
+    try {
+      const file = await saveUpload({ ownerUserId: req.account.id, purpose: 'photo', filename: req.body && req.body.filename, data: req.body && req.body.data });
+      const oldId = common.uploadIdFromUrl(req.orphanage[urlKey]);
+      await orphanages.setPhoto(req.orphanage.id, column, file.id);
+      await common.logActivity('orphanage', req.orphanage.id, 'Updated ' + label, req.orphanage.contactEmail, req.account.id);
+      if (oldId) await deleteUpload(oldId);
+      res.status(201).json({ orphanage: toProfile(await orphanages.get(req.orphanage.id)) });
+    } catch (err) {
+      handleUploadError(err, res);
+    }
+  };
+}
+
+router.post('/photo', photoRoute('profile_photo_upload_id', 'photoUrl', 'profile photo'));
+router.post('/cover', photoRoute('cover_photo_upload_id', 'coverPhotoUrl', 'cover photo'));
+
+// --- submit for verification ----------------------------------------------
+
+router.post('/submit', async (req, res) => {
+  const status = req.orphanage.status;
+  if (status === 'pending') return res.status(400).json({ error: 'Your profile is already waiting for review.' });
+  if (status === 'verified') return res.status(400).json({ error: 'Your profile is already verified.' });
+  if (status === 'rejected') return res.status(400).json({ error: 'This profile was not approved. Please contact the CAM Orphanage Connect team.' });
+
+  const missing = checklistFor(req.orphanage).filter((item) => item.required && !item.done);
+  if (missing.length > 0) {
+    return res.status(400).json({
+      error: 'Please complete these first: ' + missing.map((m) => m.label).join('; ') + '.',
+      missing: missing.map((m) => m.key),
+    });
+  }
+
+  await orphanages.markSubmitted(req.orphanage.id, status, req.orphanage.contactEmail, req.account.id);
+  res.json({ orphanage: toProfile(await orphanages.get(req.orphanage.id)) });
+});
+
+router.post('/needs', async (req, res) => {
   const { title, description, goal } = req.body || {};
   const goalAmount = parseGoal(goal);
 
@@ -126,23 +223,21 @@ router.post('/needs', (req, res) => {
     return res.status(400).json({ error: 'Goal amount must be a positive whole number.' });
   }
 
-  const result = db
-    .prepare('INSERT INTO needs (orphanage_id, title, description, goal, raised, percent, date) VALUES (?, ?, ?, ?, 0, 0, ?)')
-    .run(req.orphanage.id, title.trim(), (description || '').trim() || null, goalAmount, new Date().toISOString().slice(0, 10));
-
-  res.status(201).json({ need: rowToNeed(db.prepare('SELECT * FROM needs WHERE id = ?').get(result.lastInsertRowid)) });
+  const need = await needs.create({ orphanageId: req.orphanage.id, title, description, goal: goalAmount });
+  res.status(201).json({ need: toNeed(need) });
 });
 
-function findOwnNeed(req, res) {
-  const need = db.prepare('SELECT * FROM needs WHERE id = ? AND orphanage_id = ?').get(req.params.id, req.orphanage.id);
-  if (!need) {
+async function findOwnNeed(req, res) {
+  const need = await needs.get(Number(req.params.id));
+  if (!need || need.orphanageId !== req.orphanage.id) {
     res.status(404).json({ error: 'Need not found.' });
+    return null;
   }
   return need;
 }
 
-router.put('/needs/:id', (req, res) => {
-  const need = findOwnNeed(req, res);
+router.put('/needs/:id', async (req, res) => {
+  const need = await findOwnNeed(req, res);
   if (!need) return;
 
   const { title, description, goal } = req.body || {};
@@ -155,39 +250,45 @@ router.put('/needs/:id', (req, res) => {
     return res.status(400).json({ error: 'Goal must be a positive whole number and not below what is already raised.' });
   }
 
-  const percent = Math.min(100, Math.round((need.raised / goalAmount) * 100));
-  db.prepare("UPDATE needs SET title = ?, description = ?, goal = ?, percent = ?, updated_at = datetime('now') WHERE id = ?")
-    .run(title.trim(), (description || '').trim() || null, goalAmount, percent, need.id);
-
-  res.json({ need: rowToNeed(db.prepare('SELECT * FROM needs WHERE id = ?').get(need.id)) });
+  res.json({ need: toNeed(await needs.update(need.id, { title, description, goal: goalAmount })) });
 });
 
-router.delete('/needs/:id', (req, res) => {
-  const need = findOwnNeed(req, res);
+router.delete('/needs/:id', async (req, res) => {
+  const need = await findOwnNeed(req, res);
   if (!need) return;
 
   if (need.raised > 0) {
     return res.status(400).json({ error: 'This need has already received donations and cannot be removed.' });
   }
 
-  db.prepare('DELETE FROM needs WHERE id = ?').run(need.id);
+  await needs.remove(need.id);
   res.status(204).end();
 });
 
-router.get('/pledges', (req, res) => {
-  const pledges = db.prepare(
-    `SELECT p.id, p.amount, p.anonymous, p.donor_name, p.created_at, COALESCE(n.title, p.need_title) AS need_title
-     FROM pledges p LEFT JOIN needs n ON n.id = p.need_id
-     WHERE p.orphanage_id = ? ORDER BY p.id DESC`
-  ).all(req.orphanage.id);
+// --- visit requests ----------------------------------------------------------
 
+router.get('/visits', async (req, res) => {
+  res.json({ visits: await visits.forOrphanage(req.orphanage.id) });
+});
+
+router.post('/visits/:id/respond', async (req, res) => {
+  if (req.orphanage.status !== 'verified') {
+    return res.status(403).json({ error: 'You can answer visit requests once your orphanage is verified.' });
+  }
+  const { decision, note } = req.body || {};
+  await visits.respond(Number(req.params.id), req.orphanage.id, decision, note);
+  res.json({ visits: await visits.forOrphanage(req.orphanage.id) });
+});
+
+router.get('/pledges', async (req, res) => {
+  const pledges = await donations.pledgesToOrphanage(req.orphanage.id);
   res.json({
     pledges: pledges.map((p) => ({
       id: p.id,
-      amount: p.amount,
-      donorName: p.anonymous ? 'Anonymous' : p.donor_name,
+      amount: Number(p.amount),
+      donorName: p.is_anonymous ? 'Anonymous' : p.display_name,
       needTitle: p.need_title,
-      createdAt: p.created_at,
+      createdAt: db.isoTime(p.created_at),
     })),
   });
 });

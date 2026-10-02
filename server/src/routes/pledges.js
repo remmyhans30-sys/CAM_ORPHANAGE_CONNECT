@@ -1,6 +1,9 @@
 const express = require('express');
 const db = require('../db');
 const { authenticateUser } = require('../middleware/userAuth');
+const donors = require('../repo/donors');
+const needs = require('../repo/needs');
+const donations = require('../repo/donations');
 
 // Donor pledges: the amount is recorded and counted toward the need; no money is charged.
 const router = express.Router();
@@ -8,21 +11,18 @@ router.use(authenticateUser);
 
 const MIN_PLEDGE = 500;
 
-function rowToPledge(row) {
-  return {
-    id: row.id,
-    needId: row.need_id,
-    needTitle: row.need_title,
-    orphanageName: row.orphanage_name,
-    amount: row.amount,
-    anonymous: Boolean(row.anonymous),
-    createdAt: row.created_at,
-  };
-}
-
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   if (req.user.role !== 'user') {
     return res.status(403).json({ error: 'Only donor accounts can make pledges.' });
+  }
+
+  const account = await db.one("SELECT * FROM users WHERE id = ? AND role = 'donor'", [req.user.id]);
+  if (!account) {
+    return res.status(401).json({ code: 'sign-in', error: 'Account no longer exists.' });
+  }
+  const access = await donors.accessFor(account);
+  if (!access.ok) {
+    return res.status(403).json({ code: access.code, error: access.error });
   }
 
   const { needId, amount, anonymous } = req.body || {};
@@ -31,12 +31,9 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Pledges start at ' + MIN_PLEDGE + ' XAF (whole amounts only).' });
   }
 
-  const need = db.prepare(
-    `SELECT n.*, o.status AS orphanage_status
-     FROM needs n JOIN orphanages o ON o.id = n.orphanage_id
-     WHERE n.id = ?`
-  ).get(Number(needId));
-  if (!need || need.orphanage_status !== 'verified' || need.goal <= 0) {
+  const need = await needs.get(Number(needId));
+  const home = need ? await db.one('SELECT verification_status FROM orphanages WHERE id = ?', [need.orphanageId]) : null;
+  if (!need || !home || home.verification_status !== 'verified' || need.status !== 'open' || need.goal <= 0) {
     return res.status(404).json({ error: 'This need is not available.' });
   }
 
@@ -48,38 +45,32 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Only ' + remaining.toLocaleString('en-US') + ' XAF is still needed for this need.' });
   }
 
-  const donor = db.prepare('SELECT fullname FROM users WHERE id = ?').get(req.user.id);
-  if (!donor) {
-    return res.status(401).json({ error: 'Account no longer exists.' });
-  }
+  // The database checks the same rules again, so two pledges at the same moment cannot overfill a need.
+  await db.tx(async () => {
+    await donations.create({
+      giverUserId: req.user.id, orphanageId: need.orphanageId, needId: need.id, type: 'money',
+      amount: pledgeAmount, anonymous: Boolean(anonymous), status: 'pledged',
+    });
+    await db.run('UPDATE donor_profiles SET last_active_at = ? WHERE user_id = ?', [db.sqlTime(), req.user.id]);
+  });
 
-  const raised = need.raised + pledgeAmount;
-  const percent = Math.min(100, Math.round((raised / need.goal) * 100));
-
-  db.exec('BEGIN');
-  try {
-    db.prepare(
-      `INSERT INTO pledges (need_id, orphanage_id, user_id, donor_name, need_title, amount, anonymous)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(need.id, need.orphanage_id, req.user.id, donor.fullname, need.title, pledgeAmount, anonymous ? 1 : 0);
-    db.prepare("UPDATE needs SET raised = ?, percent = ?, updated_at = datetime('now') WHERE id = ?")
-      .run(raised, percent, need.id);
-    db.exec('COMMIT');
-  } catch (err) {
-    db.exec('ROLLBACK');
-    throw err;
-  }
-
-  res.status(201).json({ need: { id: need.id, goal: need.goal, raised: raised, percent: percent } });
+  const updated = await needs.get(need.id);
+  res.status(201).json({ need: { id: updated.id, goal: updated.goal, raised: updated.raised, percent: updated.percent } });
 });
 
-router.get('/mine', (req, res) => {
-  const rows = db.prepare(
-    `SELECT p.*, o.name AS orphanage_name
-     FROM pledges p JOIN orphanages o ON o.id = p.orphanage_id
-     WHERE p.user_id = ? ORDER BY p.id DESC`
-  ).all(req.user.id);
-  res.json({ pledges: rows.map(rowToPledge) });
+router.get('/mine', async (req, res) => {
+  const rows = await donations.pledgesBy(req.user.id);
+  res.json({
+    pledges: rows.map((r) => ({
+      id: r.id,
+      needId: r.need_id,
+      needTitle: r.need_title,
+      orphanageName: r.orphanage_name,
+      amount: Number(r.amount),
+      anonymous: Boolean(r.is_anonymous),
+      createdAt: db.isoTime(r.created_at),
+    })),
+  });
 });
 
 module.exports = router;

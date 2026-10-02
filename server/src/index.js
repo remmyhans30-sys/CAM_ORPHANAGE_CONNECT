@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('express-async-errors');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -13,13 +14,9 @@ if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET.length < 32)
   process.exit(1);
 }
 
+const db = require('./db');
+const { HttpError, fromDatabase } = require('./errors');
 const { ensureFirstAdmin } = require('./firstAdmin');
-const firstAdmin = ensureFirstAdmin({ allowDefault: process.env.NODE_ENV !== 'production' });
-if (firstAdmin.created) {
-  console.log(`Created first admin account: ${firstAdmin.email}`);
-} else if (firstAdmin.missingSettings) {
-  console.warn('No admin account yet — set ADMIN_EMAIL and ADMIN_PASSWORD and restart to create one.');
-}
 
 const authRoutes = require('./routes/auth');
 const orphanageRoutes = require('./routes/orphanages');
@@ -37,8 +34,16 @@ const userRoutes = require('./routes/users');
 const myOrphanageRoutes = require('./routes/my-orphanage');
 const publicRoutes = require('./routes/public');
 const pledgeRoutes = require('./routes/pledges');
+const fileRoutes = require('./routes/files');
+const myDonorRoutes = require('./routes/my-donor');
+const myMessagesRoutes = require('./routes/my-messages');
+const siteRoutes = require('./routes/site');
+const visitRoutes = require('./routes/visits');
+const adminConversationRoutes = require('./routes/admin-conversations');
 
 const app = express();
+// Behind the host's proxy the real visitor address is in the forwarded header (used to slow down repeated requests).
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '5mb' }));
 
@@ -57,8 +62,15 @@ app.use('/api/partner-auth', partnerAuthRoutes);
 app.use('/api/partner-orphanage-messages', partnerOrphanageMessageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/my-orphanage', myOrphanageRoutes);
-app.use('/api/public', publicRoutes);
+app.use('/api/browse', publicRoutes);
 app.use('/api/pledges', pledgeRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/my-donor', myDonorRoutes);
+app.use('/api/my-messages', myMessagesRoutes);
+app.use('/api/site', siteRoutes);
+app.use('/api/visits', visitRoutes.member);
+app.use('/api/visit-requests', visitRoutes.admin);
+app.use('/api/conversations', adminConversationRoutes);
 
 // The website itself: every top-level folder/file of the project except server/
 // (which holds .env and the database) and dotfiles. The list is exact, so encoded
@@ -66,7 +78,7 @@ app.use('/api/pledges', pledgeRoutes);
 const SITE_ROOT = path.join(__dirname, '..', '..');
 const PUBLIC_ENTRIES = new Set(
   fs.readdirSync(SITE_ROOT)
-    .filter((name) => !name.startsWith('.') && name.toLowerCase() !== 'server')
+    .filter((name) => !name.startsWith('.') && name.toLowerCase() !== 'server' && !name.toLowerCase().startsWith('server-'))
     .map((name) => name.toLowerCase())
 );
 
@@ -98,6 +110,16 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
+  const refusal = err instanceof HttpError ? err : fromDatabase(err);
+  if (refusal) {
+    return res.status(refusal.status).json({ error: refusal.message, ...refusal.extra });
+  }
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'That file is too large. The limit is 3 MB.' });
+  }
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'That request could not be read.' });
+  }
   console.error(err);
   res.status(500).json({ error: 'Internal server error.' });
 });
@@ -105,15 +127,34 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 4000;
 // Hosts such as alwaysdata give the address to listen on in IP (or HOST).
 const LISTEN_HOST = process.env.IP || process.env.HOST || undefined;
-const server = app.listen(PORT, LISTEN_HOST, () => {
-  console.log(LISTEN_HOST
-    ? `CAM Orphanage Connect listening on ${LISTEN_HOST} port ${PORT}`
-    : `CAM Orphanage Connect running on http://localhost:${PORT}`);
-});
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use — the site is probably already running. Open http://localhost:${PORT}`);
+
+async function start() {
+  try {
+    if (await db.ensureDatabase()) console.log(`Created the ${db.DB_NAME} database in MySQL.`);
+    const firstAdmin = await ensureFirstAdmin({ allowDefault: process.env.NODE_ENV !== 'production' });
+    if (firstAdmin.created) {
+      console.log(`Created first admin account: ${firstAdmin.email}`);
+    } else if (firstAdmin.missingSettings) {
+      console.warn('No admin account yet — set ADMIN_EMAIL and ADMIN_PASSWORD and restart to create one.');
+    }
+  } catch (err) {
+    console.error('Could not use the MySQL database: ' + err.message);
+    console.error('Check DB_HOST, DB_PORT, DB_USER and DB_PASSWORD in server/.env, and that MySQL is running.');
     process.exit(1);
   }
-  throw err;
-});
+
+  const server = app.listen(PORT, LISTEN_HOST, () => {
+    console.log(LISTEN_HOST
+      ? `CAM Orphanage Connect listening on ${LISTEN_HOST} port ${PORT}`
+      : `CAM Orphanage Connect running on http://localhost:${PORT}`);
+  });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use — the site is probably already running. Open http://localhost:${PORT}`);
+      process.exit(1);
+    }
+    throw err;
+  });
+}
+
+start();

@@ -1,100 +1,84 @@
 require('dotenv').config();
 const db = require('./db');
+const orphanages = require('./repo/orphanages');
 const { ensureFirstAdmin, LOCAL_DEFAULT } = require('./firstAdmin');
 
-const admin = ensureFirstAdmin({ allowDefault: true });
-if (!admin.created) {
-  console.log('Admins already exist — skipping admin seed.');
-} else if (admin.usedDefault) {
-  console.log(`Created default admin: ${LOCAL_DEFAULT.email} / ${LOCAL_DEFAULT.password} — change this password after first login.`);
-} else {
-  console.log(`Created admin ${admin.email} from ADMIN_EMAIL / ADMIN_PASSWORD.`);
-}
-
 // Sample orphanages are for local testing only; set SEED_SAMPLE_DATA=false on the live site.
-const orphanageCount = db.prepare('SELECT COUNT(*) AS count FROM orphanages').get().count;
-if (process.env.SEED_SAMPLE_DATA === 'false') {
-  console.log('SEED_SAMPLE_DATA=false — skipping sample orphanages.');
-} else if (orphanageCount === 0) {
-  const insert = db.prepare(`
-    INSERT INTO orphanages (
-      name, location, registration_number, story, story_language, status,
-      children_count, followers_count, founded_year, capacity,
-      contact_name, contact_phone, contact_email, terms_agreed,
-      photo_url, cover_photo_url, documents, submitted_date
-    ) VALUES (
-      @name, @location, @registration_number, @story, @story_language, @status,
-      @children_count, @followers_count, @founded_year, @capacity,
-      @contact_name, @contact_phone, @contact_email, @terms_agreed,
-      @photo_url, @cover_photo_url, @documents, @submitted_date
-    )
-  `);
+const SAMPLES = [
+  {
+    name: "Hope Children's Home",
+    location: 'Buea, Southwest Region',
+    registrationNumber: 'MINAS/2022/00123',
+    story: 'A home for children in Buea providing shelter, education, and care since 2012.',
+    storyLanguage: 'en',
+    status: 'verified',
+    childrenCount: 32,
+    foundedYear: 2012,
+    capacity: 40,
+    contactName: 'Grace Ebong',
+    contactPhone: '+237 677 123 456',
+    contactEmail: 'contact@hopechildrenshome.org',
+  },
+  {
+    name: "Foyer de l'Esperance",
+    location: 'Yaounde, Centre Region',
+    registrationNumber: 'MINAS/2023/00456',
+    story: 'Un foyer pour enfants a Yaounde offrant un abri sur et un accompagnement scolaire.',
+    storyLanguage: 'fr',
+    status: 'pending',
+    childrenCount: 18,
+    foundedYear: 2019,
+    capacity: 25,
+    contactName: 'Jean-Paul Mbarga',
+    contactPhone: '+237 699 234 567',
+    contactEmail: 'contact@foyerdelesperance.org',
+    submittedDate: '2026-08-10',
+  },
+  {
+    name: 'Grace Orphanage',
+    location: 'Bamenda, Northwest Region',
+    registrationNumber: 'MINAS/2021/00789',
+    story: 'Serving vulnerable children in Bamenda with housing, meals, and schooling support.',
+    storyLanguage: 'en',
+    status: 'verified',
+    childrenCount: 27,
+    foundedYear: 2015,
+    capacity: 35,
+    contactName: 'Comfort Ngwa',
+    contactPhone: '+237 675 345 678',
+    contactEmail: 'contact@graceorphanage.org',
+  },
+];
 
-  const samples = [
-    {
-      name: "Hope Children's Home",
-      location: 'Buea, Southwest Region',
-      registration_number: 'MINAS/2022/00123',
-      story: 'A home for children in Buea providing shelter, education, and care since 2012.',
-      story_language: 'en',
-      status: 'verified',
-      children_count: 32,
-      followers_count: 128,
-      founded_year: 2012,
-      capacity: 40,
-      contact_name: 'Grace Ebong',
-      contact_phone: '+237 677 123 456',
-      contact_email: 'contact@hopechildrenshome.org',
-      terms_agreed: 1,
-      photo_url: 'https://picsum.photos/seed/hope-avatar/200/200',
-      cover_photo_url: 'https://picsum.photos/seed/hope-cover/600/200',
-      documents: JSON.stringify(['registration-certificate.pdf', 'director-id.pdf']),
-      submitted_date: null,
-    },
-    {
-      name: "Foyer de l'Esperance",
-      location: 'Yaounde, Centre Region',
-      registration_number: 'MINAS/2023/00456',
-      story: 'Un foyer pour enfants a Yaounde offrant un abri sur et un accompagnement scolaire.',
-      story_language: 'fr',
-      status: 'pending',
-      children_count: 18,
-      followers_count: 9,
-      founded_year: 2019,
-      capacity: 25,
-      contact_name: 'Jean-Paul Mbarga',
-      contact_phone: '+237 699 234 567',
-      contact_email: 'contact@foyerdelesperance.org',
-      terms_agreed: 0,
-      photo_url: null,
-      cover_photo_url: null,
-      documents: JSON.stringify([]),
-      submitted_date: '2026-08-10',
-    },
-    {
-      name: 'Grace Orphanage',
-      location: 'Bamenda, Northwest Region',
-      registration_number: 'MINAS/2021/00789',
-      story: 'Serving vulnerable children in Bamenda with housing, meals, and schooling support.',
-      story_language: 'en',
-      status: 'verified',
-      children_count: 27,
-      followers_count: 76,
-      founded_year: 2015,
-      capacity: 35,
-      contact_name: 'Comfort Ngwa',
-      contact_phone: '+237 675 345 678',
-      contact_email: 'contact@graceorphanage.org',
-      terms_agreed: 1,
-      photo_url: 'https://picsum.photos/seed/grace-avatar/200/200',
-      cover_photo_url: null,
-      documents: JSON.stringify(['registration-certificate.pdf']),
-      submitted_date: null,
-    },
-  ];
+async function main() {
+  if (await db.ensureDatabase()) console.log('Created the ' + db.DB_NAME + ' database in MySQL.');
 
-  samples.forEach((sample) => insert.run(sample));
-  console.log(`Seeded ${samples.length} sample orphanages.`);
-} else {
-  console.log('Orphanages already exist — skipping orphanage seed.');
+  const admin = await ensureFirstAdmin({ allowDefault: true });
+  if (!admin.created) {
+    console.log('Admins already exist — skipping admin seed.');
+  } else if (admin.usedDefault) {
+    console.log(`Created default admin: ${LOCAL_DEFAULT.email} / ${LOCAL_DEFAULT.password} — change this password after first login.`);
+  } else {
+    console.log(`Created admin ${admin.email} from ADMIN_EMAIL / ADMIN_PASSWORD.`);
+  }
+
+  const count = (await db.one('SELECT COUNT(*) AS n FROM orphanages')).n;
+  if (process.env.SEED_SAMPLE_DATA === 'false') {
+    console.log('SEED_SAMPLE_DATA=false — skipping sample orphanages.');
+  } else if (count === 0) {
+    for (const sample of SAMPLES) {
+      const id = await orphanages.createByAdmin(sample);
+      await orphanages.save(id, { ...sample, termsAgreed: true }, { isAdmin: false });
+    }
+    console.log(`Seeded ${SAMPLES.length} sample orphanages.`);
+  } else {
+    console.log('Orphanages already exist — skipping orphanage seed.');
+  }
 }
+
+main()
+  .catch((err) => {
+    console.error('Seeding failed: ' + err.message);
+    process.exitCode = 1;
+  })
+  .finally(() => db.close());

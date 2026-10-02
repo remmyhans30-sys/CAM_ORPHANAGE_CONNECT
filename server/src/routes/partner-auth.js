@@ -3,266 +3,381 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { authenticatePartner } = require('../middleware/partnerAuth');
-const { rowToPartner } = require('./partners');
+const partners = require('../repo/partners');
+const orphanages = require('../repo/orphanages');
+const needs = require('../repo/needs');
+const donations = require('../repo/donations');
+const support = require('../repo/support');
+const common = require('../repo/common');
+const { saveUpload, deleteUpload, UploadError } = require('../uploads');
+const chat = require('../chat');
 
 const router = express.Router();
 
-function appendActivityLog(row, action) {
-  const activityLog = JSON.parse(row.activity_log || '[]');
-  activityLog.push({ reviewer: row.name + ' (partner self-service)', action: action, timestamp: new Date().toISOString() });
-  db.prepare("UPDATE partners SET activity_log = ? WHERE id = ?").run(JSON.stringify(activityLog), row.id);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ORG_TYPES = ['NGO', 'Corporate', 'Diaspora Association', 'Foundation', 'Faith group', 'Other'];
+const MAX_DOCUMENTS = 8;
+
+const actorOf = (partner) => ({ userId: partner.ownerUserId, email: partner.email, isAdmin: false });
+const reviewerOf = (partner) => partner.name + ' (partner self-service)';
+
+function issueToken(partner) {
+  return jwt.sign({ type: 'partner', id: partner.id, uid: partner.ownerUserId, email: partner.email }, process.env.JWT_SECRET, { expiresIn: '12h' });
 }
 
-router.post('/login', (req, res) => {
+// What the admin needs before a partner can be reviewed. 'required' ones block submission.
+function checklistFor(p) {
+  const filled = (v) => v !== null && v !== undefined && String(v).trim() !== '';
+  return [
+    { key: 'name', label: 'Organization name', required: true, done: filled(p.name) },
+    { key: 'orgType', label: 'Type of organization', required: true, done: filled(p.orgType) },
+    { key: 'country', label: 'Country', required: true, done: filled(p.country) },
+    { key: 'contactName', label: 'Contact person', required: true, done: filled(p.contactName) },
+    { key: 'documents', label: 'At least one verification document (registration certificate, tax clearance or the contact person\'s ID)', required: true, done: p.documents.length > 0 },
+    { key: 'termsAgreed', label: 'Agree to the terms', required: true, done: Boolean(p.termsAgreed) },
+    { key: 'logoUrl', label: 'Organization logo', required: false, done: filled(p.logoUrl) },
+    { key: 'sponsoredByBlurb', label: 'Short "Sponsored by" message for the public page', required: false, done: filled(p.sponsoredByBlurb) },
+    { key: 'pledge', label: 'Matching pledge you propose', required: false, done: Boolean(p.pledge) },
+  ];
+}
+
+function partnerProfile(p) {
+  return { ...p, documents: p.documents.map((d) => ({ id: d.id, name: d.name, size: d.size })), checklist: checklistFor(p) };
+}
+
+// Orphanage details, donations to orphanages and placement cases are only for partners an
+// admin has verified. (Profile, documents and messages with the team stay open.)
+async function requireVerified(req, res, next) {
+  const row = await db.one('SELECT verification_status FROM partner_organizations WHERE id = ?', [req.partner.id]);
+  if (!row) return res.status(404).json({ error: 'Partner account no longer exists.' });
+  if (row.verification_status !== 'verified') {
+    return res.status(403).json({
+      code: 'not-verified',
+      status: partners.STATUS_OUT[row.verification_status],
+      error: 'Browsing orphanages is available once the CAM Orphanage Connect team has verified your organization.',
+    });
+  }
+  next();
+}
+
+// Loads the signed-in partner for the routes that need the whole record.
+async function loadPartner(req, res, next) {
+  const partner = await partners.get(req.partner.id);
+  if (!partner) return res.status(404).json({ error: 'Partner account no longer exists.' });
+  req.me = partner;
+  next();
+}
+
+router.post('/register', async (req, res) => {
+  const { name, email, password, acceptTerms } = req.body || {};
+
+  if (!name || !name.trim() || !email || !password) {
+    return res.status(400).json({ error: 'Please fill in all fields.' });
+  }
+  if (acceptTerms !== true) {
+    return res.status(400).json({ error: 'Please confirm that you are 18 or older and agree to the terms of use.' });
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!EMAIL_PATTERN.test(normalizedEmail)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
+
+  if (await db.one('SELECT id FROM users WHERE email = ?', [normalizedEmail])) {
+    return res.status(409).json({ error: 'An account with this email already exists.' });
+  }
+
+  const id = await partners.register({ name: name.trim(), email: normalizedEmail, passwordHash: bcrypt.hashSync(password, 10) });
+  const partner = await partners.get(id);
+  await common.logActivity('partner', id, 'Confirmed being 18 or older and agreed to the terms of use (version 1)', reviewerOf(partner), partner.ownerUserId);
+  res.status(201).json({ token: issueToken(partner), partner: partnerProfile(partner) });
+});
+
+router.post('/login', async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
-  const partner = db.prepare('SELECT * FROM partners WHERE email = ?').get(email.trim().toLowerCase());
-  if (!partner || !partner.password_hash) {
+  const user = await db.one("SELECT * FROM users WHERE email = ? AND role = 'partner' AND status = 'active'", [email.trim().toLowerCase()]);
+  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
+  const partner = await partners.getByOwner(user.id);
+  if (!partner) return res.status(401).json({ error: 'Invalid email or password.' });
 
-  const passwordMatches = bcrypt.compareSync(password, partner.password_hash);
-  if (!passwordMatches) {
-    return res.status(401).json({ error: 'Invalid email or password.' });
-  }
-
-  const token = jwt.sign(
-    { type: 'partner', id: partner.id, email: partner.email },
-    process.env.JWT_SECRET,
-    { expiresIn: '12h' }
-  );
-
-  res.json({ token, partner: rowToPartner(partner) });
+  await db.run('UPDATE users SET last_login_at = ? WHERE id = ?', [db.sqlTime(), user.id]);
+  res.json({ token: issueToken(partner), partner: partnerProfile(partner) });
 });
 
-router.get('/me', authenticatePartner, (req, res) => {
-  const row = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  if (!row) {
-    return res.status(404).json({ error: 'Partner account no longer exists.' });
-  }
-  res.json({ partner: rowToPartner(row) });
+router.get('/me', authenticatePartner, loadPartner, (req, res) => {
+  res.json({ partner: partnerProfile(req.me) });
 });
 
-router.put('/me', authenticatePartner, (req, res) => {
-  const existing = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  if (!existing) return res.status(404).json({ error: 'Partner account no longer exists.' });
+router.put('/me', authenticatePartner, loadPartner, async (req, res) => {
+  const existing = req.me;
+  const body = req.body || {};
+  const changes = {};
+  const text = (key, max) => {
+    if (body[key] === undefined) return null;
+    const value = String(body[key] || '').trim();
+    if (value.length > max) return 'One of the fields is too long.';
+    changes[key] = value || null;
+    return null;
+  };
 
-  const { contactName, country } = req.body || {};
-  const updates = {};
-  if (contactName !== undefined) updates.contact_name = contactName.trim();
-  if (country !== undefined) updates.country = country.trim();
+  const problems = [text('name', 150), text('contactName', 120), text('country', 100), text('sponsoredByBlurb', 400)].filter(Boolean);
+  if (problems.length > 0) return res.status(400).json({ error: problems[0] });
 
-  const keys = Object.keys(updates);
-  if (keys.length > 0) {
-    const setClause = keys.map((k) => `${k} = ?`).join(', ');
-    db.prepare(`UPDATE partners SET ${setClause}, updated_at = datetime('now') WHERE id = ?`)
-      .run(...keys.map((k) => updates[k]), req.partner.id);
-    appendActivityLog(existing, 'Self-updated contact details');
+  if (body.name !== undefined && changes.name === null) return res.status(400).json({ error: 'Organization name cannot be empty.' });
+  if (body.orgType !== undefined) {
+    const orgType = String(body.orgType || '');
+    if (orgType && !ORG_TYPES.includes(orgType)) return res.status(400).json({ error: 'Please choose one of the listed organization types.' });
+    changes.orgType = orgType || null;
+  }
+  if (body.termsAgreed !== undefined) changes.termsAgreed = Boolean(body.termsAgreed);
+
+  // A matching pledge is a proposal until the admin approves it, so it can't be changed once verified.
+  if (body.pledgeDescription !== undefined || body.pledgeLimit !== undefined) {
+    if (existing.verificationStatus === 'verified') {
+      return res.status(400).json({ error: 'Your matching pledge is already approved. Contact the CAM Orphanage Connect team to change it.' });
+    }
+    const description = String(body.pledgeDescription || '').trim();
+    const limit = Number(body.pledgeLimit);
+    if (!description && !body.pledgeLimit) {
+      changes.pledge = null;
+    } else {
+      if (!description || description.length > 400) return res.status(400).json({ error: 'Please describe your matching pledge (up to 400 characters).' });
+      if (!Number.isInteger(limit) || limit <= 0) return res.status(400).json({ error: 'The pledge limit must be a positive whole number.' });
+      changes.pledge = { description: description, limit: limit, used: existing.pledge ? existing.pledge.used : 0 };
+    }
+  }
+  if (changes.sponsoredByBlurb !== undefined && changes.sponsoredByBlurb !== existing.sponsoredByBlurb) {
+    changes.wordingApproved = false;
   }
 
-  const row = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  res.json({ partner: rowToPartner(row) });
+  if (Object.keys(changes).length === 0) return res.status(400).json({ error: 'Nothing to update.' });
+
+  await common.logActivity('partner', existing.id, 'Updated organization profile', reviewerOf(existing), existing.ownerUserId);
+  res.json({ partner: partnerProfile(await partners.save(existing.id, changes, actorOf(existing))) });
 });
 
-router.post('/change-password', authenticatePartner, (req, res) => {
-  const row = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  if (!row) return res.status(404).json({ error: 'Partner account no longer exists.' });
+// --- documents, logo and submit for verification ---------------------------
 
+function uploadFailure(err, res) {
+  if (err instanceof UploadError) return res.status(400).json({ error: err.message });
+  throw err;
+}
+
+router.post('/me/documents', authenticatePartner, loadPartner, async (req, res) => {
+  const partner = req.me;
+  if (partner.documents.length >= MAX_DOCUMENTS) {
+    return res.status(400).json({ error: 'You can upload up to ' + MAX_DOCUMENTS + ' documents. Remove one first.' });
+  }
+  try {
+    const file = await saveUpload({ ownerUserId: partner.ownerUserId, purpose: 'document', filename: req.body && req.body.filename, data: req.body && req.body.data });
+    await partners.attachDocument(partner.id, file.id);
+    await common.logActivity('partner', partner.id, 'Uploaded document: ' + file.name, reviewerOf(partner), partner.ownerUserId);
+    res.status(201).json({ partner: partnerProfile(await partners.get(partner.id)) });
+  } catch (err) {
+    uploadFailure(err, res);
+  }
+});
+
+router.delete('/me/documents/:id', authenticatePartner, loadPartner, async (req, res) => {
+  const partner = req.me;
+  const doc = partner.documents.find((d) => d.id === req.params.id);
+  if (!doc) return res.status(404).json({ error: 'Document not found.' });
+
+  await deleteUpload(doc.id);
+  await common.logActivity('partner', partner.id, 'Removed document: ' + doc.name, reviewerOf(partner), partner.ownerUserId);
+  res.json({ partner: partnerProfile(await partners.get(partner.id)) });
+});
+
+router.post('/me/logo', authenticatePartner, loadPartner, async (req, res) => {
+  const partner = req.me;
+  try {
+    const file = await saveUpload({ ownerUserId: partner.ownerUserId, purpose: 'photo', filename: req.body && req.body.filename, data: req.body && req.body.data });
+    const oldId = common.uploadIdFromUrl(partner.logoUrl);
+    await db.run('UPDATE partner_organizations SET logo_upload_id = ?, blurb_approved = 0 WHERE id = ?', [file.id, partner.id]);
+    await common.logActivity('partner', partner.id, 'Updated organization logo', reviewerOf(partner), partner.ownerUserId);
+    if (oldId) await deleteUpload(oldId);
+    res.status(201).json({ partner: partnerProfile(await partners.get(partner.id)) });
+  } catch (err) {
+    uploadFailure(err, res);
+  }
+});
+
+router.post('/me/submit', authenticatePartner, loadPartner, async (req, res) => {
+  const partner = req.me;
+
+  const status = partner.verificationStatus;
+  if (status === 'pending') return res.status(400).json({ error: 'Your organization is already waiting for review.' });
+  if (status === 'verified') return res.status(400).json({ error: 'Your organization is already verified.' });
+  if (status === 'rejected') return res.status(400).json({ error: 'This application was not approved. Please contact the CAM Orphanage Connect team.' });
+
+  const missing = checklistFor(partner).filter((item) => item.required && !item.done);
+  if (missing.length > 0) {
+    return res.status(400).json({
+      error: 'Please complete these first: ' + missing.map((m) => m.label).join('; ') + '.',
+      missing: missing.map((m) => m.key),
+    });
+  }
+
+  await partners.submit(partner, partner.name);
+  res.json({ partner: partnerProfile(await partners.get(partner.id)) });
+});
+
+router.post('/change-password', authenticatePartner, loadPartner, async (req, res) => {
+  const partner = req.me;
   const { currentPassword, newPassword } = req.body || {};
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Current and new password are required.' });
   }
-  if (!row.password_hash || !bcrypt.compareSync(currentPassword, row.password_hash)) {
+  const user = await db.one('SELECT password_hash FROM users WHERE id = ?', [partner.ownerUserId]);
+  if (!user || !bcrypt.compareSync(currentPassword, user.password_hash)) {
     return res.status(401).json({ error: 'Current password is incorrect.' });
   }
   if (newPassword.length < 6) {
     return res.status(400).json({ error: 'New password must be at least 6 characters.' });
   }
 
-  const newHash = bcrypt.hashSync(newPassword, 10);
-  db.prepare("UPDATE partners SET password_hash = ?, updated_at = datetime('now') WHERE id = ?").run(newHash, req.partner.id);
-  appendActivityLog(row, 'Changed partner portal password');
+  await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [bcrypt.hashSync(newPassword, 10), partner.ownerUserId]);
+  await common.logActivity('partner', partner.id, 'Changed partner portal password', reviewerOf(partner), partner.ownerUserId);
   res.json({ success: true });
 });
 
-function rowToPublicOrphanage(row) {
+function toPublicOrphanage(o) {
   return {
-    id: row.id,
-    name: row.name,
-    location: row.location,
-    story: row.story,
-    childrenCount: row.children_count,
-    capacity: row.capacity,
-    foundedYear: row.founded_year,
-    followersCount: row.followers_count,
-    photoUrl: row.photo_url,
-    coverPhotoUrl: row.cover_photo_url,
-    gallery: JSON.parse(row.gallery),
-    posts: JSON.parse(row.posts),
+    id: o.id,
+    name: o.name,
+    location: o.location,
+    story: o.story,
+    childrenCount: o.childrenCount,
+    capacity: o.capacity,
+    foundedYear: o.foundedYear,
+    followersCount: o.followersCount,
+    photoUrl: o.photoUrl,
+    coverPhotoUrl: o.coverPhotoUrl,
+    gallery: o.gallery,
+    posts: o.posts,
   };
 }
 
-function rowToPublicNeed(row) {
-  return { id: row.id, title: row.title, goal: row.goal, raised: row.raised, percent: row.percent, date: row.date };
-}
-
-router.get('/orphanages', authenticatePartner, (req, res) => {
-  const rows = db.prepare("SELECT * FROM orphanages WHERE status = 'verified' ORDER BY name ASC").all();
-  const orphanages = rows.map((row) => {
-    const orphanage = rowToPublicOrphanage(row);
-    const needs = db.prepare('SELECT raised FROM needs WHERE orphanage_id = ?').all(row.id);
-    orphanage.needsCount = needs.length;
-    orphanage.totalRaised = needs.reduce((sum, n) => sum + Number(n.raised || 0), 0);
-    return orphanage;
-  });
-  res.json({ orphanages: orphanages });
-});
-
-router.get('/orphanages/:id', authenticatePartner, (req, res) => {
-  const row = db.prepare("SELECT * FROM orphanages WHERE id = ? AND status = 'verified'").get(req.params.id);
-  if (!row) return res.status(404).json({ error: 'Orphanage not found.' });
-
-  const needs = db.prepare('SELECT * FROM needs WHERE orphanage_id = ? ORDER BY id DESC').all(req.params.id).map(rowToPublicNeed);
-  res.json({ orphanage: rowToPublicOrphanage(row), needs: needs });
-});
-
-function rowToThread(row) {
-  return {
-    id: row.id,
-    senderName: row.sender_name,
-    accountType: row.account_type,
-    accountId: row.account_id,
-    subject: row.subject,
-    body: row.body,
-    timestamp: row.timestamp,
-    fromAdmin: Boolean(row.from_admin),
-    replies: JSON.parse(row.replies),
-  };
-}
-
-router.get('/messages', authenticatePartner, (req, res) => {
-  const row = db.prepare("SELECT * FROM messages WHERE account_type = 'partner' AND account_id = ?").get(req.partner.id);
-  if (row) {
-    db.prepare('UPDATE messages SET partner_last_seen_at = ? WHERE id = ?').run(new Date().toISOString(), row.id);
+router.get('/orphanages', authenticatePartner, requireVerified, async (req, res) => {
+  const homes = await orphanages.verifiedList();
+  const result = [];
+  for (const home of homes) {
+    const list = await needs.forOrphanage(home.id);
+    const orphanage = toPublicOrphanage(home);
+    orphanage.needsCount = list.length;
+    orphanage.totalRaised = list.reduce((sum, n) => sum + n.raised, 0);
+    result.push(orphanage);
   }
-  res.json({ message: row ? rowToThread(row) : null });
+  res.json({ orphanages: result });
 });
 
-function lastAdminActivityAt(row) {
-  const timestamps = [];
-  if (row.from_admin && row.body) timestamps.push(row.timestamp);
-  JSON.parse(row.replies || '[]').forEach((r) => {
-    if (r.sender !== 'partner') timestamps.push(r.timestamp);
-  });
-  if (timestamps.length === 0) return null;
-  return timestamps.reduce((latest, t) => (new Date(t) > new Date(latest) ? t : latest));
+router.get('/orphanages/:id', authenticatePartner, requireVerified, async (req, res) => {
+  const home = await orphanages.getVerified(Number(req.params.id));
+  if (!home) return res.status(404).json({ error: 'Orphanage not found.' });
+
+  const list = (await needs.forOrphanage(home.id)).map((n) => ({ id: n.id, title: n.title, goal: n.goal, raised: n.raised, percent: n.percent, date: n.date }));
+  res.json({ orphanage: toPublicOrphanage(home), needs: list });
+});
+
+// ---- the conversation with the CAM team ---------------------------------------
+
+function toTeamThread(conv) {
+  return {
+    id: conv.id,
+    senderName: conv.senderName,
+    accountType: conv.accountType,
+    accountId: conv.accountId,
+    subject: conv.subject,
+    body: conv.body,
+    timestamp: conv.timestamp,
+    fromAdmin: conv.fromAdmin,
+    replies: conv.replies,
+  };
 }
 
-router.get('/messages/unread', authenticatePartner, (req, res) => {
-  const row = db.prepare("SELECT * FROM messages WHERE account_type = 'partner' AND account_id = ?").get(req.partner.id);
-  if (!row) return res.json({ hasUnread: false });
-
-  const lastActivity = lastAdminActivityAt(row);
-  const hasUnread = Boolean(lastActivity) && (!row.partner_last_seen_at || new Date(lastActivity) > new Date(row.partner_last_seen_at));
-  res.json({ hasUnread: hasUnread });
+router.get('/messages', authenticatePartner, loadPartner, async (req, res) => {
+  const conv = await support.forUser(req.me.ownerUserId);
+  if (conv) await support.markSeenByMember(conv.id, req.me.ownerUserId);
+  res.json({ message: conv ? toTeamThread(conv) : null });
 });
 
-router.post('/messages/reply', authenticatePartner, (req, res) => {
+router.get('/messages/unread', authenticatePartner, loadPartner, async (req, res) => {
+  const conv = await support.forUser(req.me.ownerUserId);
+  const teamUnread = conv ? await support.unreadForMember(conv.id, req.me.ownerUserId) : false;
+  const threads = await chat.threadsOf(req.me.ownerUserId);
+  const chatsUnread = threads.filter((t) => chat.isUnread(t, 'partner')).length;
+  res.json({ hasUnread: teamUnread || chatsUnread > 0, teamUnread: teamUnread, chatsUnread: chatsUnread });
+});
+
+// The partner's direct chats with orphanages (open one from its orphanage page).
+router.get('/chats', authenticatePartner, loadPartner, async (req, res) => {
+  const threads = await chat.threadsOf(req.me.ownerUserId);
+  const conversations = threads
+    .filter((t) => t.messages.length > 0)
+    .map((t) => {
+      const view = chat.viewFor(t, 'partner');
+      delete view.messages;
+      view.orphanageId = t.orphanage.id;
+      return view;
+    })
+    .sort((x, y) => new Date(y.lastAt) - new Date(x.lastAt));
+  res.json({ conversations: conversations });
+});
+
+router.post('/messages/reply', authenticatePartner, loadPartner, async (req, res) => {
   const text = ((req.body || {}).text || '').trim();
   if (!text) return res.status(400).json({ error: 'Message text is required.' });
+  if (text.length > chat.MAX_TEXT) return res.status(400).json({ error: 'That message is too long. The limit is ' + chat.MAX_TEXT + ' characters.' });
 
-  let row = db.prepare("SELECT * FROM messages WHERE account_type = 'partner' AND account_id = ?").get(req.partner.id);
-
-  if (!row) {
-    const partnerRow = db.prepare('SELECT name FROM partners WHERE id = ?').get(req.partner.id);
-    const result = db.prepare(
-      'INSERT INTO messages (sender_name, account_type, account_id, subject, body, timestamp, read, from_admin, replies) VALUES (?,?,?,?,?,?,?,?,?)'
-    ).run(partnerRow.name, 'partner', req.partner.id, 'Conversation with ' + partnerRow.name, text, new Date().toISOString(), 0, 0, '[]');
-    row = db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
-    return res.status(201).json({ message: rowToThread(row) });
-  }
-
-  const replies = JSON.parse(row.replies);
-  replies.push({ text: text, timestamp: new Date().toISOString(), sender: 'partner' });
-  db.prepare("UPDATE messages SET replies = ?, read = 0, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(replies), row.id);
-  row = db.prepare('SELECT * FROM messages WHERE id = ?').get(row.id);
-  res.json({ message: rowToThread(row) });
+  const before = await support.forUser(req.me.ownerUserId);
+  const conv = await support.memberSends(req.me.ownerUserId, text);
+  res.status(!before || before.messages.length === 0 ? 201 : 200).json({ message: toTeamThread(conv) });
 });
 
-router.post('/donations', authenticatePartner, (req, res) => {
-  const row = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  if (!row) return res.status(404).json({ error: 'Partner account no longer exists.' });
+// ---- gifts and placement cases ---------------------------------------------------
 
+router.post('/donations', authenticatePartner, requireVerified, loadPartner, async (req, res) => {
+  const partner = req.me;
   const body = req.body || {};
   const type = body.type === 'item' ? 'item' : 'money';
-  const orphanageRow = db.prepare("SELECT * FROM orphanages WHERE id = ? AND status = 'verified'").get(body.orphanageId);
-  if (!orphanageRow) return res.status(400).json({ error: 'Please select a valid orphanage.' });
+  const orphanage = await orphanages.getVerified(Number(body.orphanageId));
+  if (!orphanage) return res.status(400).json({ error: 'Please select a valid orphanage.' });
 
   const date = body.date || new Date().toISOString().slice(0, 10);
-  const need = (body.need || '').trim();
-  let donation;
-  let estimatedValue;
+  const needTitle = (body.need || '').trim();
+  const value = Number(body.amount) || 0;
+  const itemDescription = (body.itemDescription || '').trim();
 
-  if (type === 'item') {
-    const itemDescription = (body.itemDescription || '').trim();
-    if (!itemDescription) return res.status(400).json({ error: 'Please describe what was donated.' });
-    estimatedValue = Number(body.amount) || 0;
-    donation = {
-      type: 'item',
-      orphanage: orphanageRow.name,
-      orphanageId: orphanageRow.id,
-      need: need,
-      itemDescription: itemDescription,
-      quantity: (body.quantity || '').trim(),
-      amount: estimatedValue,
-      deliveryMethod: (body.deliveryMethod || '').trim(),
-      date: date,
-      status: 'completed',
-    };
-  } else {
-    estimatedValue = Number(body.amount) || 0;
-    if (estimatedValue <= 0) return res.status(400).json({ error: 'Please enter a donation amount.' });
-    donation = {
-      type: 'money',
-      orphanage: orphanageRow.name,
-      orphanageId: orphanageRow.id,
-      need: need,
-      amount: estimatedValue,
-      method: (body.method || '').trim(),
-      date: date,
-      status: 'completed',
-    };
-  }
+  if (type === 'item' && !itemDescription) return res.status(400).json({ error: 'Please describe what was donated.' });
+  if (type === 'money' && value <= 0) return res.status(400).json({ error: 'Please enter a donation amount.' });
 
-  const donations = JSON.parse(row.donations || '[]');
-  donations.push(donation);
+  const need = needTitle ? (await needs.forOrphanage(orphanage.id)).find((n) => n.title === needTitle) : null;
 
-  const orphanagesSponsored = JSON.parse(row.orphanages_sponsored || '[]');
-  const existingHome = orphanagesSponsored.find((o) => o.name === orphanageRow.name);
-  if (existingHome) {
-    existingHome.amount = (existingHome.amount || 0) + estimatedValue;
-  } else {
-    orphanagesSponsored.push({ name: orphanageRow.name, sponsorSince: date, amount: estimatedValue });
-  }
+  await db.tx(async () => {
+    await donations.create({
+      giverUserId: partner.ownerUserId, orphanageId: orphanage.id, needId: need ? need.id : null, type,
+      amount: value, itemDescription, quantity: (body.quantity || '').trim(), deliveryMethod: (body.deliveryMethod || '').trim(),
+      method: (body.method || '').trim(), status: 'completed', date,
+    });
+    await partners.noteSponsorship(partner.id, orphanage.id, date);
+    await common.logActivity('partner', partner.id, 'Logged a ' + type + ' donation to ' + orphanage.name, reviewerOf(partner), partner.ownerUserId);
+  });
 
-  const newTotal = (row.total_contributed || 0) + estimatedValue;
-
-  db.prepare("UPDATE partners SET donations = ?, orphanages_sponsored = ?, total_contributed = ?, updated_at = datetime('now') WHERE id = ?")
-    .run(JSON.stringify(donations), JSON.stringify(orphanagesSponsored), newTotal, req.partner.id);
-  appendActivityLog(row, 'Logged a ' + type + ' donation to ' + orphanageRow.name);
-
-  const updated = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  res.status(201).json({ partner: rowToPartner(updated) });
+  res.status(201).json({ partner: await partners.get(partner.id) });
 });
 
-router.post('/placement-cases', authenticatePartner, (req, res) => {
-  const row = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  if (!row) return res.status(404).json({ error: 'Partner account no longer exists.' });
-  if (row.tier !== 'Verified Referrer') {
+router.post('/placement-cases', authenticatePartner, requireVerified, loadPartner, async (req, res) => {
+  const partner = req.me;
+  if (partner.tier !== 'Verified Referrer') {
     return res.status(403).json({ error: 'Only Verified Referrer partners can submit placement cases.' });
   }
 
@@ -273,92 +388,70 @@ router.post('/placement-cases', authenticatePartner, (req, res) => {
     return res.status(400).json({ error: 'Social worker name and reason for referral are required.' });
   }
 
-  const placementCase = {
-    submittedDate: new Date().toISOString().slice(0, 10),
-    status: 'pending',
-    socialWorkerName: socialWorkerName,
+  await partners.addPlacementCase(partner.id, {
+    socialWorkerName, reasonForReferral,
     socialWorkerPhone: (body.socialWorkerPhone || '').trim(),
-    reasonForReferral: reasonForReferral,
     placementType: (body.placementType || '').trim(),
     educationalStatus: (body.educationalStatus || '').trim(),
     livingEnvironmentNotes: (body.livingEnvironmentNotes || '').trim(),
     anticipatedDischargeDate: (body.anticipatedDischargeDate || '').trim(),
-  };
+  });
+  await common.logActivity('partner', partner.id, 'Submitted a new placement referral case', reviewerOf(partner), partner.ownerUserId);
 
-  const placementCases = JSON.parse(row.placement_cases || '[]');
-  placementCases.push(placementCase);
-  const newCount = (row.placement_referrals_count || 0) + 1;
-
-  db.prepare("UPDATE partners SET placement_cases = ?, placement_referrals_count = ?, updated_at = datetime('now') WHERE id = ?")
-    .run(JSON.stringify(placementCases), newCount, req.partner.id);
-  appendActivityLog(row, 'Submitted a new placement referral case');
-
-  const updated = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  res.status(201).json({ partner: rowToPartner(updated) });
+  res.status(201).json({ partner: await partners.get(partner.id) });
 });
 
-router.post('/orphanages/:id/favorite', authenticatePartner, (req, res) => {
-  const row = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  if (!row) return res.status(404).json({ error: 'Partner account no longer exists.' });
+router.post('/orphanages/:id/favorite', authenticatePartner, requireVerified, loadPartner, async (req, res) => {
+  const orphanage = await orphanages.getVerified(Number(req.params.id));
+  if (!orphanage) return res.status(404).json({ error: 'Orphanage not found.' });
 
-  const orphanageId = Number(req.params.id);
-  const orphanageRow = db.prepare("SELECT id FROM orphanages WHERE id = ? AND status = 'verified'").get(orphanageId);
-  if (!orphanageRow) return res.status(404).json({ error: 'Orphanage not found.' });
-
-  const favorites = JSON.parse(row.favorite_orphanage_ids || '[]');
-  const index = favorites.indexOf(orphanageId);
-  if (index === -1) {
-    favorites.push(orphanageId);
-  } else {
-    favorites.splice(index, 1);
-  }
-
-  db.prepare("UPDATE partners SET favorite_orphanage_ids = ?, updated_at = datetime('now') WHERE id = ?")
-    .run(JSON.stringify(favorites), req.partner.id);
-
-  const updated = db.prepare('SELECT * FROM partners WHERE id = ?').get(req.partner.id);
-  res.json({ partner: rowToPartner(updated) });
+  await partners.toggleFavourite(req.me.ownerUserId, orphanage.id);
+  res.json({ partner: await partners.get(req.me.id) });
 });
 
-function rowToPartnerOrphanageThread(row) {
+// ---- the partner's chat with one orphanage -----------------------------------------
+
+function toThread(thread, partnerId) {
   return {
-    id: row.id,
-    partnerId: row.partner_id,
-    orphanageId: row.orphanage_id,
-    messages: JSON.parse(row.messages || '[]'),
-    updatedAt: row.updated_at,
+    id: thread.id,
+    partnerId: partnerId,
+    orphanageId: thread.orphanage.id,
+    messages: thread.messages.map((m) => ({ text: m.text, timestamp: m.timestamp, sender: m.sender })),
+    updatedAt: thread.updatedAt,
   };
 }
 
-router.get('/orphanages/:id/messages', authenticatePartner, (req, res) => {
-  const orphanageId = Number(req.params.id);
-  const row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE partner_id = ? AND orphanage_id = ?').get(req.partner.id, orphanageId);
-  res.json({ thread: row ? rowToPartnerOrphanageThread(row) : null });
+async function existingThread(partnerUserId, orphanageUserId) {
+  const low = Math.min(partnerUserId, orphanageUserId);
+  const high = Math.max(partnerUserId, orphanageUserId);
+  const row = await db.one("SELECT id FROM conversations WHERE kind = 'direct' AND user_low_id = ? AND user_high_id = ?", [low, high]);
+  return row ? chat.threadById(row.id) : null;
+}
+
+router.get('/orphanages/:id/messages', authenticatePartner, requireVerified, loadPartner, async (req, res) => {
+  const orphanage = await orphanages.get(Number(req.params.id));
+  const thread = orphanage ? await existingThread(req.me.ownerUserId, orphanage.ownerUserId) : null;
+  if (thread) await chat.markSeen(thread, 'partner');
+  res.json({ thread: thread ? toThread(await chat.threadById(thread.id), req.me.id) : null, orphanageName: orphanage ? orphanage.name : null });
 });
 
-router.post('/orphanages/:id/messages', authenticatePartner, (req, res) => {
+router.post('/orphanages/:id/messages', authenticatePartner, requireVerified, loadPartner, async (req, res) => {
   const text = ((req.body || {}).text || '').trim();
   if (!text) return res.status(400).json({ error: 'Message text is required.' });
-
-  const orphanageId = Number(req.params.id);
-  const orphanageRow = db.prepare("SELECT id FROM orphanages WHERE id = ? AND status = 'verified'").get(orphanageId);
-  if (!orphanageRow) return res.status(404).json({ error: 'Orphanage not found.' });
-
-  let row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE partner_id = ? AND orphanage_id = ?').get(req.partner.id, orphanageId);
-  const entry = { text: text, timestamp: new Date().toISOString(), sender: 'partner' };
-
-  if (!row) {
-    const result = db.prepare('INSERT INTO partner_orphanage_threads (partner_id, orphanage_id, messages) VALUES (?,?,?)')
-      .run(req.partner.id, orphanageId, JSON.stringify([entry]));
-    row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE id = ?').get(result.lastInsertRowid);
-  } else {
-    const messages = JSON.parse(row.messages);
-    messages.push(entry);
-    db.prepare("UPDATE partner_orphanage_threads SET messages = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(messages), row.id);
-    row = db.prepare('SELECT * FROM partner_orphanage_threads WHERE id = ?').get(row.id);
+  if (text.length > chat.MAX_TEXT) return res.status(400).json({ error: 'That message is too long. The limit is ' + chat.MAX_TEXT + ' characters.' });
+  try {
+    chat.checkRate('partner-' + req.me.id);
+  } catch (err) {
+    return res.status(429).json({ error: err.message });
   }
 
-  res.status(201).json({ thread: rowToPartnerOrphanageThread(row) });
+  const orphanage = await orphanages.getVerified(Number(req.params.id));
+  if (!orphanage) return res.status(404).json({ error: 'Orphanage not found.' });
+
+  let thread = await chat.findOrCreateThread(orphanage.ownerUserId, req.me.ownerUserId);
+  thread = await chat.appendMessage(thread, 'partner', text);
+  await chat.markSeen(thread, 'partner');
+  res.status(201).json({ thread: toThread(thread, req.me.id) });
 });
 
 module.exports = router;

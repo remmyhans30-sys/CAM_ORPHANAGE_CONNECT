@@ -13,7 +13,7 @@ function authenticatePartner(req, res, next) {
     if (payload.type !== 'partner') {
       return res.status(401).json({ error: 'Invalid or expired token.' });
     }
-    req.partner = { id: payload.id, email: payload.email };
+    req.partner = { id: payload.id, email: payload.email, userId: payload.uid };
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token.' });

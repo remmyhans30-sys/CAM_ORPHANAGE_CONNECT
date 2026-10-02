@@ -1,6 +1,6 @@
 # CAM Orphanage Connect — Backend API
 
-An Express + SQLite backend for the whole site: admin panel, partner portal,
+An Express + MySQL backend for the whole site: admin panel, partner portal,
 public sign-up/login and the orphanage portal. It also serves the website pages
 themselves, so everything runs from one address.
 
@@ -9,7 +9,7 @@ the project folder — see the main `README.md`. The steps below are the manual 
 
 ## Setup
 
-Requires Node.js (LTS) installed and on your PATH — check with `node --version`.
+Requires Node.js 18 or newer on your PATH (check with `node --version`) and a running MySQL Server 8.0.16 or newer.
 
 ```bash
 cd server
@@ -17,11 +17,11 @@ npm install
 cp .env.example .env
 ```
 
-Open `.env` and set `JWT_SECRET` to any long random string (it signs login tokens).
+Open `.env` and set `JWT_SECRET` to any long random string (it signs login tokens), and `DB_USER` / `DB_PASSWORD` to the MySQL account you use in MySQL Workbench. The site creates the database (`DB_NAME`, default `cam_orphanage_connect`) and all its tables by itself on first start, from `../database/cam_orphanage_connect.sql`. It never changes a database that already has tables.
 
 ## Seed the database
 
-Creates `server/data.sqlite` (gitignored) with a default admin account and a few
+Creates the database if it is missing, then adds a default admin account and a few
 sample orphanages:
 
 ```bash
@@ -44,8 +44,11 @@ npm start
 Open `http://localhost:4000` for the website; the API is under `/api`. Keep the
 port at 4000 — the pages call the API at `http://localhost:4000/api`.
 
-Everything in `server/` (including `.env` and `data.sqlite`) is never served to
-the browser.
+Everything in `server/` (including `.env`) is never served to the browser.
+
+### How the code is organised
+
+`src/repo/` holds the database code, one module per area (orphanages, donors, partners, needs, donations, support threads, admin data). Each turns table rows into the JSON the pages use, and applies saves back to the right tables. `src/routes/` holds the Express routes, which only validate and call the repositories. `src/db.js` is the MySQL connection (all queries are parameterised) and the first-run setup. The database itself also enforces the main rules (see `../database/README.md`), so a mistake in the code cannot, for example, over-fill a need.
 
 ## API
 
@@ -92,13 +95,80 @@ record linked to the account, so it appears in the admin verification queue.
 | DELETE | /api/my-orphanage/needs/:id   | Remove an own need that has no donations yet         |
 | GET    | /api/my-orphanage/pledges     | Pledges received by the signed-in orphanage          |
 
+### Profiles, documents and photos
+
+Documents and photos are uploaded as JSON `{ filename, data }` where `data` is the
+file in base64. The type is checked from the file's contents (PDF, JPG, PNG; photos
+also WebP), the limit is 3 MB, and files are stored in `server/uploads/` (never served
+directly).
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | /api/my-orphanage/documents | orphanage | Upload a verification document |
+| DELETE | /api/my-orphanage/documents/:id | orphanage | Remove one |
+| POST | /api/my-orphanage/photo, /cover | orphanage | Profile / cover photo |
+| POST | /api/my-orphanage/submit | orphanage | Submit for verification (`draft` or `needs-info` becomes `pending`) |
+| GET, PUT | /api/my-donor | donor | Donor profile |
+| POST | /api/my-donor/photo | donor | Donor photo |
+| POST | /api/partner-auth/register | none | Partner sign-up `{ name, email, password }`, starts as `draft` |
+| GET, PUT | /api/partner-auth/me | partner | Partner profile |
+| POST | /api/partner-auth/me/documents, /me/logo, /me/submit | partner | Upload, logo, submit |
+| GET | /api/files/photo/:id | none | A public photo or logo |
+| GET | /api/files/document/:id | admin, or the owner | A private document |
+
+### Messages
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /api/my-messages/overview | donor, orphanage, partner | Conversation list: the team thread plus direct chats (does not mark anything read) |
+| GET | /api/my-messages/team | donor, orphanage, partner | The thread with the CAM team (marks it read) |
+| POST | /api/my-messages/team/reply | donor, orphanage, partner | `{ text }` write to the team (allowed even before approval) |
+| GET | /api/my-messages/chats/:key | donor, orphanage, partner | One direct chat (`do-<id>` donor and orphanage, `po-<id>` partner and orphanage) |
+| POST | /api/my-messages/chats/:key/messages | donor, orphanage, partner | `{ text }` |
+| POST | /api/my-messages/chats | donor, orphanage, partner | `{ withType, withId, text }` start a chat |
+| GET | /api/my-messages/contacts | donor, orphanage, partner | Who this person may start a chat with |
+| GET | /api/my-messages/unread | donor, orphanage, partner | Unread count for the badge |
+| GET | /api/conversations, /:key | admin | Every direct chat (read) |
+| POST | /api/conversations/:key/reply | admin | Step in as the team |
+| DELETE | /api/conversations/:key/messages/:index | admin | Remove a message |
+
+Rules: both sides must be approved, orphanages can only start chats with verified
+partners and donors who gave under their own name, text is limited to 2,000
+characters, and 15 messages per minute per person.
+
+### Visit requests and password reset
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | /api/visits | approved donor, verified partner | `{ orphanageId, preferredDate, visitorsCount, message }` ask to visit a verified orphanage |
+| GET | /api/visits/mine | donor, partner | The person's own requests with the home's answer |
+| POST | /api/visits/:id/cancel | donor, partner | Cancel a request that is still waiting |
+| GET | /api/my-orphanage/visits | orphanage | Requests for this home (visitor email only after approval) |
+| POST | /api/my-orphanage/visits/:id/respond | orphanage | `{ decision: 'approved' or 'declined', note }` (a note is required to decline) |
+| GET | /api/visit-requests | admin | Every request, read-only |
+| POST | /api/users/forgot-password | none | `{ email }` emails a reset link (same answer for every address) |
+| POST | /api/users/reset-password | none | `{ token, password }` choose a new password with the emailed link |
+
+Email is sent with the `SMTP_*` settings in `.env` (see `.env.example`). Without them a local run prints the reset link in the server window, and the live site (`NODE_ENV=production`) tells people to contact the team.
+
+### Public website data
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /api/site/stats | none | Totals for the home page: verified orphanages, open needs, total pledged, approved donors, verified partners |
+| GET | /api/site/info | none | The organization's name, email, phone, address and description from the admin Settings page |
+
 ### Public and pledges
 
 | Method | Path                    | Auth        | Description                                             |
 |--------|-------------------------|-------------|---------------------------------------------------------|
-| GET    | /api/public/orphanages  | none        | Verified orphanages and their open needs (donor page)   |
-| POST   | /api/pledges            | donor token | `{ needId, amount, anonymous }` — records a pledge and adds it to the need |
+| GET    | /api/browse/orphanages  | approved donor | Verified orphanages and their open needs (donor page). Others get 401/403 with a `code` (`sign-in`, `pending`, `rejected`, `flagged`, `donors-only`) |
+| POST   | /api/pledges            | approved donor | `{ needId, amount, anonymous }` — records a pledge and adds it to the need |
 | GET    | /api/pledges/mine       | donor token | The signed-in donor's pledges                           |
+
+Donors are `pending` until an admin sets their status to `active` (Donors page), and
+partners must be `verified`; partner routes for orphanages, donations and placement
+cases answer 403 `not-verified` until then.
 
 A pledge is a promise to give: no money is charged. Pledges start at 500 XAF and
 can't exceed what the need still requires.

@@ -1,267 +1,148 @@
-const path = require('path');
-const { DatabaseSync } = require('node:sqlite');
+const { AsyncLocalStorage } = require('node:async_hooks');
+const mysql = require('mysql2/promise');
 
-const db = new DatabaseSync(path.join(__dirname, '..', 'data.sqlite'));
-db.exec('PRAGMA foreign_keys = ON;');
+// The MySQL connection. Settings come from server/.env (see .env.example).
+const DB_NAME = process.env.DB_NAME || 'cam_orphanage_connect';
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS admins (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'Super Admin',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+const connectionSettings = {
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  charset: 'utf8mb4',
+  // Times are stored in UTC and handed to the pages as plain strings.
+  timezone: 'Z',
+  dateStrings: true,
+  decimalNumbers: true,
+  supportBigNumbers: false,
+};
 
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fullname TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+let pool = null;
+const transaction = new AsyncLocalStorage();
 
-  CREATE TABLE IF NOT EXISTS orphanages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    location TEXT,
-    registration_number TEXT,
-    story TEXT,
-    story_language TEXT,
-    status TEXT NOT NULL DEFAULT 'pending',
-    children_count INTEGER DEFAULT 0,
-    followers_count INTEGER DEFAULT 0,
-    founded_year INTEGER,
-    capacity INTEGER,
-    contact_name TEXT,
-    contact_phone TEXT,
-    contact_email TEXT,
-    terms_agreed INTEGER DEFAULT 0,
-    photo_url TEXT,
-    cover_photo_url TEXT,
-    payment_provider TEXT,
-    payment_account_name TEXT,
-    payment_account_number TEXT,
-    payment_account_confirmed INTEGER DEFAULT 0,
-    flagged INTEGER DEFAULT 0,
-    flag_reason TEXT,
-    rejection_reason TEXT,
-    appeal_message TEXT,
-    appeal_date TEXT,
-    info_request_message TEXT,
-    submitted_date TEXT,
-    blur_faces INTEGER DEFAULT 1,
-    show_full_names INTEGER DEFAULT 0,
-    documents TEXT NOT NULL DEFAULT '[]',
-    gallery TEXT NOT NULL DEFAULT '[]',
-    posts TEXT NOT NULL DEFAULT '[]',
-    activity_log TEXT NOT NULL DEFAULT '[]',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS donors (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT,
-    join_date TEXT,
-    location TEXT,
-    preferred_payment TEXT,
-    preferred_currency TEXT,
-    last_active TEXT,
-    vip INTEGER DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'active',
-    flag_reason TEXT,
-    total_given INTEGER DEFAULT 0,
-    donations_count INTEGER DEFAULT 0,
-    homes_followed_count INTEGER DEFAULT 0,
-    active_recurring_gifts INTEGER DEFAULT 0,
-    chargebacks_count INTEGER DEFAULT 0,
-    photo_url TEXT,
-    referred_by TEXT,
-    admin_notes TEXT,
-    donations TEXT NOT NULL DEFAULT '[]',
-    password_resets TEXT NOT NULL DEFAULT '[]',
-    failed_payments TEXT NOT NULL DEFAULT '[]',
-    support_tickets TEXT NOT NULL DEFAULT '[]',
-    referrals_made TEXT NOT NULL DEFAULT '[]',
-    homes_followed TEXT NOT NULL DEFAULT '[]',
-    groups_joined TEXT NOT NULL DEFAULT '[]',
-    activity_log TEXT NOT NULL DEFAULT '[]',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS partners (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    contact_name TEXT,
-    email TEXT,
-    password_hash TEXT,
-    country TEXT,
-    submitted_date TEXT,
-    verification_status TEXT NOT NULL DEFAULT 'pending',
-    org_type TEXT,
-    tier TEXT,
-    status TEXT NOT NULL DEFAULT 'active',
-    flag_reason TEXT,
-    total_contributed INTEGER DEFAULT 0,
-    placement_referrals_count INTEGER DEFAULT 0,
-    logo_url TEXT,
-    sponsored_by_blurb TEXT,
-    wording_approved INTEGER DEFAULT 0,
-    sanctions_screened INTEGER DEFAULT 0,
-    info_request_message TEXT,
-    rejection_reason TEXT,
-    appeal_message TEXT,
-    appeal_date TEXT,
-    admin_notes TEXT,
-    pledge TEXT,
-    orphanages_sponsored TEXT NOT NULL DEFAULT '[]',
-    documents TEXT NOT NULL DEFAULT '[]',
-    placement_cases TEXT NOT NULL DEFAULT '[]',
-    activity_log TEXT NOT NULL DEFAULT '[]',
-    donations TEXT NOT NULL DEFAULT '[]',
-    favorite_orphanage_ids TEXT NOT NULL DEFAULT '[]',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS programs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    category TEXT,
-    status TEXT NOT NULL DEFAULT 'active',
-    description TEXT,
-    funding_goal INTEGER DEFAULT 0,
-    amount_raised INTEGER DEFAULT 0,
-    children_benefiting INTEGER DEFAULT 0,
-    objectives TEXT,
-    activities TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS needs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    orphanage_id INTEGER NOT NULL REFERENCES orphanages(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    goal INTEGER DEFAULT 0,
-    raised INTEGER DEFAULT 0,
-    percent INTEGER DEFAULT 0,
-    date TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sender_name TEXT,
-    account_type TEXT,
-    account_id INTEGER,
-    subject TEXT,
-    body TEXT,
-    timestamp TEXT,
-    read INTEGER DEFAULT 0,
-    from_admin INTEGER DEFAULT 0,
-    auto_replied INTEGER DEFAULT 0,
-    replies TEXT NOT NULL DEFAULT '[]',
-    partner_last_seen_at TEXT,
-    status TEXT NOT NULL DEFAULT 'open',
-    priority TEXT NOT NULL DEFAULT 'normal',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    reporter_name TEXT,
-    reporter_account_type TEXT,
-    reported_account_type TEXT,
-    reported_account_id INTEGER,
-    reported_account_name TEXT,
-    reason_category TEXT,
-    details TEXT,
-    timestamp TEXT,
-    status TEXT NOT NULL DEFAULT 'open',
-    resolution TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS partner_orphanage_threads (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    partner_id INTEGER NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
-    orphanage_id INTEGER NOT NULL REFERENCES orphanages(id) ON DELETE CASCADE,
-    messages TEXT NOT NULL DEFAULT '[]',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(partner_id, orphanage_id)
-  );
-
-  CREATE TABLE IF NOT EXISTS settings (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    org_name TEXT,
-    org_email TEXT,
-    org_phone TEXT,
-    org_address TEXT,
-    org_description TEXT,
-    currency TEXT NOT NULL DEFAULT 'FCFA',
-    notif_email INTEGER NOT NULL DEFAULT 1,
-    notif_donations INTEGER NOT NULL DEFAULT 1,
-    notif_messages INTEGER NOT NULL DEFAULT 1
-  );
-`);
-
-// Lightweight migration: add columns to tables that already existed before this column was introduced.
-const partnerColumns = db.prepare("PRAGMA table_info(partners)").all().map((c) => c.name);
-if (!partnerColumns.includes('password_hash')) {
-  db.exec('ALTER TABLE partners ADD COLUMN password_hash TEXT');
-}
-if (!partnerColumns.includes('donations')) {
-  db.exec("ALTER TABLE partners ADD COLUMN donations TEXT NOT NULL DEFAULT '[]'");
-}
-if (!partnerColumns.includes('favorite_orphanage_ids')) {
-  db.exec("ALTER TABLE partners ADD COLUMN favorite_orphanage_ids TEXT NOT NULL DEFAULT '[]'");
+function getPool() {
+  if (!pool) {
+    pool = mysql.createPool({ ...connectionSettings, database: DB_NAME, connectionLimit: 10, waitForConnections: true });
+  }
+  return pool;
 }
 
-const messageColumns = db.prepare("PRAGMA table_info(messages)").all().map((c) => c.name);
-if (!messageColumns.includes('partner_last_seen_at')) {
-  db.exec('ALTER TABLE messages ADD COLUMN partner_last_seen_at TEXT');
-}
-if (!messageColumns.includes('status')) {
-  db.exec("ALTER TABLE messages ADD COLUMN status TEXT NOT NULL DEFAULT 'open'");
-}
-if (!messageColumns.includes('priority')) {
-  db.exec("ALTER TABLE messages ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'");
+function executor() {
+  const store = transaction.getStore();
+  return store ? store.conn : getPool();
 }
 
-// Orphanage accounts from the public sign-up page own one orphanage record each.
-const orphanageColumns = db.prepare("PRAGMA table_info(orphanages)").all().map((c) => c.name);
-if (!orphanageColumns.includes('user_id')) {
-  db.exec('ALTER TABLE orphanages ADD COLUMN user_id INTEGER REFERENCES users(id)');
+function clean(params) {
+  return (params || []).map((p) => (p === undefined ? null : p));
 }
 
-const needColumns = db.prepare("PRAGMA table_info(needs)").all().map((c) => c.name);
-if (!needColumns.includes('description')) {
-  db.exec('ALTER TABLE needs ADD COLUMN description TEXT');
+// Rows of a SELECT.
+async function q(sql, params) {
+  const [rows] = await executor().query(sql, clean(params));
+  return rows;
 }
 
-// Donor pledges from the donor page (no money is charged; the amount counts toward the need).
-db.exec(`
-  CREATE TABLE IF NOT EXISTS pledges (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    need_id INTEGER REFERENCES needs(id) ON DELETE SET NULL,
-    orphanage_id INTEGER NOT NULL REFERENCES orphanages(id) ON DELETE CASCADE,
-    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    donor_name TEXT NOT NULL,
-    need_title TEXT NOT NULL,
-    amount INTEGER NOT NULL,
-    anonymous INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
+// First row of a SELECT, or null.
+async function one(sql, params) {
+  const rows = await q(sql, params);
+  return rows[0] || null;
+}
 
-module.exports = db;
+// INSERT / UPDATE / DELETE: returns { insertId, affectedRows }.
+async function run(sql, params) {
+  const [result] = await executor().query(sql, clean(params));
+  return result;
+}
+
+// Everything inside fn happens together or not at all.
+async function tx(fn) {
+  if (transaction.getStore()) return fn();
+  const conn = await getPool().getConnection();
+  try {
+    await conn.beginTransaction();
+    const result = await transaction.run({ conn }, fn);
+    await conn.commit();
+    return result;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+// --- times -------------------------------------------------------------------
+
+// A JavaScript date (or ISO text) as MySQL DATETIME text, in UTC.
+function sqlTime(value) {
+  const d = value ? new Date(value) : new Date();
+  if (Number.isNaN(d.getTime())) return sqlTime();
+  return d.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// MySQL DATETIME text as an ISO time string for the pages.
+function isoTime(value) {
+  if (!value) return null;
+  return String(value).replace(' ', 'T') + (String(value).length <= 19 ? 'Z' : '');
+}
+
+// The date part (YYYY-MM-DD) of a DATETIME or DATE value.
+function dateOnly(value) {
+  return value ? String(value).slice(0, 10) : null;
+}
+
+// --- first-run setup -----------------------------------------------------------
+
+// Runs database/cam_orphanage_connect.sql when the database is missing or empty.
+// It never touches a database that already has tables.
+async function ensureDatabase() {
+  const admin = await mysql.createConnection({ ...connectionSettings });
+  try {
+    const [found] = await admin.query('SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = ?', [DB_NAME]);
+    if (found[0].n > 0) return false;
+    await admin.query('CREATE DATABASE IF NOT EXISTS `' + DB_NAME + '` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci');
+    await admin.query('USE `' + DB_NAME + '`');
+    for (const statement of readScript()) {
+      await admin.query(statement);
+    }
+    return true;
+  } finally {
+    await admin.end();
+  }
+}
+
+// Splits the script into statements, honouring the DELIMITER lines used for triggers.
+function readScript() {
+  const fs = require('fs');
+  const path = require('path');
+  const file = path.join(__dirname, '..', '..', 'database', 'cam_orphanage_connect.sql');
+  const statements = [];
+  let delimiter = ';';
+  let buffer = '';
+
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (/^DELIMITER\s+/i.test(trimmed)) {
+      delimiter = trimmed.split(/\s+/)[1];
+      continue;
+    }
+    if (!buffer && (trimmed === '' || trimmed.startsWith('--'))) continue;
+    buffer += line + '\n';
+    if (trimmed.endsWith(delimiter)) {
+      const statement = buffer.trim().slice(0, -delimiter.length).trim();
+      buffer = '';
+      // The script starts by dropping and creating the database; setup has done that already.
+      if (/^(DROP DATABASE|CREATE DATABASE|USE)\b/i.test(statement)) continue;
+      if (/^SELECT\b.*is ready/is.test(statement)) continue;
+      if (statement) statements.push(statement);
+    }
+  }
+  return statements;
+}
+
+async function close() {
+  if (pool) await pool.end();
+  pool = null;
+}
+
+module.exports = { q, one, run, tx, sqlTime, isoTime, dateOnly, ensureDatabase, close, DB_NAME };

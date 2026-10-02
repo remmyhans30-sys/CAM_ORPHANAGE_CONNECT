@@ -1,41 +1,33 @@
 const express = require('express');
-const db = require('../db');
+const orphanages = require('../repo/orphanages');
+const needs = require('../repo/needs');
 
-// What anyone can see without an account: verified orphanages and their open needs.
+// Verified orphanages and their open needs, for approved donors only.
+const { requireApprovedDonor } = require('../middleware/donorAccess');
+
 const router = express.Router();
+router.use(requireApprovedDonor);
 
-router.get('/orphanages', (req, res) => {
-  const orphanages = db
-    .prepare("SELECT id, name, location, story, children_count, photo_url FROM orphanages WHERE status = 'verified' ORDER BY name")
-    .all()
-    .map((o) => ({
-      id: o.id,
-      name: o.name,
-      location: o.location,
-      story: o.story,
-      childrenCount: o.children_count,
-      photoUrl: o.photo_url,
-      needs: [],
-    }));
+router.get('/orphanages', async (req, res) => {
+  const homes = (await orphanages.verifiedList()).map((o) => ({
+    id: o.id,
+    name: o.name,
+    location: o.location,
+    story: o.story,
+    childrenCount: o.childrenCount,
+    photoUrl: o.photoUrl,
+    needs: [],
+  }));
 
-  const byId = new Map(orphanages.map((o) => [o.id, o]));
-  db.prepare(
-    `SELECT n.id, n.orphanage_id, n.title, n.description, n.goal, n.raised, n.percent
-     FROM needs n JOIN orphanages o ON o.id = n.orphanage_id
-     WHERE o.status = 'verified' AND n.goal > 0
-     ORDER BY n.id DESC`
-  ).all().forEach((n) => {
-    byId.get(n.orphanage_id).needs.push({
-      id: n.id,
-      title: n.title,
-      description: n.description,
-      goal: n.goal,
-      raised: n.raised,
-      percent: n.percent,
-    });
+  const byId = new Map(homes.map((o) => [o.id, o]));
+  (await needs.openForVerifiedOrphanages()).forEach((n) => {
+    const home = byId.get(n.orphanageId);
+    if (home) {
+      home.needs.push({ id: n.id, title: n.title, description: n.description, goal: n.goal, raised: n.raised, percent: n.percent });
+    }
   });
 
-  res.json({ orphanages: orphanages });
+  res.json({ orphanages: homes });
 });
 
 module.exports = router;

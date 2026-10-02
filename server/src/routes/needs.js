@@ -1,57 +1,44 @@
 const express = require('express');
 const db = require('../db');
+const { HttpError } = require('../errors');
 const { authenticate } = require('../middleware/auth');
+const needs = require('../repo/needs');
 
 const router = express.Router();
 router.use(authenticate);
 
-function rowToNeed(row) {
-  return {
-    id: row.id,
-    orphanageId: row.orphanage_id,
-    title: row.title,
-    goal: row.goal,
-    raised: row.raised,
-    percent: row.percent,
-    date: row.date,
-  };
+// "Raised" is calculated from the pledges, so only the goal, title, description and date are saved.
+function fieldsOf(body) {
+  const fields = {};
+  if (body.orphanageId !== undefined) fields.orphanageId = Number(body.orphanageId);
+  if (body.title !== undefined) fields.title = body.title;
+  if (body.description !== undefined) fields.description = body.description;
+  if (body.goal !== undefined) {
+    const goal = Math.trunc(Number(body.goal));
+    if (!Number.isFinite(goal) || goal <= 0) throw new HttpError(400, 'The goal must be more than zero.');
+    fields.goal = goal;
+  }
+  if (body.date) fields.date = body.date;
+  return fields;
 }
 
-const FIELD_MAP = {
-  orphanageId: 'orphanage_id',
-  title: 'title',
-  goal: 'goal',
-  raised: 'raised',
-  percent: 'percent',
-  date: 'date',
-};
-
-function bodyToColumns(body) {
-  const columns = {};
-  Object.keys(FIELD_MAP).forEach((key) => {
-    if (Object.prototype.hasOwnProperty.call(body, key)) {
-      columns[FIELD_MAP[key]] = body[key];
-    }
-  });
-  return columns;
+async function checkOrphanage(orphanageId) {
+  if (!(await db.one('SELECT id FROM orphanages WHERE id = ?', [orphanageId]))) {
+    throw new HttpError(400, 'That orphanage does not exist.');
+  }
 }
 
-function isForeignKeyError(err) {
-  return err && /FOREIGN KEY constraint failed/i.test(err.message || '');
-}
-
-router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM needs ORDER BY id DESC').all();
-  res.json({ needs: rows.map(rowToNeed) });
+router.get('/', async (req, res) => {
+  res.json({ needs: await needs.list() });
 });
 
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM needs WHERE id = ?').get(req.params.id);
-  if (!row) return res.status(404).json({ error: 'Need not found.' });
-  res.json({ need: rowToNeed(row) });
+router.get('/:id', async (req, res) => {
+  const need = await needs.get(req.params.id);
+  if (!need) return res.status(404).json({ error: 'Need not found.' });
+  res.json({ need });
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const body = req.body || {};
   if (!body.title || !body.title.trim()) {
     return res.status(400).json({ error: 'Title is required.' });
@@ -59,53 +46,22 @@ router.post('/', (req, res) => {
   if (!body.orphanageId) {
     return res.status(400).json({ error: 'An orphanage must be selected.' });
   }
-
-  const columns = bodyToColumns(body);
-  const keys = Object.keys(columns);
-  const placeholders = keys.map(() => '?').join(', ');
-  const sql = `INSERT INTO needs (${keys.join(', ')}) VALUES (${placeholders})`;
-
-  let result;
-  try {
-    result = db.prepare(sql).run(...keys.map((k) => columns[k]));
-  } catch (err) {
-    if (isForeignKeyError(err)) {
-      return res.status(400).json({ error: 'That orphanage does not exist.' });
-    }
-    throw err;
-  }
-
-  const row = db.prepare('SELECT * FROM needs WHERE id = ?').get(result.lastInsertRowid);
-  res.status(201).json({ need: rowToNeed(row) });
+  const fields = fieldsOf(body);
+  if (!fields.goal) throw new HttpError(400, 'The goal must be more than zero.');
+  await checkOrphanage(fields.orphanageId);
+  res.status(201).json({ need: await needs.create(fields) });
 });
 
-router.put('/:id', (req, res) => {
-  const existing = db.prepare('SELECT id FROM needs WHERE id = ?').get(req.params.id);
-  if (!existing) return res.status(404).json({ error: 'Need not found.' });
-
-  const columns = bodyToColumns(req.body || {});
-  const keys = Object.keys(columns);
-
-  if (keys.length > 0) {
-    const setClause = keys.map((k) => `${k} = ?`).join(', ');
-    try {
-      db.prepare(`UPDATE needs SET ${setClause}, updated_at = datetime('now') WHERE id = ?`)
-        .run(...keys.map((k) => columns[k]), req.params.id);
-    } catch (err) {
-      if (isForeignKeyError(err)) {
-        return res.status(400).json({ error: 'That orphanage does not exist.' });
-      }
-      throw err;
-    }
-  }
-
-  const row = db.prepare('SELECT * FROM needs WHERE id = ?').get(req.params.id);
-  res.json({ need: rowToNeed(row) });
+router.put('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!(await needs.get(id))) return res.status(404).json({ error: 'Need not found.' });
+  const fields = fieldsOf(req.body || {});
+  if (fields.orphanageId !== undefined) await checkOrphanage(fields.orphanageId);
+  res.json({ need: await needs.update(id, fields) });
 });
 
-router.delete('/:id', (req, res) => {
-  const result = db.prepare('DELETE FROM needs WHERE id = ?').run(req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: 'Need not found.' });
+router.delete('/:id', async (req, res) => {
+  if (!(await needs.remove(req.params.id))) return res.status(404).json({ error: 'Need not found.' });
   res.status(204).send();
 });
 
