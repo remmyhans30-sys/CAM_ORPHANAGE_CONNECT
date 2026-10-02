@@ -26,6 +26,6 @@ async function call(path, method, body, token) {
   console.log('accepted:', ok, '| refused:', refused.length, '| need raised:', final.raised, 'of', final.goal);
   console.log('first refusal:', refused[0]);
   const pass = ok === 2 && final.raised === 80000 && refused.length === 8;
-  console.log(pass ? 'PASS: never over-filled' : 'FAIL');
+  console.log(pass ? 'ALL PASSED: never over-filled' : 'TEST FAILED: expected 2 accepted, 8 refused and 80000 raised');
   process.exit(pass ? 0 : 1);
 })();

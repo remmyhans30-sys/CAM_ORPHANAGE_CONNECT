@@ -84,6 +84,7 @@ const WIDTHS = [360, 768, 1280];
     }
   }
   console.log('\nPages checked:', report.length, '| pages with issues:', problems);
+  if (problems === 0) console.log('ALL PASSED');
   b.close();
-  process.exit(0);
+  process.exit(problems ? 1 : 0);
 })().catch((e) => { console.error('AUDIT FAILED', e); process.exit(1); });

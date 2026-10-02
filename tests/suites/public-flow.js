@@ -1,10 +1,18 @@
-const fs = require('fs');
 const { connect, sleep } = require('../helpers/browser');
 const SITE = 'http://127.0.0.2:4555';
 const out = (l, v) => console.log(l.padEnd(58), v);
 
+// A new account of the given kind ('user' = donor, 'volunteer' = orphanage); returns its sign-in token.
+async function signUp(role, fullname) {
+  const email = role + Date.now() + Math.floor(Math.random() * 1000) + '@example.com';
+  const res = await fetch(SITE + '/api/users/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acceptTerms: true, fullname, email, password: 'secret1', role }) });
+  const body = await res.json();
+  if (!body.token) throw new Error('Could not sign up a ' + role + ': ' + JSON.stringify(body));
+  return body.token;
+}
+
 (async () => {
-  const cast = JSON.parse(fs.readFileSync(__dirname + '/cast.json', 'utf-8'));
+  const cast = { donorToken: await signUp('user', 'Amara Flow'), orphToken: await signUp('volunteer', 'Hope Flow Home') };
   const b = await connect();
   await b.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
 
