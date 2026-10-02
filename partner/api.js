@@ -28,7 +28,9 @@ function apiRequest(path, options) {
     return response.json().catch(function () { return null; }).then(function (data) {
       if (!response.ok) {
         const message = (data && data.error) || ('Request failed with status ' + response.status);
-        throw new Error(message);
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
       }
       return data;
     });

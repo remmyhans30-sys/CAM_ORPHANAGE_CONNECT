@@ -1,0 +1,64 @@
+/* Visit requests (shared/visits.js). Self-contained: it does not depend on the page's own theme. */
+.cv-dialog {
+  border: 0;
+  border-radius: 14px;
+  padding: 0;
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  color: #1f2a24;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  box-shadow: 0 20px 50px rgba(20, 40, 30, 0.35);
+}
+.cv-dialog::backdrop { background: rgba(18, 30, 24, 0.55); }
+.cv-form { padding: 1.5rem; }
+.cv-title { font-family: 'Bitter', Georgia, serif; font-size: 1.35rem; margin: 0 0 0.15rem; }
+.cv-lead { margin: 0 0 1.1rem; color: #12804A; font-weight: 600; }
+.cv-field { margin-bottom: 0.95rem; }
+.cv-label { display: block; font-weight: 600; margin-bottom: 0.3rem; font-size: 0.95rem; }
+.cv-input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #c9d3cc;
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+}
+.cv-input:focus { outline: 2px solid #12804A; outline-offset: 1px; border-color: #12804A; }
+.cv-hint { margin: 0.3rem 0 0; font-size: 0.85rem; color: #5a665e; }
+.cv-rules { background: #f4f8f1; border-left: 4px solid #E9B93A; border-radius: 8px; padding: 0.8rem 1rem; margin: 0.4rem 0 1rem; }
+.cv-rules-title { margin: 0 0 0.3rem; font-weight: 700; font-size: 0.95rem; }
+.cv-rules-list { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
+.cv-rules-list li { margin-bottom: 0.2rem; }
+.cv-error { color: #C0392B; margin: 0.4rem 0; font-weight: 600; }
+.cv-error:empty { display: none; }
+.cv-done { color: #12804A; font-weight: 600; margin: 0.4rem 0; }
+.cv-done:empty { display: none; }
+.cv-actions { display: flex; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.cv-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.5rem 1.2rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cv-btn:disabled { opacity: 0.6; cursor: default; }
+.cv-btn-main { background: #12804A; color: #fff; }
+.cv-btn-main:hover:not(:disabled) { background: #0e6a3d; }
+.cv-btn-quiet { background: #fff; color: #1f2a24; border-color: #c9d3cc; }
+.cv-btn-quiet:hover:not(:disabled) { background: #f1f4f2; }
+.cv-btn-small { padding: 0.25rem 0.85rem; font-size: 0.9rem; margin-top: 0.4rem; }
+
+.cv-card { border: 1px solid #dfe6e1; border-radius: 12px; padding: 0.9rem 1rem; margin-bottom: 0.7rem; background: #fff; }
+.cv-card-head { display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; justify-content: space-between; align-items: center; }
+.cv-card-title { font-size: 1.05rem; }
+.cv-card-line { margin: 0.25rem 0 0; color: #3b4740; }
+.cv-card-note { margin: 0.25rem 0 0; color: #5a665e; font-size: 0.92rem; }
+.cv-card-reply { margin: 0.3rem 0 0; padding: 0.4rem 0.6rem; background: #f4f8f1; border-radius: 8px; font-size: 0.95rem; }
+.cv-empty { color: #5a665e; margin: 0; }
+.cv-badge { font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 999px; }
+.cv-badge-pending { background: #fbf0cf; color: #7a5b00; }
+.cv-badge-approved { background: #d9f0e2; color: #0e6a3d; }
+.cv-badge-declined { background: #f7dcd8; color: #922b21; }
+.cv-badge-cancelled { background: #e9ecea; color: #4c5750; }

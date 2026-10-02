@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Organization - CAM Orphanage Connect</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="text-center py-2">
+    <span class="dashboard-title-pill">PARTNER PORTAL</span>
+  </div>
+  <div class="dashboard-shell">
+    <aside class="dashboard-sidebar" id="dashboard-sidebar">
+      <div class="dashboard-brand">
+        <span class="dashboard-brand-icon"><i class="bi bi-heart-fill"></i></span>
+        <span>CAM Orphanage<br>Connect</span>
+      </div>
+      <nav class="dashboard-nav">
+        <a href="dashboard.html" class="dashboard-nav-link"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+        <a href="profile.html" class="dashboard-nav-link active"><i class="bi bi-building"></i> My Organization</a>
+        <a href="orphanages.html" class="dashboard-nav-link"><i class="bi bi-house-heart"></i> Browse Orphanages</a>
+        <a href="messages.html" id="messages-nav-link" class="dashboard-nav-link"><i class="bi bi-chat-dots"></i> Messages</a>
+        <a href="index.html" class="dashboard-nav-link logout-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
+      </nav>
+    </aside>
+
+    <div class="dashboard-main">
+      <div class="dashboard-topbar">
+        <button type="button" class="btn btn-sm btn-admin-outline d-lg-none" id="sidebar-toggle-btn"><i class="bi bi-list"></i></button>
+        <h1 class="h5 mb-0">My Organization</h1>
+        <span class="status-badge ms-auto" id="status-badge"></span>
+      </div>
+
+      <div class="p-4 p-md-5">
+        <div id="load-error" class="alert alert-danger d-none" role="alert"></div>
+        <div id="status-note" class="mb-4"></div>
+
+        <div class="card card-admin p-4 p-md-5 mb-4" id="checklist-card">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <h2 class="h6 mb-1">Complete your profile</h2>
+              <p class="text-muted small mb-0" id="checklist-summary"></p>
+            </div>
+            <button type="button" class="btn btn-admin-primary" id="submit-review-btn"><i class="bi bi-send-check"></i> Submit for verification</button>
+          </div>
+          <div id="submit-error" class="alert alert-danger py-2 d-none" role="alert"></div>
+          <div class="progress mb-3" style="height: 8px;"><div class="progress-bar" id="checklist-progress" style="width: 0%"></div></div>
+          <ul class="list-unstyled mb-0" id="checklist"></ul>
+        </div>
+
+        <div class="card card-admin p-4 p-md-5 mb-4">
+          <h2 class="h6 mb-3">Organization details</h2>
+          <form id="profile-form" novalidate>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small" for="org-name">Organization name *</label>
+                <input type="text" class="form-control" id="org-name" maxlength="150">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small" for="org-type">Type of organization *</label>
+                <select class="form-select" id="org-type">
+                  <option value="">Choose…</option>
+                  <option>NGO</option>
+                  <option>Corporate</option>
+                  <option>Diaspora Association</option>
+                  <option>Foundation</option>
+                  <option>Faith group</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small" for="org-country">Country *</label>
+                <input type="text" class="form-control" id="org-country" maxlength="100">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small" for="org-contact">Contact person *</label>
+                <input type="text" class="form-control" id="org-contact" maxlength="120">
+              </div>
+              <div class="col-12">
+                <label class="form-label small" for="org-blurb">"Sponsored by" message <span class="text-muted">(optional, shown publicly once approved)</span></label>
+                <textarea class="form-control" id="org-blurb" rows="2" maxlength="400" placeholder="e.g. Proud to support the children of Hope Children's Home."></textarea>
+              </div>
+            </div>
+
+            <h3 class="h6 mt-4 mb-2">Matching pledge you propose <span class="text-muted fw-normal small">(optional)</span></h3>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label small" for="pledge-description">What will you match?</label>
+                <input type="text" class="form-control" id="pledge-description" maxlength="400" placeholder="e.g. Match donor gifts to one home, up to a yearly limit">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small" for="pledge-limit">Yearly limit (FCFA)</label>
+                <input type="number" class="form-control" id="pledge-limit" min="1" step="1000">
+              </div>
+            </div>
+
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="org-terms">
+              <label class="form-check-label small" for="org-terms">I confirm the information and documents I provide are accurate and I agree to the CAM Orphanage Connect <a href="../terms.html" target="_blank" rel="noopener">terms of use</a>. *</label>
+            </div>
+
+            <div id="profile-error" class="alert alert-danger py-2 mt-3 d-none" role="alert"></div>
+            <div id="profile-saved" class="alert alert-success py-2 mt-3 d-none" role="alert">Saved.</div>
+            <button type="submit" class="btn btn-admin-primary mt-3" id="save-profile-btn">Save details</button>
+          </form>
+        </div>
+
+        <div class="card card-admin p-4 p-md-5 mb-4">
+          <h2 class="h6 mb-1">Logo and documents</h2>
+          <p class="text-muted small">The logo is shown publicly once approved. Documents are private: only you and the CAM Orphanage Connect team can open them.</p>
+          <div id="upload-error" class="alert alert-danger py-2 d-none" role="alert"></div>
+
+          <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="avatar" id="logo-box">?</div>
+            <div>
+              <strong>Organization logo</strong>
+              <p class="text-muted small mb-2">JPG, PNG or WebP, up to 3 MB.</p>
+              <button type="button" class="btn btn-admin-outline btn-sm" data-upload="logo"><i class="bi bi-upload"></i> Upload logo</button>
+            </div>
+          </div>
+
+          <strong>Verification documents *</strong>
+          <p class="text-muted small mb-2">Your registration certificate, tax clearance certificate and the contact person's government ID. PDF, JPG or PNG, up to 3 MB each.</p>
+          <ul class="list-unstyled mb-3" id="doc-list"></ul>
+          <button type="button" class="btn btn-admin-outline btn-sm" data-upload="document"><i class="bi bi-upload"></i> Upload a document</button>
+          <input type="file" id="upload-input" hidden>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="api.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>

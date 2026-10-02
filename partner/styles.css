@@ -10,13 +10,13 @@
 }
 
 body {
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
   background-color: var(--paper-dim);
   color: var(--ink);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   color: var(--dawn-purple);
 }
 
@@ -58,7 +58,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .admin-login-wrapper {
-  min-height: 100vh;
+  min-height: calc(100vh - 6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,7 +120,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .stat-tile strong {
   display: block;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   color: var(--dawn-purple);
   font-size: 1.1rem;
 }
@@ -143,7 +143,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-weight: 600;
   font-size: 1.25rem;
   overflow: hidden;
@@ -159,7 +159,7 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-block;
   background-color: var(--dawn-purple);
   color: #fff;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-weight: 700;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
@@ -169,7 +169,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .dashboard-shell {
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100vh - 6px);
 }
 
 .dashboard-sidebar {
@@ -188,7 +188,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-weight: 700;
   margin-bottom: 2rem;
   font-size: 0.95rem;
@@ -272,7 +272,7 @@ h1, h2, h3, h4, h5, h6 {
 .dashboard-stat-icon.gold { background-color: var(--gold); color: var(--ink); }
 
 .dashboard-stat-value {
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   font-size: 1.35rem;
   color: var(--ink);
   line-height: 1.1;
@@ -459,7 +459,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .profile-stats .stat strong {
   display: block;
-  font-family: 'Baloo 2', sans-serif;
+  font-family: 'Bitter', Georgia, serif;
   color: var(--dawn-purple);
   font-size: 0.95rem;
 }
@@ -538,4 +538,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .profile-actions .btn {
   flex: 1;
+}
+
+
+.status-badge.status-draft { background-color: rgba(26, 32, 53, 0.08); color: var(--ink); }
+
+/* Cameroon flag bar across the top of every page */
+body::before {
+  content: '';
+  display: block;
+  height: 6px;
+  background: linear-gradient(90deg, #12804A 0 33.34%, #C0392B 33.34% 66.67%, #E9B93A 66.67% 100%);
 }

@@ -14,9 +14,13 @@
   const emptyState = document.getElementById('emptyState');
   const loadingState = document.getElementById('loadingState');
   const loadError = document.getElementById('loadError');
+  const accessGate = document.getElementById('accessGate');
+  const filterBar = document.getElementById('filterBar');
   const searchInput = document.getElementById('searchInput');
   const locationFilter = document.getElementById('locationFilter');
   const navUser = document.getElementById('navUser');
+  const navProfile = document.getElementById('navProfile');
+  const navMessages = document.getElementById('navMessages');
   const navAuth = document.getElementById('navAuth');
 
   const donateModalEl = document.getElementById('donateModal');
@@ -83,6 +87,13 @@
     if (session && session.fullname) {
       navUser.textContent = 'Signed in as ' + session.fullname;
       navUser.classList.remove('d-none');
+      if (session.role === 'user') {
+        navProfile.classList.remove('d-none');
+        navMessages.classList.remove('d-none');
+        window.watchUnread({ base: API_BASE, token: session.token }, function (count) {
+          document.getElementById('navMessagesDot').classList.toggle('d-none', count === 0);
+        });
+      }
       navAuth.textContent = 'Log out';
       navAuth.setAttribute('href', '#');
     }
@@ -152,6 +163,8 @@
                 '<h2 class="h5 mb-1">' + escapeHtml(orphanage.name) + '</h2>' +
                 '<span class="badge-verified">Verified</span>' +
               '</div>' +
+              '<a class="btn btn-outline-secondary btn-sm orphanage-message-btn" href="messages.html?with=orphanage-' + orphanage.id + '">Message this orphanage</a>' +
+              '<button type="button" class="btn btn-outline-secondary btn-sm orphanage-visit-btn" data-visit-orphanage="' + orphanage.id + '">Request a visit</button>' +
               '<p class="orphanage-location">' +
                 escapeHtml(orphanage.location || 'Cameroon') +
                 (orphanage.childrenCount ? ' · ' + escapeHtml(orphanage.childrenCount) + ' children in care' : '') +
@@ -281,19 +294,71 @@
     }
   }
 
+  // Orphanages are only shown to donors an admin has approved. Everyone else sees why.
+  function showGate(code, message) {
+    const content = {
+      'sign-in': {
+        title: 'Sign in to see orphanages',
+        message: 'Orphanage profiles are shown to approved donors. Create a donor account or sign in. Once the CAM Orphanage Connect team approves your account, you can browse and give.',
+        actions: [['Sign in', '../login/index.html', 'btn-donor-primary'], ['Create a donor account', '../login/register.html', 'btn-outline-secondary']]
+      },
+      pending: {
+        title: 'Your account is waiting for approval',
+        message: message,
+        actions: [['Complete my profile', 'profile.html', 'btn-donor-primary']]
+      },
+      rejected: { title: 'Your account was not approved', message: message, actions: [['My profile', 'profile.html', 'btn-outline-secondary']] },
+      flagged: { title: 'Your account is under review', message: message, actions: [['My profile', 'profile.html', 'btn-outline-secondary']] },
+      'donors-only': {
+        title: 'This page is for donors',
+        message: message,
+        actions: [['Home', '../index.html', 'btn-outline-secondary']]
+      }
+    };
+    const view = content[code] || content['sign-in'];
+
+    document.getElementById('gateTitle').textContent = view.title;
+    document.getElementById('gateMessage').textContent = view.message;
+    const actions = document.getElementById('gateActions');
+    actions.innerHTML = '';
+    view.actions.forEach(function (action) {
+      const link = document.createElement('a');
+      link.className = 'btn ' + action[2];
+      link.href = action[1];
+      link.textContent = action[0];
+      actions.appendChild(link);
+    });
+
+    accessGate.classList.remove('d-none');
+    filterBar.classList.add('d-none');
+    orphanageList.classList.add('d-none');
+    emptyState.classList.add('d-none');
+  }
+
   async function loadOrphanages() {
     try {
       let response;
+      const session = donorSession();
       try {
-        response = await fetch(API_BASE + '/public/orphanages');
+        response = await fetch(API_BASE + '/browse/orphanages', {
+          headers: session ? { Authorization: 'Bearer ' + session.token } : {}
+        });
       } catch (err) {
         throw new Error('Cannot reach the server. Please try again in a moment.');
+      }
+      if (response.status === 401 || response.status === 403) {
+        const problem = await response.json().catch(function () { return {}; });
+        if (response.status === 401 && readSession()) clearSession();
+        showGate(problem.code, problem.error);
+        loadingState.classList.add('d-none');
+        return;
       }
       if (!response.ok) throw new Error('Could not load orphanages. Please try again later.');
       const data = await response.json();
       orphanages = data.orphanages;
       populateLocationFilter();
       render();
+      showMyVisits();
     } catch (err) {
       loadError.textContent = err.message;
       loadError.classList.remove('d-none');
@@ -301,7 +366,37 @@
     loadingState.classList.add('d-none');
   }
 
+  // Visit requests: the person is approved by the time the orphanages are shown.
+  let visitsList = null;
+
+  function visitOptions() {
+    const session = donorSession();
+    return {
+      apiBase: API_BASE,
+      token: session.token,
+      onExpired: clearSession
+    };
+  }
+
+  function showMyVisits() {
+    if (!donorSession() || !window.CocVisits) return;
+    document.getElementById('myVisitsSection').classList.remove('d-none');
+    window.CocVisits.mountMine(document.getElementById('myVisits'), visitOptions()).then(function (handle) { visitsList = handle; });
+  }
+
   orphanageList.addEventListener('click', function (e) {
+    const visitBtn = e.target.closest('.orphanage-visit-btn');
+    if (visitBtn && donorSession()) {
+      const home = orphanages.find(function (o) { return o.id === Number(visitBtn.dataset.visitOrphanage); });
+      if (home) {
+        window.CocVisits.request(Object.assign(visitOptions(), {
+          orphanageId: home.id,
+          orphanageName: home.name,
+          onDone: function () { if (visitsList) visitsList.reload(); }
+        }));
+      }
+      return;
+    }
     const btn = e.target.closest('.donate-btn');
     if (!btn || btn.disabled) return;
     openDonateModal(Number(btn.dataset.orphanageId), Number(btn.dataset.needId));

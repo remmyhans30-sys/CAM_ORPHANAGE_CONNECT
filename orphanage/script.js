@@ -90,6 +90,26 @@ document.querySelectorAll('[data-view-link]').forEach(function (btn) {
     });
 });
 
+// Menu button (phones and tablets)
+const sidebar = document.getElementById('portal-sidebar');
+const menuBtn = document.getElementById('menu-btn');
+const scrim = document.createElement('div');
+scrim.className = 'portal-scrim';
+document.body.appendChild(scrim);
+
+function setMenu(open) {
+    sidebar.classList.toggle('show', open);
+    scrim.classList.toggle('show', open);
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuBtn.setAttribute('aria-label', open ? 'Close the menu' : 'Open the menu');
+}
+menuBtn.addEventListener('click', function () { setMenu(!sidebar.classList.contains('show')); });
+scrim.addEventListener('click', function () { setMenu(false); });
+document.querySelectorAll('.portal-nav-link').forEach(function (link) {
+    link.addEventListener('click', function () { setMenu(false); });
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+
 // Portal state
 let orphanage = null;
 let needs = [];
@@ -97,6 +117,10 @@ let needs = [];
 const portalError = document.getElementById('portal-error');
 
 const STATUS_DISPLAY = {
+    draft: {
+        badge: '<i class="bi bi-pencil-square"></i> Incomplete',
+        note: 'Your profile is not complete yet. Fill in the checklist below, then submit it for verification. You can already add needs while you work on it.'
+    },
     pending: {
         badge: '<i class="bi bi-hourglass-split"></i> Pending Verification',
         note: 'Your profile is under review by our team. You can still add needs and update your profile while you wait — donors will see your listing once verification is complete.'
@@ -116,7 +140,7 @@ const STATUS_DISPLAY = {
 };
 
 function renderStatus() {
-    const status = STATUS_DISPLAY[orphanage.status] ? orphanage.status : 'pending';
+    const status = STATUS_DISPLAY[orphanage.status] ? orphanage.status : 'draft';
     const display = STATUS_DISPLAY[status];
 
     const badge = document.getElementById('status-badge');
@@ -134,6 +158,7 @@ function renderStatus() {
     document.getElementById('status-note-text').textContent = note;
 
     document.getElementById('portal-greeting').textContent = 'Welcome back, ' + orphanage.name;
+    renderChecklist();
 }
 
 function renderStats() {
@@ -150,12 +175,20 @@ function renderStats() {
 const PROFILE_INPUTS = {
     name: 'org-name',
     location: 'org-location',
+    registrationNumber: 'org-registration',
     foundedYear: 'org-founded',
+    capacity: 'org-capacity',
     childrenCount: 'org-children',
     contactName: 'org-contact-name',
     contactPhone: 'org-contact-phone',
-    story: 'org-story'
+    contactEmail: 'org-contact-email',
+    story: 'org-story',
+    storyLanguage: 'org-story-language',
+    paymentProvider: 'org-pay-provider',
+    paymentAccountName: 'org-pay-name',
+    paymentAccountNumber: 'org-pay-number'
 };
+const termsInput = document.getElementById('org-terms');
 
 const editProfileBtn = document.getElementById('edit-profile-btn');
 const saveProfileBtn = document.getElementById('save-profile-btn');
@@ -167,11 +200,12 @@ function fillProfileForm() {
         const value = orphanage[key];
         document.getElementById(PROFILE_INPUTS[key]).value = value === null || value === undefined ? '' : value;
     });
+    termsInput.checked = Boolean(orphanage.termsAgreed);
 }
 
 function setEditing(editing) {
     profileForm.classList.toggle('editing', editing);
-    profileForm.querySelectorAll('input, textarea').forEach(function (field) {
+    profileForm.querySelectorAll('input, textarea, select').forEach(function (field) {
         field.disabled = !editing;
     });
     saveProfileBtn.style.display = editing ? 'inline-flex' : 'none';
@@ -194,6 +228,7 @@ profileForm.addEventListener('submit', async function (e) {
     Object.keys(PROFILE_INPUTS).forEach(function (key) {
         body[key] = document.getElementById(PROFILE_INPUTS[key]).value.trim();
     });
+    body.termsAgreed = termsInput.checked;
     if (!body.name) {
         showError(profileError, 'Orphanage name cannot be empty.');
         return;
@@ -208,11 +243,180 @@ profileForm.addEventListener('submit', async function (e) {
         setEditing(false);
         renderStatus();
         renderStats();
+        renderUploads();
     } catch (err) {
         showError(profileError, err.message);
     }
     saveProfileBtn.disabled = false;
 });
+
+// Checklist and submit for verification
+const submitReviewBtn = document.getElementById('submit-review-btn');
+const submitError = document.getElementById('submit-error');
+
+function renderChecklist() {
+    const panel = document.getElementById('checklist-panel');
+    const canEdit = orphanage.status === 'draft' || orphanage.status === 'needs-info';
+    panel.style.display = orphanage.status === 'verified' || orphanage.status === 'rejected' ? 'none' : '';
+
+    const items = orphanage.checklist || [];
+    const required = items.filter(function (i) { return i.required; });
+    const doneRequired = required.filter(function (i) { return i.done; }).length;
+
+    document.getElementById('checklist-progress').style.width = Math.round((doneRequired / Math.max(1, required.length)) * 100) + '%';
+    document.getElementById('checklist-summary').textContent = orphanage.status === 'pending'
+        ? 'Submitted. Our team is reviewing your profile.'
+        : doneRequired + ' of ' + required.length + ' required items done. The CAM Orphanage Connect team reviews your profile once you submit it.';
+
+    const list = document.getElementById('checklist');
+    list.innerHTML = '';
+    items.forEach(function (item) {
+        const li = document.createElement('li');
+        li.className = item.done ? 'done' : '';
+        li.innerHTML = '<i class="bi ' + (item.done ? 'bi-check-circle-fill' : 'bi-circle') + '"></i><span></span>' + (item.required ? '' : '<em class="tag">optional</em>');
+        li.querySelector('span').textContent = item.label;
+        list.appendChild(li);
+    });
+
+    submitReviewBtn.style.display = canEdit ? '' : 'none';
+    submitReviewBtn.disabled = doneRequired < required.length;
+    submitReviewBtn.innerHTML = orphanage.status === 'needs-info'
+        ? '<i class="bi bi-send-check"></i> Resubmit for verification'
+        : '<i class="bi bi-send-check"></i> Submit for verification';
+}
+
+submitReviewBtn.addEventListener('click', async function () {
+    hideError(submitError);
+    submitReviewBtn.disabled = true;
+    try {
+        const data = await api('/submit', { method: 'POST' });
+        orphanage = data.orphanage;
+        setEditing(false);
+        renderStatus();
+        renderStats();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+        showError(submitError, err.message);
+        renderChecklist();
+    }
+});
+
+// Photos and documents
+const uploadError = document.getElementById('upload-error');
+const uploadInput = document.getElementById('upload-input');
+const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
+let uploadKind = null;
+
+const UPLOAD_TARGETS = {
+    photo: { path: '/photo', accept: 'image/jpeg,image/png,image/webp' },
+    cover: { path: '/cover', accept: 'image/jpeg,image/png,image/webp' },
+    document: { path: '/documents', accept: 'application/pdf,image/jpeg,image/png' }
+};
+
+function renderUploads() {
+    function showPhoto(boxId, url) {
+        const box = document.getElementById(boxId);
+        box.innerHTML = '';
+        if (!url) {
+            box.innerHTML = '<i class="bi bi-image"></i>';
+            return;
+        }
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+        box.appendChild(img);
+    }
+    showPhoto('photo-preview', orphanage.photoUrl);
+    showPhoto('cover-preview', orphanage.coverPhotoUrl);
+
+    const list = document.getElementById('doc-list');
+    list.innerHTML = '';
+    if (orphanage.documents.length === 0) {
+        list.innerHTML = '<li class="doc-empty">No documents uploaded yet.</li>';
+    }
+    orphanage.documents.forEach(function (doc) {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = doc.name + (doc.size ? ' (' + Math.max(1, Math.round(doc.size / 1024)) + ' KB)' : '');
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            openDocument(doc);
+        });
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.innerHTML = '<i class="bi bi-trash"></i> Remove';
+        remove.addEventListener('click', function () { removeDocument(doc); });
+        li.appendChild(link);
+        li.appendChild(remove);
+        list.appendChild(li);
+    });
+    renderChecklist();
+}
+
+document.querySelectorAll('[data-upload]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        uploadKind = btn.dataset.upload;
+        uploadInput.accept = UPLOAD_TARGETS[uploadKind].accept;
+        uploadInput.value = '';
+        uploadInput.click();
+    });
+});
+
+uploadInput.addEventListener('change', function () {
+    const file = uploadInput.files[0];
+    if (!file || !uploadKind) return;
+    hideError(uploadError);
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+        showError(uploadError, 'That file is too large. The limit is 3 MB.');
+        return;
+    }
+
+    const kind = uploadKind;
+    const reader = new FileReader();
+    reader.onload = async function () {
+        try {
+            const data = await api(UPLOAD_TARGETS[kind].path, { method: 'POST', body: { filename: file.name, data: String(reader.result) } });
+            orphanage = data.orphanage;
+            renderUploads();
+            renderStatus();
+        } catch (err) {
+            showError(uploadError, err.message);
+        }
+    };
+    reader.onerror = function () { showError(uploadError, 'Could not read that file. Please try another one.'); };
+    reader.readAsDataURL(file);
+});
+
+async function removeDocument(doc) {
+    if (!window.confirm('Remove "' + doc.name + '"?')) return;
+    hideError(uploadError);
+    try {
+        const data = await api('/documents/' + doc.id, { method: 'DELETE' });
+        orphanage = data.orphanage;
+        renderUploads();
+    } catch (err) {
+        showError(uploadError, err.message);
+    }
+}
+
+// Documents are private, so they are fetched with the login and opened from memory.
+async function openDocument(doc) {
+    const opened = window.open('', '_blank');
+    try {
+        const response = await fetch(API_BASE.replace('/my-orphanage', '/files/document/') + doc.id, {
+            headers: { Authorization: 'Bearer ' + session.token }
+        });
+        if (!response.ok) throw new Error('not found');
+        const url = URL.createObjectURL(await response.blob());
+        if (opened) opened.location.href = url; else window.location.href = url;
+        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    } catch (err) {
+        if (opened) opened.close();
+        showError(uploadError, 'Could not open "' + doc.name + '".');
+    }
+}
 
 // Needs
 const needsList = document.getElementById('needs-list');
@@ -368,6 +572,123 @@ function renderPledges(pledges) {
     });
 }
 
+// Visit requests: the orphanage decides
+function visitDate(value) {
+    const date = new Date(value + 'T00:00:00');
+    return isNaN(date) ? value : date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function renderVisits(visits) {
+    const list = document.getElementById('visits-list');
+    const waiting = visits.filter(function (v) { return v.status === 'pending'; }).length;
+    document.getElementById('visits-dot').style.display = waiting > 0 ? '' : 'none';
+
+    list.innerHTML = '';
+    if (visits.length === 0) {
+        list.innerHTML = '<p class="empty-cell">No visit requests yet.</p>';
+        return;
+    }
+
+    visits.forEach(function (v) {
+        const card = document.createElement('div');
+        card.className = 'visit-card';
+
+        const head = document.createElement('div');
+        head.className = 'visit-card-head';
+        const who = document.createElement('strong');
+        who.textContent = v.requesterName + (v.requesterType === 'partner' ? ' (partner organization)' : ' (donor)');
+        const status = document.createElement('span');
+        status.className = 'visit-status ' + v.status;
+        status.textContent = { pending: 'Waiting for your answer', approved: 'Approved', declined: 'Declined', cancelled: 'Cancelled by the visitor' }[v.status] || v.status;
+        head.appendChild(who);
+        head.appendChild(status);
+        card.appendChild(head);
+
+        const when = document.createElement('p');
+        when.textContent = visitDate(v.preferredDate) + ' · ' + v.visitorsCount + (v.visitorsCount === 1 ? ' visitor' : ' visitors');
+        card.appendChild(when);
+
+        if (v.requesterLocation) {
+            const place = document.createElement('p');
+            place.className = 'visit-meta';
+            place.textContent = 'From ' + v.requesterLocation;
+            card.appendChild(place);
+        }
+        if (v.message) {
+            const quote = document.createElement('p');
+            quote.className = 'visit-quote';
+            quote.textContent = v.message;
+            card.appendChild(quote);
+        }
+        if (v.status === 'approved' && v.requesterEmail) {
+            const contact = document.createElement('p');
+            contact.textContent = 'Contact to arrange the visit: ' + v.requesterEmail;
+            card.appendChild(contact);
+        }
+        if (v.responseNote) {
+            const reply = document.createElement('p');
+            reply.className = 'visit-meta';
+            reply.textContent = 'Your answer: ' + v.responseNote;
+            card.appendChild(reply);
+        }
+
+        if (v.status === 'pending') {
+            const note = document.createElement('textarea');
+            note.placeholder = 'Note to the visitor (required if you decline)';
+            note.maxLength = 500;
+            card.appendChild(note);
+
+            const actions = document.createElement('div');
+            actions.className = 'visit-actions';
+            [['approved', 'Approve', 'btn-primary-pill'], ['declined', 'Decline', 'btn-outline-pill']].forEach(function (choice) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = choice[2];
+                button.textContent = choice[1];
+                button.addEventListener('click', function () { answerVisit(v.id, choice[0], note.value, actions); });
+                actions.appendChild(button);
+            });
+            card.appendChild(actions);
+        }
+        list.appendChild(card);
+    });
+}
+
+async function answerVisit(id, decision, note, actions) {
+    const box = document.getElementById('visits-error');
+    hideError(box);
+    actions.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    try {
+        const data = await api('/visits/' + id + '/respond', { method: 'POST', body: { decision: decision, note: note } });
+        renderVisits(data.visits);
+    } catch (err) {
+        showError(box, err.message);
+        actions.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+    }
+}
+
+// Messages: chat with the team, donors and partners
+let chatStarted = false;
+
+function startChat() {
+    if (chatStarted) return;
+    chatStarted = true;
+    window.createChat({
+        root: document.getElementById('chat-root'),
+        api: window.createUserChatApi({
+            base: API_BASE.replace(/\/my-orphanage$/, ''),
+            token: session.token,
+            onExpired: function () {
+                clearSession();
+                window.location.replace('../login/index.html');
+            }
+        }),
+        onUnread: function (count) {
+            document.getElementById('messages-dot').style.display = count > 0 ? '' : 'none';
+        }
+    });
+}
+
 // Initial load
 async function loadPortal() {
     try {
@@ -377,9 +698,14 @@ async function loadPortal() {
         renderStatus();
         renderStats();
         fillProfileForm();
+        renderUploads();
         renderNeeds();
+        startChat();
+        if (orphanage.status === 'draft') setEditing(true);
         const pledgeData = await api('/pledges');
         renderPledges(pledgeData.pledges);
+        const visitData = await api('/visits');
+        renderVisits(visitData.visits);
     } catch (err) {
         showError(portalError, err.message);
         document.getElementById('status-note-text').textContent = 'Your profile could not be loaded.';

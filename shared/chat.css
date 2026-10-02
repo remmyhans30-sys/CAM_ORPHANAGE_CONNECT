@@ -1,0 +1,89 @@
+/* Chat window shared by the orphanage portal and the donor pages. */
+.chat {
+  --chat-accent: var(--dawn-purple, #2E8B57);
+  --chat-ink: var(--ink, #1A2035);
+  --chat-line: rgba(26, 32, 53, 0.12);
+  --chat-soft: rgba(26, 32, 53, 0.05);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 520px;
+  height: 70vh;
+  max-height: 720px;
+  background: #fff;
+  border: 1px solid var(--chat-line);
+  border-radius: 16px;
+  overflow: hidden;
+  font-family: inherit;
+  color: var(--chat-ink);
+}
+
+.chat-list { border-right: 1px solid var(--chat-line); display: flex; flex-direction: column; min-height: 0 }
+.chat-list-head { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1rem; border-bottom: 1px solid var(--chat-line) }
+.chat-list-title { font-size: 1.05rem; margin: 0 }
+.chat-items { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 }
+.chat-lock-note { margin: 0; padding: 0.75rem 1rem; font-size: 0.82rem; background: rgba(245, 166, 35, 0.15); color: #92400E }
+
+.chat-item { display: flex; gap: 0.7rem; align-items: center; padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid var(--chat-soft); position: relative }
+.chat-item:hover, .chat-item:focus { background: var(--chat-soft); outline: none }
+.chat-item.active { background: rgba(46, 139, 87, 0.1) }
+.chat-item.unread .chat-item-title { font-weight: 700 }
+.chat-item-text { min-width: 0; flex: 1 }
+.chat-item-top { display: flex; justify-content: space-between; gap: 0.5rem }
+.chat-item-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem }
+.chat-item-time { font-size: 0.7rem; opacity: 0.55; white-space: nowrap }
+.chat-item-last { font-size: 0.8rem; opacity: 0.65; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.chat-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--chat-accent); flex-shrink: 0 }
+.chat-type-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.45rem; margin-left: 0.4rem; border-radius: 100px; background: var(--chat-soft) }
+.chat-item .chat-type-tag { margin: 0 0 0.1rem }
+
+.chat-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--chat-soft); color: var(--chat-accent); font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+
+.chat-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 0 }
+.chat-pane-head { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--chat-line) }
+.chat-pane-sub { font-size: 0.75rem; opacity: 0.6 }
+.chat-messages { flex: 1; overflow-y: auto; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.55rem; background: var(--chat-soft) }
+.chat-msg { max-width: 75%; padding: 0.55rem 0.8rem; border-radius: 14px; font-size: 0.9rem; word-wrap: break-word; overflow-wrap: anywhere }
+.chat-msg.mine { align-self: flex-end; background: var(--chat-accent); color: #fff; border-bottom-right-radius: 4px }
+.chat-msg.theirs { align-self: flex-start; background: #fff; border: 1px solid var(--chat-line); border-bottom-left-radius: 4px }
+.chat-msg-text { white-space: pre-wrap }
+.chat-msg-meta { font-size: 0.68rem; opacity: 0.7; margin-top: 0.2rem }
+.chat-no-messages, .chat-muted { opacity: 0.6; font-size: 0.88rem; padding: 1rem }
+
+.chat-form { padding: 0.7rem 1rem; border-top: 1px solid var(--chat-line); background: #fff }
+.chat-form-row { display: flex; gap: 0.6rem; align-items: flex-end }
+.chat-input { flex: 1; resize: none; border: 1px solid var(--chat-line); border-radius: 12px; padding: 0.55rem 0.8rem; font: inherit; font-size: 0.9rem }
+.chat-input:focus, .chat-search:focus { outline: 2px solid var(--chat-accent); outline-offset: 0 }
+.chat-btn { border: none; background: var(--chat-accent); color: #fff; border-radius: 100px; padding: 0.55rem 1.3rem; font: inherit; font-weight: 600; cursor: pointer }
+.chat-btn:disabled { opacity: 0.5; cursor: not-allowed }
+.chat-btn-small { padding: 0.3rem 0.85rem; font-size: 0.8rem }
+.chat-error { color: #E5484D; font-size: 0.82rem; margin-top: 0.4rem; padding: 0 0.2rem }
+
+.chat-empty { margin: auto; text-align: center; padding: 2rem; opacity: 0.7 }
+.chat-new-title { font-size: 1.05rem; margin: 0; padding: 0.8rem 1.1rem 0 }
+.chat-chosen { padding: 0.6rem 1.1rem; font-size: 0.9rem }
+.chat-search { margin: 0 1.1rem 0.5rem; padding: 0.5rem 0.8rem; border: 1px solid var(--chat-line); border-radius: 10px; font: inherit; font-size: 0.88rem }
+.chat-contacts { list-style: none; margin: 0 0 0.5rem; padding: 0; flex: 1; overflow-y: auto }
+.chat-contact { display: flex; gap: 0.7rem; align-items: center; padding: 0.6rem 1.1rem; cursor: pointer }
+.chat-contact:hover { background: var(--chat-soft) }
+.chat-contact.active { background: rgba(46, 139, 87, 0.12) }
+.chat-back { display: none; border: none; background: none; color: var(--chat-accent); padding: 0.6rem 1rem; text-align: left; font: inherit; font-size: 0.85rem; cursor: pointer }
+
+@media (max-width: 760px) {
+  .chat { grid-template-columns: 1fr; height: 75vh }
+  .chat .chat-pane { display: none }
+  .chat.chat--pane-open .chat-list { display: none }
+  .chat.chat--pane-open .chat-pane { display: flex }
+  .chat-back { display: block }
+}
+
+/* Extras used by the admin pages */
+.chat-badge { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.45rem; margin-left: 0.3rem; border-radius: 100px; background: rgba(245, 166, 35, 0.25); color: #92400E }
+.chat-badge.danger { background: rgba(229, 72, 77, 0.18); color: #E5484D }
+.chat-badge.muted { background: var(--chat-soft); color: var(--chat-ink) }
+.chat-pane-extra { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; padding: 0.55rem 1.1rem; border-bottom: 1px solid var(--chat-line); font-size: 0.82rem; background: #fff }
+.chat-pane-extra label { margin: 0 0.35rem 0 0; font-size: 0.78rem; opacity: 0.7 }
+.chat-pane-extra select { font: inherit; font-size: 0.82rem; border: 1px solid var(--chat-line); border-radius: 8px; padding: 0.2rem 0.4rem }
+.chat-pane-extra a { color: var(--chat-accent) }
+.chat-pane-extra .chat-danger { margin-left: auto; border: none; background: none; color: #E5484D; font: inherit; cursor: pointer }
+.chat-msg-action { border: none; background: none; padding: 0; margin-left: 0.6rem; font: inherit; font-size: 0.68rem; text-decoration: underline; cursor: pointer; color: inherit; opacity: 0.8 }
+.chat-no-items { padding: 1.2rem 1rem; font-size: 0.85rem; opacity: 0.6; list-style: none }

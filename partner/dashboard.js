@@ -22,6 +22,7 @@ function formatFcfa(amount) {
 }
 
 function statusLabel(status) {
+  if (status === 'draft') return 'Incomplete';
   if (status === 'needs-info') return 'Needs info';
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
@@ -42,6 +43,10 @@ function fetchPartnerFromApi() {
 function fetchOrphanagesFromApi() {
   return apiRequest('/partner-auth/orphanages').then(function (data) {
     orphanagesCache = data.orphanages;
+  }).catch(function (err) {
+    // Orphanages unlock once an admin verifies the partner; until then the list is simply empty.
+    if (err.status !== 403) throw err;
+    orphanagesCache = [];
   });
 }
 
@@ -74,7 +79,9 @@ function renderStatusNote(partner) {
   const box = document.getElementById('status-note-box');
   let html = '';
 
-  if (partner.verificationStatus === 'pending') {
+  if (partner.verificationStatus === 'draft') {
+    html = '<div class="alert alert-warning py-2 mb-0">Your profile is not complete yet. <a href="profile.html">Complete it and submit it for verification</a>.</div>';
+  } else if (partner.verificationStatus === 'pending') {
     html = '<div class="alert alert-warning py-2 mb-0">Your account is awaiting verification by the CAM Orphanage Connect team.</div>';
   } else if (partner.verificationStatus === 'needs-info' && partner.infoRequestMessage) {
     html = '<div class="alert alert-warning py-2 mb-0">Info requested: ' + escapeHtml(partner.infoRequestMessage) + '</div>';
@@ -163,7 +170,7 @@ function renderFavorites(partner) {
   }
 
   panel.innerHTML = '<div class="d-flex flex-wrap gap-2">' + favorites.map(function (o) {
-    return '<a href="orphanage-view.html?id=' + encodeURIComponent(o.id) + '" class="tier-tag text-decoration-none">&#9733; ' + escapeHtml(o.name) + '</a>';
+    return '<a href="orphanage-view.html?id=' + encodeURIComponent(o.id) + '" class="tier-tag text-decoration-none"><i class="bi bi-star-fill"></i> ' + escapeHtml(o.name) + '</a>';
   }).join('') + '</div>';
 }
 

@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -6,8 +8,9 @@
         <title>Orphanage Portal - CAM Orphanage Connect</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="../shared/chat.css">
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
@@ -31,12 +34,15 @@
                     <button type="button" class="portal-nav-link" data-view="profile"><i class="bi bi-person-circle"></i> Profile</button>
                     <button type="button" class="portal-nav-link" data-view="needs"><i class="bi bi-clipboard2-pulse"></i> Manage Needs</button>
                     <button type="button" class="portal-nav-link" data-view="donations"><i class="bi bi-cash-coin"></i> Pledges Received</button>
+                    <button type="button" class="portal-nav-link" data-view="visits"><i class="bi bi-calendar-heart"></i> Visit Requests <span class="nav-dot" id="visits-dot" style="display:none"></span></button>
+                    <button type="button" class="portal-nav-link" data-view="messages"><i class="bi bi-chat-dots"></i> Messages <span class="nav-dot" id="messages-dot" style="display:none"></span></button>
                     <a class="portal-nav-link logout-link" id="logout-link" href="../login/index.html"><i class="bi bi-box-arrow-right"></i> Logout</a>
                 </nav>
             </aside>
 
             <main class="portal-main">
                 <div class="portal-topbar">
+                    <button type="button" class="portal-menu-btn" id="menu-btn" aria-label="Open the menu" aria-expanded="false" aria-controls="portal-sidebar"><i class="bi bi-list"></i></button>
                     <div>
                         <h1 id="portal-greeting">Welcome back</h1>
                         <p>Here's what's happening with your orphanage profile</p>
@@ -51,6 +57,27 @@
                     <div class="info-note" id="status-note">
                         <i class="bi bi-info-circle"></i>
                         <div id="status-note-text">Loading your profile…</div>
+                    </div>
+
+                    <div class="welcome-banner">
+                        <div>
+                            <h2>Thank you for caring for children.</h2>
+                            <p>Every need you post gives a supporter a clear way to help. Keep your profile fresh and reply to messages, and supporters will find you.</p>
+                        </div>
+                    </div>
+
+                    <div class="panel" id="checklist-panel">
+                        <div class="panel-head">
+                            <div>
+                                <h2>Complete your profile</h2>
+                                <p class="panel-desc" id="checklist-summary"></p>
+                            </div>
+                            <button type="button" class="btn-primary-pill" id="submit-review-btn"><i class="bi bi-send-check"></i> Submit for verification</button>
+                        </div>
+                        <div class="form-error" id="submit-error"></div>
+                        <div class="progress-track"><div class="progress-fill" id="checklist-progress"></div></div>
+                        <ul class="checklist" id="checklist"></ul>
+                        <button type="button" class="btn-outline-pill" data-view-link="profile"><i class="bi bi-pencil"></i> Go to my profile</button>
                     </div>
 
                     <div class="stat-grid">
@@ -96,37 +123,114 @@
                         <form id="profile-form">
                             <div class="field-row">
                                 <div class="field">
-                                    <label for="org-name">Orphanage Name</label>
-                                    <input type="text" id="org-name" value="" disabled>
+                                    <label for="org-name">Orphanage name *</label>
+                                    <input type="text" id="org-name" maxlength="150" disabled>
                                 </div>
                                 <div class="field">
-                                    <label for="org-location">Location</label>
-                                    <input type="text" id="org-location" value="" disabled>
+                                    <label for="org-location">Location (city / region) *</label>
+                                    <input type="text" id="org-location" maxlength="150" disabled>
                                 </div>
                                 <div class="field">
-                                    <label for="org-founded">Founded Year</label>
-                                    <input type="number" id="org-founded" min="1900" max="2100" value="" disabled>
+                                    <label for="org-registration">Official registration number *</label>
+                                    <input type="text" id="org-registration" maxlength="80" placeholder="As on your registration certificate" disabled>
                                 </div>
                                 <div class="field">
-                                    <label for="org-children">Children in Care</label>
-                                    <input type="number" id="org-children" min="0" value="" disabled>
+                                    <label for="org-founded">Year founded</label>
+                                    <input type="number" id="org-founded" min="1800" max="2100" disabled>
                                 </div>
                                 <div class="field">
-                                    <label for="org-contact-name">Contact Person</label>
-                                    <input type="text" id="org-contact-name" value="" disabled>
+                                    <label for="org-children">Children in care *</label>
+                                    <input type="number" id="org-children" min="0" disabled>
                                 </div>
                                 <div class="field">
-                                    <label for="org-contact-phone">Contact Phone</label>
-                                    <input type="text" id="org-contact-phone" value="" disabled>
+                                    <label for="org-capacity">Capacity (children you can house)</label>
+                                    <input type="number" id="org-capacity" min="0" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-contact-name">Contact person *</label>
+                                    <input type="text" id="org-contact-name" maxlength="120" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-contact-phone">Contact phone *</label>
+                                    <input type="text" id="org-contact-phone" maxlength="40" placeholder="+237 6XX XXX XXX" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-contact-email">Contact email</label>
+                                    <input type="email" id="org-contact-email" maxlength="150" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-story-language">Language of your story</label>
+                                    <select id="org-story-language" disabled>
+                                        <option value="">Choose…</option>
+                                        <option value="en">English</option>
+                                        <option value="fr">Français</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="field">
-                                <label for="org-story">About / Story</label>
-                                <textarea id="org-story" disabled></textarea>
+                                <label for="org-story">Your story — what you do and who you care for *</label>
+                                <textarea id="org-story" maxlength="4000" disabled></textarea>
                             </div>
+
+                            <h3 class="form-section">Payment account for donations <span class="optional">(optional for now)</span></h3>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="org-pay-provider">Provider</label>
+                                    <select id="org-pay-provider" disabled>
+                                        <option value="">Choose…</option>
+                                        <option>MTN Mobile Money</option>
+                                        <option>Orange Money</option>
+                                        <option>Bank transfer</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="org-pay-name">Account holder name</label>
+                                    <input type="text" id="org-pay-name" maxlength="120" disabled>
+                                </div>
+                                <div class="field">
+                                    <label for="org-pay-number">Account / phone number</label>
+                                    <input type="text" id="org-pay-number" maxlength="60" disabled>
+                                </div>
+                            </div>
+
+                            <label class="terms-check">
+                                <input type="checkbox" id="org-terms" disabled>
+                                <span>I confirm the information and documents I provide are accurate and I agree to the CAM Orphanage Connect <a href="../terms.html" target="_blank" rel="noopener">terms of use</a>. *</span>
+                            </label>
+
                             <div class="form-error" id="profile-error"></div>
                             <button type="submit" class="btn-primary-pill" id="save-profile-btn" style="display:none"><i class="bi bi-check2"></i> Save Changes</button>
                         </form>
+                    </div>
+                    <div class="panel" id="uploads-panel">
+                        <h2>Photos and documents</h2>
+                        <p class="panel-desc">Photos are shown to donors. Documents are private: only you and the CAM Orphanage Connect team can open them.</p>
+                        <div class="form-error" id="upload-error"></div>
+
+                        <div class="upload-row">
+                            <div class="photo-preview" id="photo-preview"><i class="bi bi-image"></i></div>
+                            <div>
+                                <strong>Profile photo</strong>
+                                <p class="upload-hint">JPG, PNG or WebP, up to 3 MB.</p>
+                                <button type="button" class="btn-outline-pill" data-upload="photo"><i class="bi bi-upload"></i> Upload photo</button>
+                            </div>
+                        </div>
+                        <div class="upload-row">
+                            <div class="photo-preview wide" id="cover-preview"><i class="bi bi-image"></i></div>
+                            <div>
+                                <strong>Cover photo</strong>
+                                <p class="upload-hint">A wide picture of your home. JPG, PNG or WebP, up to 3 MB.</p>
+                                <button type="button" class="btn-outline-pill" data-upload="cover"><i class="bi bi-upload"></i> Upload cover</button>
+                            </div>
+                        </div>
+
+                        <div class="upload-docs">
+                            <strong>Verification documents *</strong>
+                            <p class="upload-hint">For example your registration certificate or the director's ID. PDF, JPG or PNG, up to 3 MB each.</p>
+                            <ul class="doc-list" id="doc-list"></ul>
+                            <button type="button" class="btn-outline-pill" data-upload="document"><i class="bi bi-upload"></i> Upload a document</button>
+                        </div>
+                        <input type="file" id="upload-input" hidden>
                     </div>
                 </section>
 
@@ -160,6 +264,24 @@
                         </table>
                     </div>
                 </section>
+                <!-- Visit requests -->
+                <section class="portal-view" id="view-visits">
+                    <div class="panel">
+                        <h2>Visit Requests</h2>
+                        <p class="panel-desc">Approved donors and verified partners can ask to visit. You decide. Visits should always be supervised by your staff, and you can say no. When you approve, the visitor's email appears here so you can arrange the day.</p>
+                        <div class="form-error" id="visits-error"></div>
+                        <div id="visits-list"><p class="empty-cell">No visit requests yet.</p></div>
+                    </div>
+                </section>
+
+                <!-- Messages -->
+                <section class="portal-view" id="view-messages">
+                    <div class="panel">
+                        <h2>Messages</h2>
+                        <p class="panel-desc">Chat with the CAM Orphanage Connect team, and with the donors and partners who support you. The team can read direct chats between orphanages, donors and partners to keep everyone safe.</p>
+                        <div id="chat-root"></div>
+                    </div>
+                </section>
             </main>
         </div>
 
@@ -189,6 +311,8 @@
             </div>
         </div>
 
+        <script src="../shared/chat.js"></script>
+        <script src="../shared/chat-api.js"></script>
         <script src="script.js"></script>
     </body>
 </html>

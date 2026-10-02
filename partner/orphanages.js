@@ -53,7 +53,7 @@ function renderGrid(list) {
           '<div class="profile-card">' +
             '<div class="profile-cover' + (hasCoverPhoto ? ' has-photo' : ' ' + coverClass) + '"' + coverAttrs + '>' +
               '<span class="profile-status-chip status-verified">Verified</span>' +
-              '<button type="button" class="fav-star-btn' + (isFavorite ? ' is-favorite' : '') + '" data-orphanage-id="' + o.id + '" title="' + (isFavorite ? 'Remove from favorites' : 'Add to favorites') + '">' + (isFavorite ? '★' : '☆') + '</button>' +
+              '<button type="button" class="fav-star-btn' + (isFavorite ? ' is-favorite' : '') + '" data-orphanage-id="' + o.id + '" title="' + (isFavorite ? 'Remove from favorites' : 'Add to favorites') + '">' + (isFavorite ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>') + '</button>' +
             '</div>' +
             '<div class="profile-body">' +
               '<div class="avatar-wrap">' +
@@ -115,9 +115,28 @@ Promise.all([apiRequest('/partner-auth/orphanages'), apiRequest('/partner-auth/m
   favoritesCache = results[1].partner.favoriteOrphanageIds || [];
   populateLocationFilter();
   applyFilters();
+
+  // Visit requests this partner has made (verified partners only reach this point).
+  document.getElementById('my-visits-card').classList.remove('d-none');
+  window.CocVisits.mountMine(document.getElementById('my-visits'), {
+    apiBase: API_BASE,
+    token: localStorage.getItem('partnerToken'),
+    onExpired: function () { localStorage.removeItem('partnerToken'); window.location.href = 'index.html'; }
+  });
 }).catch(function (err) {
   const emptyState = document.getElementById('empty-state');
   emptyState.classList.remove('d-none');
+  if (err.status === 403) {
+    // Not verified yet: explain, and point to the profile where they can finish and submit.
+    emptyState.innerHTML = '<strong>Browsing orphanages is locked for now.</strong><br>' +
+      'It opens once the CAM Orphanage Connect team has verified your organization. ' +
+      '<a href="profile.html">Complete your profile and submit it for verification</a>.';
+    ['search-input', 'location-filter'].forEach(function (id) {
+      const control = document.getElementById(id);
+      if (control) control.disabled = true;
+    });
+    return;
+  }
   emptyState.textContent = 'Could not load orphanages: ' + err.message + '. Is the backend running?';
 });
 
