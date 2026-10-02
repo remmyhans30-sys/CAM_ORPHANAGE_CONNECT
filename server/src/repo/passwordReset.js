@@ -15,10 +15,6 @@ const fingerprint = (token) => crypto.createHash('sha256').update(token).digest(
 
 // The address links in emails point to. Never taken from the request, so nobody can make the
 // site send reset links to a look-alike address.
-function siteUrl() {
-  return (process.env.SITE_URL || 'http://localhost:' + (process.env.PORT || 4000)).replace(/\/+$/, '');
-}
-
 // Returns true when an email was sent (or printed locally). Says nothing about whether the
 // address has an account, so the caller can answer everyone the same way.
 async function requestReset(email, ip) {
@@ -37,7 +33,7 @@ async function requestReset(email, ip) {
     [user.id, fingerprint(token), db.sqlTime(Date.now() + TOKEN_LIFETIME_MINUTES * 60 * 1000), String(ip || '').slice(0, 45) || null]
   );
 
-  const link = siteUrl() + '/login/reset-password.html?token=' + token;
+  const link = mailer.siteUrl() + '/login/reset-password.html?token=' + token;
   const text = [
     'Hello ' + user.display_name + ',',
     '',

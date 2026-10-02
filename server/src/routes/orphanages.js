@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticate } = require('../middleware/auth');
 const db = require('../db');
 const orphanages = require('../repo/orphanages');
+const notify = require('../notify');
 const { videoUrl } = require('../uploads');
 
 const router = express.Router();
@@ -29,8 +30,11 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
+  const before = await orphanages.get(Number(req.params.id));
   const orphanage = await orphanages.save(Number(req.params.id), req.body || {}, actorOf(req));
   if (!orphanage) return res.status(404).json({ error: 'Orphanage not found.' });
+  // The home hears by email about the team's verification decision.
+  if (before && before.status !== orphanage.status) notify.orphanageDecision(orphanage.id, orphanage.status);
   res.json({ orphanage });
 });
 

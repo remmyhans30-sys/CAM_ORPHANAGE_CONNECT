@@ -4,6 +4,7 @@ const { authenticateUser } = require('../middleware/userAuth');
 const donors = require('../repo/donors');
 const needs = require('../repo/needs');
 const donations = require('../repo/donations');
+const notify = require('../notify');
 
 // Donor pledges: the amount is recorded and counted toward the need; no money is charged.
 const router = express.Router();
@@ -55,6 +56,8 @@ router.post('/', async (req, res) => {
     await db.run('UPDATE donor_profiles SET last_active_at = ? WHERE user_id = ?', [db.sqlTime(), req.user.id]);
     return id;
   });
+  // The home hears about the new pledge by email.
+  notify.newPledge(pledgeId);
 
   // The donor gives directly to the home: they get its confirmed account (or null while the team has
   // not confirmed one yet) and a reference to write in the payment note.

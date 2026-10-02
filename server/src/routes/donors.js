@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticate } = require('../middleware/auth');
 const donors = require('../repo/donors');
+const notify = require('../notify');
 
 const router = express.Router();
 router.use(authenticate);
@@ -27,8 +28,11 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
+  const before = await donors.get(Number(req.params.id));
   const donor = await donors.save(Number(req.params.id), req.body || {}, actorOf(req));
   if (!donor) return res.status(404).json({ error: 'Donor not found.' });
+  // The donor hears by email when the team approves the account (or does not).
+  if (before && before.status !== donor.status) notify.donorDecision(donor.id, donor.status, donor.flagReason);
   res.json({ donor });
 });
 

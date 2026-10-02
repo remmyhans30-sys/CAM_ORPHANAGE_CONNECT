@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// Sends the site's emails (password resets). On the live site set SMTP_HOST, SMTP_PORT,
+// Sends the site's emails (password resets and notifications, see notify.js). On the live site set SMTP_HOST, SMTP_PORT,
 // SMTP_USER, SMTP_PASSWORD and SMTP_FROM (see DEPLOY.md). On your own computer, without
 // SMTP settings, the email is printed in the server window instead, so you can still test.
 
@@ -47,4 +47,9 @@ async function sendMail({ to, subject, text, html }) {
   throw new Error('Email is not set up on this server.');
 }
 
-module.exports = { sendMail, canDeliver, canPrintToConsole };
+// The site's own address, for links in emails (SITE_URL on the live site).
+function siteUrl() {
+  return (process.env.SITE_URL || 'http://localhost:' + (process.env.PORT || 4000)).replace(/\/+$/, '');
+}
+
+module.exports = { sendMail, canDeliver, canPrintToConsole, siteUrl };

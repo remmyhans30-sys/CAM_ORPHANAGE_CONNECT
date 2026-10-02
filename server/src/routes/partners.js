@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
 const partners = require('../repo/partners');
+const notify = require('../notify');
 
 const router = express.Router();
 router.use(authenticate);
@@ -39,7 +40,10 @@ router.put('/:id', async (req, res) => {
   if (body.password) {
     await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [bcrypt.hashSync(body.password, 10), existing.ownerUserId]);
   }
-  res.json({ partner: await partners.save(id, body, actorOf(req)) });
+  const partner = await partners.save(id, body, actorOf(req));
+  // The organization hears by email about the team's verification decision.
+  if (partner && existing.verificationStatus !== partner.verificationStatus) notify.partnerDecision(partner.id, partner.verificationStatus);
+  res.json({ partner });
 });
 
 router.delete('/:id', async (req, res) => {

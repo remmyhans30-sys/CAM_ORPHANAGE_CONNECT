@@ -86,7 +86,7 @@ If the site has an **SSL** tab, turn on **Force HTTPS**. Save.
 
 ## 7. Set up email (password reset)
 
-"Forgot password?" emails people a link, so the site needs a mailbox to send from. Until you do this step, the page tells people to contact the team instead.
+"Forgot password?" emails people a link, and the site emails people about things that concern them (account approved, verification decisions, new pledges, gifts received, visit requests and answers), so it needs a mailbox to send from. Until you do this step, the forgot-password page tells people to contact the team instead, and no notifications are sent.
 
 1. In the alwaysdata panel go to **Emails > Mailboxes** and add a mailbox, for example `noreply@ACCOUNT.alwaysdata.net`, with a strong password.
 2. Put its address and password in the environment settings of the site (step 6): `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_FROM`. The server address for `SMTP_HOST` is shown on the Emails page (it looks like `smtp-ACCOUNT.alwaysdata.net`, port 587).

@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { memberActor } = require('../middleware/memberActor');
 const orphanages = require('../repo/orphanages');
 const visits = require('../repo/visits');
+const notify = require('../notify');
 
 // Visit requests, for approved donors and verified partners (the orphanage answers them from
 // its own portal, see my-orphanage.js). Admins can read them all.
@@ -36,13 +37,14 @@ member.post('/', requireApproved, async (req, res) => {
   const orphanage = await orphanages.getListed(Number(body.orphanageId) || 0);
   if (!orphanage) throw new HttpError(404, 'This orphanage is not available.');
 
-  await visits.create({
+  const visitId = await visits.create({
     userId: req.actor.userId,
     orphanageId: orphanage.id,
     preferredDate: body.preferredDate,
     visitorsCount: body.visitorsCount,
     message: body.message,
   });
+  notify.visitRequested(visitId);
   res.status(201).json({ visits: await visits.forRequester(req.actor.userId) });
 });
 

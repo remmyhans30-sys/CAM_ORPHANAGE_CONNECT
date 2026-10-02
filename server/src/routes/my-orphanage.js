@@ -7,6 +7,7 @@ const donations = require('../repo/donations');
 const visits = require('../repo/visits');
 const posts = require('../repo/posts');
 const common = require('../repo/common');
+const notify = require('../notify');
 const { saveUpload, saveVideo, deleteUpload, UploadError, MAX_VIDEO_MB, VIDEO_QUOTA_MB } = require('../uploads');
 
 // The signed-in orphanage account's own profile and needs (orphanage/ portal).
@@ -363,6 +364,7 @@ router.post('/visits/:id/respond', async (req, res) => {
   }
   const { decision, note } = req.body || {};
   await visits.respond(Number(req.params.id), req.orphanage.id, decision, note);
+  notify.visitAnswered(Number(req.params.id));
   res.json({ visits: await visits.forOrphanage(req.orphanage.id) });
 });
 
@@ -392,6 +394,7 @@ router.post('/pledges/:id/received', async (req, res) => {
   await common.logActivity('orphanage', req.orphanage.id,
     (received ? 'Marked pledge ' : 'Marked as not received yet: pledge ') + donations.referenceOf(id) + (received ? ' as received' : ''),
     req.orphanage.contactEmail, req.account.id);
+  if (received) notify.pledgeReceived(id);
   res.json({ pledges: await pledgeList(req.orphanage.id) });
 });
 
