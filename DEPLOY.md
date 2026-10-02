@@ -1,6 +1,6 @@
 # Putting CAM Orphanage Connect online (alwaysdata, free plan)
 
-This puts the whole site online at `https://ACCOUNT.alwaysdata.net`, where `ACCOUNT` is the account name you choose. Anyone can then open it in Chrome, Edge or any other browser. The free plan keeps files between restarts, so the database (`server/data.sqlite`) is saved.
+This puts the whole site online at `https://ACCOUNT.alwaysdata.net`, where `ACCOUNT` is the account name you choose. Anyone can then open it in Chrome, Edge or any other browser. The free plan includes a MySQL database, which keeps all the site's data between restarts.
 
 Replace `ACCOUNT` everywhere below with your account name.
 
@@ -11,7 +11,7 @@ Replace `ACCOUNT` everywhere below with your account name.
 
 ## 2. Choose the Node.js version
 
-In the alwaysdata admin panel, go to **Environment > Node.js** and set the default version to **24** (or 22). The site needs Node.js 22.5 or newer.
+In the alwaysdata admin panel, go to **Environment > Node.js** and set the default version to **24** (or 22). The site needs Node.js 18 or newer.
 
 ## 3. Turn on SSH
 
@@ -34,7 +34,17 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 The last command prints a long random line. Copy it: it's the site's secret key (`JWT_SECRET`). Don't share it or put it on GitHub.
 
-## 5. Create the website
+## 5. Create the MySQL database
+
+In the alwaysdata panel go to **Databases > MySQL**.
+
+1. **Add a database** (any name; alwaysdata prefixes it with your account name, for example `ACCOUNT_camorphanage`).
+2. Under **Users**, **add a user** with a strong password, and give it **full rights on that database**.
+3. Note the server address shown on the page (it looks like `mysql-ACCOUNT.alwaysdata.net`).
+
+The site builds all its tables by itself the first time it starts. Nothing else to run.
+
+## 6. Create the website
 
 Go to **Web > Sites > Add a site** and fill in:
 
@@ -51,10 +61,20 @@ Environment, one setting per line:
 ```
 NODE_ENV=production
 JWT_SECRET=the-long-line-from-step-4
+DB_HOST=mysql-ACCOUNT.alwaysdata.net
+DB_USER=the-mysql-user-from-step-5
+DB_PASSWORD=the-mysql-password-from-step-5
+DB_NAME=ACCOUNT_camorphanage
 ADMIN_EMAIL=the-admin's-email
 ADMIN_PASSWORD=a-strong-password
 SEED_SAMPLE_DATA=false
 SUPPORT_EMAIL=an-email-people-can-contact
+SITE_URL=https://ACCOUNT.alwaysdata.net
+SMTP_HOST=smtp-ACCOUNT.alwaysdata.net
+SMTP_PORT=587
+SMTP_USER=the-mailbox-address-from-step-7
+SMTP_PASSWORD=the-mailbox-password
+SMTP_FROM=CAM Orphanage Connect <the-mailbox-address-from-step-7>
 ```
 
 - On the first start, `ADMIN_EMAIL` and `ADMIN_PASSWORD` create the first admin account. Use a strong password of at least 8 characters, and share it with no one who shouldn't be an admin.
@@ -62,13 +82,22 @@ SUPPORT_EMAIL=an-email-people-can-contact
 
 If the site has an **SSL** tab, turn on **Force HTTPS**. Save.
 
-## 6. Check it
+## 7. Set up email (password reset)
+
+"Forgot password?" emails people a link, so the site needs a mailbox to send from. Until you do this step, the page tells people to contact the team instead.
+
+1. In the alwaysdata panel go to **Emails > Mailboxes** and add a mailbox, for example `noreply@ACCOUNT.alwaysdata.net`, with a strong password.
+2. Put its address and password in the environment settings of the site (step 6): `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_FROM`. The server address for `SMTP_HOST` is shown on the Emails page (it looks like `smtp-ACCOUNT.alwaysdata.net`, port 587).
+3. Set `SITE_URL` to the site's real address, exactly as people type it, with no slash at the end. The reset links in the emails point there.
+4. Restart the site, then try "Forgot password?" with your own address.
+
+## 8. Check it
 
 - Open `https://ACCOUNT.alwaysdata.net`. The home page should appear.
 - Click **Sign In**, then **Admin sign-in**, and log in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 - Sign up as an orphanage in another browser (or a private window), then approve it as the admin. It should appear on the donor page (`/donor/index.html`).
 
-If the site doesn't start, check its logs in your account's `admin/logs` folder (over SSH) or in the site's page in the panel. The usual cause is a missing or too-short `JWT_SECRET`, or a Node.js version older than 22.5.
+If the site doesn't start, check its logs in your account's `admin/logs` folder (over SSH) or in the site's page in the panel. The usual cause is a missing or too-short `JWT_SECRET`, a wrong `DB_HOST`, `DB_USER`, `DB_PASSWORD` or `DB_NAME`, or a Node.js version older than 18. The log says "Could not use the MySQL database" when the database settings are the problem.
 
 ## Updating the live site
 
@@ -82,4 +111,4 @@ Then restart the site from **Web > Sites**. The database is kept.
 
 ## Backups
 
-All accounts, orphanages, needs and pledges are in `/home/ACCOUNT/site/server/data.sqlite`. The free plan keeps 3 days of backups. Also download a copy regularly over SFTP, for example with FileZilla to `ssh-ACCOUNT.alwaysdata.net`.
+All accounts, orphanages, needs, pledges and messages are in the MySQL database. Export it regularly: in the alwaysdata panel open **Databases > MySQL** and use the phpMyAdmin link, then **Export**. The documents and photos people upload are in the folder `/home/ACCOUNT/site/server/uploads/`. The free plan keeps 3 days of backups. Also download a copy of **both** regularly (the database export and the uploads folder over SFTP, for example with FileZilla to `ssh-ACCOUNT.alwaysdata.net`). They belong together: a backup of one without the other leaves documents or photos missing.
