@@ -142,10 +142,30 @@
         if (index === 3) cell.className = 'text-end';
         row.appendChild(cell);
       });
+      row.appendChild(statusCell(pledge));
       body.appendChild(row);
     });
     document.getElementById('pledgeSummary').textContent =
-      pledges.length + (pledges.length === 1 ? ' pledge' : ' pledges') + ', ' + formatXAF(total) + ' in total. A pledge is a promise to give; no money is charged on this site.';
+      pledges.length + (pledges.length === 1 ? ' pledge' : ' pledges') + ', ' + formatXAF(total) + ' in total. ' +
+      'You give directly to each home, with the reference in the payment note; the home marks the pledge as received. No money is charged on this site.';
+  }
+
+  // Received, or still to give: then where to send it (once the team has confirmed the home's account).
+  function statusCell(pledge) {
+    const cell = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = 'pledge-status ' + (pledge.received ? 'is-received' : 'is-pledged');
+    badge.textContent = pledge.received ? 'Received' : 'Pledged';
+    cell.appendChild(badge);
+    if (!pledge.received) {
+      const howTo = document.createElement('p');
+      howTo.className = 'pledge-howto';
+      howTo.textContent = pledge.payTo
+        ? 'Send to ' + pledge.payTo.provider + ' ' + pledge.payTo.accountNumber + ' (' + pledge.payTo.accountName + '), reference ' + pledge.reference + '.'
+        : 'Reference ' + pledge.reference + '. The home\'s payment account is still being checked by our team; the details will appear here.';
+      cell.appendChild(howTo);
+    }
+    return cell;
   }
 
   form.addEventListener('submit', async function (e) {

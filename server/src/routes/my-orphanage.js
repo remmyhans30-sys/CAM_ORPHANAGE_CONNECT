@@ -366,17 +366,33 @@ router.post('/visits/:id/respond', async (req, res) => {
   res.json({ visits: await visits.forOrphanage(req.orphanage.id) });
 });
 
+async function pledgeList(orphanageId) {
+  return (await donations.pledgesToOrphanage(orphanageId)).map((p) => ({
+    id: p.id,
+    reference: donations.referenceOf(p.id),
+    amount: Number(p.amount),
+    donorName: p.is_anonymous ? 'Anonymous' : p.display_name,
+    needTitle: p.need_title,
+    createdAt: db.isoTime(p.created_at),
+    received: p.status === 'completed',
+  }));
+}
+
 router.get('/pledges', async (req, res) => {
-  const pledges = await donations.pledgesToOrphanage(req.orphanage.id);
-  res.json({
-    pledges: pledges.map((p) => ({
-      id: p.id,
-      amount: Number(p.amount),
-      donorName: p.is_anonymous ? 'Anonymous' : p.display_name,
-      needTitle: p.need_title,
-      createdAt: db.isoTime(p.created_at),
-    })),
-  });
+  res.json({ pledges: await pledgeList(req.orphanage.id) });
+});
+
+// The home confirms that a pledged gift arrived ({ received: true }), or takes that back.
+router.post('/pledges/:id/received', async (req, res) => {
+  const received = (req.body || {}).received !== false;
+  const id = Number(req.params.id) || 0;
+  if (!(await donations.setReceived(id, req.orphanage.id, received))) {
+    return res.status(404).json({ error: 'Pledge not found.' });
+  }
+  await common.logActivity('orphanage', req.orphanage.id,
+    (received ? 'Marked pledge ' : 'Marked as not received yet: pledge ') + donations.referenceOf(id) + (received ? ' as received' : ''),
+    req.orphanage.contactEmail, req.account.id);
+  res.json({ pledges: await pledgeList(req.orphanage.id) });
 });
 
 module.exports = router;

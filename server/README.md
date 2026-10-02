@@ -189,8 +189,9 @@ Email is sent with the `SMTP_*` settings in `.env` (see `.env.example`). Without
 |--------|-------------------------|-------------|---------------------------------------------------------|
 | GET    | /api/browse/orphanages  | approved donor | Verified orphanages and their open needs (donor page). Others get 401/403 with a `code` (`sign-in`, `pending`, `rejected`, `flagged`, `donors-only`) |
 | GET    | /api/browse/orphanages/:id | approved donor | One home's full profile (`donor/orphanage.html`): story, facts, registration number, contact person, verified date, open and fully pledged needs, and its record (`totalPledged`, `supporters`, `itemGifts`). Never its phone, email, payment account or documents |
-| POST   | /api/pledges            | approved donor | `{ needId, amount, anonymous }` — records a pledge and adds it to the need |
-| GET    | /api/pledges/mine       | donor token | The signed-in donor's pledges                           |
+| POST   | /api/pledges            | approved donor | `{ needId, amount, anonymous }` — records a pledge and adds it to the need. Returns `pledge: { reference, payTo }`: where to send the gift (the home's confirmed account, or null until an admin confirms it) |
+| GET    | /api/pledges/mine       | donor token | The signed-in donor's pledges, each with `reference`, `received` and, while not received, `payTo` |
+| POST   | /api/my-orphanage/pledges/:id/received | orphanage | `{ received: true or false }` — the home confirms a pledged gift arrived (or takes it back) |
 
 Donors are `pending` until an admin sets their status to `active` (Donors page), and
 partners must be `verified`; partner routes for orphanages, donations and placement

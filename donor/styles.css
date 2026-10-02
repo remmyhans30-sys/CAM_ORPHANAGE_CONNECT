@@ -457,3 +457,14 @@ body::before {
 .donor-hero h1 { color: #fff }
 .donor-hero .lead-muted { color: rgba(255, 255, 255, 0.92); opacity: 1 }
 .donor-hero .section-badge { background-color: var(--gold); color: #2B2105 }
+
+/* After a pledge: its reference and where to send the gift (pledge.js, profile.js) */
+.pledge-payto { background-color: var(--section-bg); border-radius: 14px; padding: 0.9rem 1.1rem }
+.pledge-payto-ref { font-weight: 700; margin-bottom: 0.4rem }
+.pledge-payto-account { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.9rem; margin: 0 0 0.6rem }
+.pledge-payto-account dt { font-weight: 600; opacity: 0.75 }
+.pledge-payto-account dd { margin: 0; font-weight: 700; overflow-wrap: anywhere }
+.pledge-status { display: inline-block; font-size: 0.8rem; font-weight: 700; border-radius: 100px; padding: 0.15rem 0.7rem; white-space: nowrap }
+.pledge-status.is-received { background-color: rgba(18, 128, 74, 0.14); color: var(--teal) }
+.pledge-status.is-pledged { background-color: rgba(233, 185, 58, 0.28); color: #6B4E00 }
+.pledge-howto { font-size: 0.85rem; margin: 0.35rem 0 0; opacity: 0.85; overflow-wrap: anywhere }

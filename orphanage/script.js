@@ -553,6 +553,8 @@ function formatDate(value) {
     return isNaN(date) ? value : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+// Donors send the money straight to the home, with the pledge's reference in the payment note.
+// When it arrives, the home marks the pledge as received (and can take that back).
 function renderPledges(pledges) {
     const body = document.getElementById('pledges-body');
     if (pledges.length === 0) return;
@@ -560,17 +562,42 @@ function renderPledges(pledges) {
     body.innerHTML = '';
     pledges.forEach(function (pledge) {
         const row = document.createElement('tr');
-        [formatDate(pledge.createdAt), pledge.donorName, pledge.needTitle, formatFcfa(pledge.amount)].forEach(function (text) {
+        [formatDate(pledge.createdAt), pledge.donorName, pledge.needTitle, formatFcfa(pledge.amount), pledge.reference].forEach(function (text) {
             const cell = document.createElement('td');
             cell.textContent = text;
             row.appendChild(cell);
         });
         const status = document.createElement('td');
-        status.innerHTML = '<span class="donation-status completed">Pledged</span>';
+        const badge = document.createElement('span');
+        badge.className = 'donation-status ' + (pledge.received ? 'completed' : 'pledged');
+        badge.textContent = pledge.received ? 'Received' : 'Pledged';
+        status.appendChild(badge);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'pledge-received-btn ' + (pledge.received ? 'is-undo' : '');
+        button.dataset.pledgeId = pledge.id;
+        button.dataset.received = pledge.received ? 'false' : 'true';
+        button.textContent = pledge.received ? 'Undo' : 'Mark as received';
+        status.appendChild(button);
         row.appendChild(status);
         body.appendChild(row);
     });
 }
+
+document.getElementById('pledges-body').addEventListener('click', async function (e) {
+    const button = e.target.closest('.pledge-received-btn');
+    if (!button) return;
+    const error = document.getElementById('pledges-error');
+    button.disabled = true;
+    try {
+        const data = await api('/pledges/' + button.dataset.pledgeId + '/received', { method: 'POST', body: { received: button.dataset.received === 'true' } });
+        hideError(error);
+        renderPledges(data.pledges);
+    } catch (err) {
+        showError(error, err.message);
+        button.disabled = false;
+    }
+});
 
 // Stories, updates and videos
 let postLimits = { maxVideoMb: 15, videoQuotaMb: 60 };

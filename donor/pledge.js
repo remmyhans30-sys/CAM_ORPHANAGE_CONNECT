@@ -5,6 +5,8 @@
  * `need` is { id, title, goal, raised, percent }. After a pledge, its raised amount and percent
  * are updated and onPledged(need) lets the page redraw. Without a token the window asks the
  * person to sign in instead.
+ * After pledging, the window shows the pledge's reference and how to give: the donor sends the
+ * money directly to the home's account, once the CAM Orphanage Connect team has confirmed it.
  */
 
 (function () {
@@ -23,6 +25,7 @@
   const donateError = document.getElementById('donateError');
   const donateAlert = document.getElementById('donateAlert');
   const donateSubmit = document.getElementById('donateSubmit');
+  const pledgePayTo = document.getElementById('pledgePayTo');
 
   let active = null;
 
@@ -41,6 +44,34 @@
     donateProgressLabel.textContent = formatXAF(need.raised) + ' pledged of ' + formatXAF(need.goal) + ' (' + pct + '%)';
   }
 
+  function addLine(parent, tag, text, className) {
+    const node = document.createElement(tag);
+    node.textContent = text;
+    if (className) node.className = className;
+    parent.appendChild(node);
+    return node;
+  }
+
+  // The reference, and where to send the money if the team has confirmed the home's account.
+  function showHowToGive(pledge) {
+    pledgePayTo.innerHTML = '';
+    addLine(pledgePayTo, 'p', 'Your pledge reference: ' + pledge.reference, 'pledge-payto-ref');
+    if (pledge.payTo) {
+      addLine(pledgePayTo, 'p', 'To give, send the money directly to the home. Our team has confirmed this account belongs to it:', 'mb-2');
+      const details = document.createElement('dl');
+      details.className = 'pledge-payto-account';
+      [['Pay with', pledge.payTo.provider], ['Account name', pledge.payTo.accountName], ['Number', pledge.payTo.accountNumber]].forEach(function (row) {
+        addLine(details, 'dt', row[0]);
+        addLine(details, 'dd', row[1] || '—');
+      });
+      pledgePayTo.appendChild(details);
+      addLine(pledgePayTo, 'p', 'Write ' + pledge.reference + ' in the payment note. The home marks your pledge as received when the money arrives. You can find these details again under My profile.', 'small mb-0');
+    } else {
+      addLine(pledgePayTo, 'p', 'Our team has not confirmed this home\'s payment account yet. As soon as it does, the details appear with your pledge under My profile.', 'small mb-0');
+    }
+    pledgePayTo.classList.remove('d-none');
+  }
+
   function open(options) {
     active = options;
 
@@ -52,6 +83,7 @@
     document.querySelectorAll('.btn-quick-amount').forEach(function (b) { b.classList.remove('active'); });
     donateError.classList.add('d-none');
     donateAlert.classList.add('d-none');
+    pledgePayTo.classList.add('d-none');
 
     const signedIn = Boolean(options.token);
     signInPrompt.classList.toggle('d-none', signedIn);
@@ -108,6 +140,7 @@
       showNeedProgress(need);
       donateAlert.textContent = 'Thank you! Your pledge of ' + formatXAF(amount) + ' to ' + pledge.orphanage.name + ' has been recorded.';
       donateAlert.classList.remove('d-none');
+      if (data.pledge) showHowToGive(data.pledge);
       pledgeFields.classList.add('d-none');
       donateSubmit.classList.add('d-none');
       if (pledge.onPledged) pledge.onPledged(need);

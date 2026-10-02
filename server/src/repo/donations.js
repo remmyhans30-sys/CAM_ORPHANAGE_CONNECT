@@ -41,15 +41,48 @@ async function forGivers(userIds) {
   return map;
 }
 
+// A pledge's reference. The donor writes it in the payment note, so the home can match the money.
+function referenceOf(id) {
+  return 'CAM-' + id;
+}
+
 // The money pledged to an orphanage, newest first (the orphanage portal's pledge list).
 async function pledgesToOrphanage(orphanageId) {
   return db.q(
-    `SELECT d.id, d.amount, d.is_anonymous, d.created_at, u.display_name, n.title AS need_title
+    `SELECT d.id, d.amount, d.status, d.is_anonymous, d.created_at, u.display_name, n.title AS need_title
      FROM donations d JOIN users u ON u.id = d.giver_user_id LEFT JOIN needs n ON n.id = d.need_id
      WHERE d.orphanage_id = ? AND d.donation_type = 'money' AND d.status IN ('pledged', 'completed')
      ORDER BY d.id DESC`,
     [orphanageId]
   );
+}
+
+// Where donors send a pledged gift: each home's payment account, but only once the team has confirmed
+// it belongs to the home. Shown only to donors who pledged to that home. Map(orphanageId -> account).
+async function confirmedAccounts(orphanageIds) {
+  const accounts = new Map();
+  if (orphanageIds.length === 0) return accounts;
+  (await db.q(
+    `SELECT a.orphanage_id, COALESCE(a.provider_name, m.name) AS provider, a.account_holder, a.account_number
+     FROM orphanage_payment_accounts a JOIN payment_methods m ON m.id = a.payment_method_id
+     WHERE a.orphanage_id IN (?) AND a.confirmed_at IS NOT NULL ORDER BY a.id DESC`,
+    [orphanageIds]
+  )).forEach((r) => {
+    if (!accounts.has(r.orphanage_id)) {
+      accounts.set(r.orphanage_id, { provider: r.provider, accountName: r.account_holder, accountNumber: r.account_number });
+    }
+  });
+  return accounts;
+}
+
+// The home says a pledged gift has arrived (or takes that back). Only money pledges to this home.
+async function setReceived(donationId, orphanageId, received) {
+  const result = await db.run(
+    `UPDATE donations SET status = ?, completed_at = ?
+     WHERE id = ? AND orphanage_id = ? AND donation_type = 'money' AND status IN ('pledged', 'completed')`,
+    [received ? 'completed' : 'pledged', received ? db.sqlTime() : null, donationId, orphanageId]
+  );
+  return result.affectedRows > 0;
 }
 
 // A home's giving record for its profile page: money pledged so far, how many people and
@@ -67,7 +100,7 @@ async function totalsForOrphanage(orphanageId) {
 
 async function pledgesBy(userId) {
   return db.q(
-    `SELECT d.id, d.need_id, d.amount, d.is_anonymous, d.created_at, n.title AS need_title, o.name AS orphanage_name
+    `SELECT d.id, d.need_id, d.orphanage_id, d.amount, d.status, d.is_anonymous, d.created_at, n.title AS need_title, o.name AS orphanage_name
      FROM donations d JOIN orphanages o ON o.id = d.orphanage_id LEFT JOIN needs n ON n.id = d.need_id
      WHERE d.giver_user_id = ? AND d.donation_type = 'money' AND d.status IN ('pledged', 'completed')
      ORDER BY d.id DESC`,
@@ -98,4 +131,6 @@ async function setStatus(id, status) {
   await db.run('UPDATE donations SET status = ?, completed_at = IF(? = "completed", COALESCE(completed_at, ?), completed_at) WHERE id = ?', [status, status, db.sqlTime(), id]);
 }
 
-module.exports = { toDonation, forGivers, pledgesToOrphanage, totalsForOrphanage, pledgesBy, create, setStatus };
+module.exports = {
+  toDonation, forGivers, referenceOf, pledgesToOrphanage, confirmedAccounts, setReceived, totalsForOrphanage, pledgesBy, create, setStatus,
+};

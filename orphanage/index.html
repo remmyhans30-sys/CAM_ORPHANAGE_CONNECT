@@ -117,7 +117,7 @@
                         <div class="panel-head">
                             <div>
                                 <h2>Orphanage Profile</h2>
-                                <p class="panel-desc">Once your profile is verified, approved donors and partners can see it. Your contact phone, email and payment account stay private: only you and the CAM Orphanage Connect team see them.</p>
+                                <p class="panel-desc">Once your profile is verified, approved donors and partners can see it. Your contact phone and email stay private: only you and the CAM Orphanage Connect team see them. Your payment account is shown only to donors who pledge to you, once our team has confirmed it belongs to your organization.</p>
                             </div>
                             <button type="button" class="btn-outline-pill" id="edit-profile-btn"><i class="bi bi-pencil"></i> Edit</button>
                         </div>
@@ -175,6 +175,7 @@
                             </div>
 
                             <h3 class="form-section">Payment account for donations <span class="optional">(optional for now)</span></h3>
+                            <p class="panel-desc">Donors who pledge to you send their gift to this account, with the pledge's reference in the payment note. They only see it once our team has confirmed it is your organization's account, not a personal one.</p>
                             <div class="field-row">
                                 <div class="field">
                                     <label for="org-pay-provider">Provider</label>
@@ -255,15 +256,18 @@
                 <section class="portal-view" id="view-donations">
                     <div class="panel">
                         <h2>Pledges Received</h2>
-                        <p class="panel-desc">Donors' pledges toward your needs. A pledge is a promise to give; no money moves through this site.</p>
-                        <table class="donations-table">
-                            <thead>
-                                <tr><th>Date</th><th>Donor</th><th>Need</th><th>Amount</th><th>Status</th></tr>
-                            </thead>
-                            <tbody id="pledges-body">
-                                <tr><td colspan="5" class="empty-cell">No pledges yet. They will appear here once donors pledge to your needs.</td></tr>
-                            </tbody>
-                        </table>
+                        <p class="panel-desc">Donors' pledges toward your needs. No money moves through this site: donors send their gift straight to your confirmed payment account, with the reference below in the payment note. When it arrives, click <strong>Mark as received</strong>; the donor sees it in their account.</p>
+                        <div class="form-error" id="pledges-error"></div>
+                        <div class="table-scroll">
+                            <table class="donations-table">
+                                <thead>
+                                    <tr><th>Date</th><th>Donor</th><th>Need</th><th>Amount</th><th>Reference</th><th>Status</th></tr>
+                                </thead>
+                                <tbody id="pledges-body">
+                                    <tr><td colspan="6" class="empty-cell">No pledges yet. They will appear here once donors pledge to your needs.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
                 <!-- Stories, updates and videos -->

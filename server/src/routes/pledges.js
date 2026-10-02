@@ -47,29 +47,41 @@ router.post('/', async (req, res) => {
   }
 
   // The database checks the same rules again, so two pledges at the same moment cannot overfill a need.
-  await db.tx(async () => {
-    await donations.create({
+  const pledgeId = await db.tx(async () => {
+    const id = await donations.create({
       giverUserId: req.user.id, orphanageId: need.orphanageId, needId: need.id, type: 'money',
       amount: pledgeAmount, anonymous: Boolean(anonymous), status: 'pledged',
     });
     await db.run('UPDATE donor_profiles SET last_active_at = ? WHERE user_id = ?', [db.sqlTime(), req.user.id]);
+    return id;
   });
 
+  // The donor gives directly to the home: they get its confirmed account (or null while the team has
+  // not confirmed one yet) and a reference to write in the payment note.
   const updated = await needs.get(need.id);
-  res.status(201).json({ need: { id: updated.id, goal: updated.goal, raised: updated.raised, percent: updated.percent } });
+  const payTo = (await donations.confirmedAccounts([need.orphanageId])).get(need.orphanageId) || null;
+  res.status(201).json({
+    need: { id: updated.id, goal: updated.goal, raised: updated.raised, percent: updated.percent },
+    pledge: { id: pledgeId, reference: donations.referenceOf(pledgeId), payTo: payTo },
+  });
 });
 
+// The donor's pledges: whether the home has received each one, and where to send those it has not.
 router.get('/mine', async (req, res) => {
   const rows = await donations.pledgesBy(req.user.id);
+  const accounts = await donations.confirmedAccounts(Array.from(new Set(rows.map((r) => r.orphanage_id))));
   res.json({
     pledges: rows.map((r) => ({
       id: r.id,
+      reference: donations.referenceOf(r.id),
       needId: r.need_id,
       needTitle: r.need_title,
       orphanageName: r.orphanage_name,
       amount: Number(r.amount),
       anonymous: Boolean(r.is_anonymous),
       createdAt: db.isoTime(r.created_at),
+      received: r.status === 'completed',
+      payTo: r.status === 'completed' ? null : (accounts.get(r.orphanage_id) || null),
     })),
   });
 });

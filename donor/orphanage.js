@@ -2,8 +2,8 @@
  * One orphanage's full profile, for approved donors, opened from the Give page as
  * orphanage.html?id=<id>: its story, what the CAM Orphanage Connect team checked, the support it
  * has had so far, its needs (pledge.js runs the pledge window), and the stories, updates and
- * videos it shares (../shared/updates.js). The home's phone, email and payment account are not
- * shown: donors reach a home through messages and visit requests.
+ * videos it shares (../shared/updates.js). The home's phone and email are not shown: donors reach
+ * a home through messages and visit requests. Its payment account appears only after a pledge.
  */
 
 (function () {
