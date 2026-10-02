@@ -116,21 +116,27 @@ async function sharedPage(email, password, from) {
   check('16b guesses spread over several computers lock the email everywhere', r.status === 429 && LOCKED.test(r.body.error), r.status + ' ' + r.body.error);
 
   console.log('--- WHAT PEOPLE SEE ON THE LOGIN PAGES');
+  // Here the wait is only 6 seconds, so each page is opened and filled in first, the account is locked
+  // with wrong passwords from other addresses, and only then is the form sent.
   const spread = (i) => '127.0.0.' + (40 + i);
-  for (let i = 0; i < 8; i++) await userLogin(d4.user.email, 'wrong', spread(i));
-  for (let i = 0; i < 8; i++) await partnerLogin(p2Email, 'wrong', spread(i));
+  const shown = `(document.getElementById('login-error') ? document.getElementById('login-error').innerText : 'no message, the page went on to ' + location.pathname)`;
   const b = await connect();
   await b.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
   await b.go(SITE + '/login/index.html', `!!document.querySelector('.login-form')`);
-  await b.js(`localStorage.clear(); sessionStorage.clear(); document.getElementById('email').value = '${d4.user.email}'; document.getElementById('password').value = 'secret1'; document.querySelector('.login-form').requestSubmit()`);
-  check('17 the main login page shows the wait message', await b.waitFor(`/Too many sign-in attempts/.test(document.getElementById('login-error').innerText)`), await b.js(`document.getElementById('login-error').innerText`));
+  await b.js(`localStorage.clear(); sessionStorage.clear(); document.getElementById('email').value = '${d4.user.email}'; document.getElementById('password').value = 'secret1'`);
+  for (let i = 0; i < 8; i++) await userLogin(d4.user.email, 'wrong', spread(i));
+  await b.js(`document.querySelector('.login-form').requestSubmit()`);
+  check('17 the main login page shows the wait message', await b.waitFor(`/Too many sign-in attempts/.test(${shown})`), await b.js(shown));
   await b.go(SITE + '/partner/index.html', `!!document.getElementById('partner-login-form')`);
-  await b.js(`document.getElementById('partner-email').value = '${p2Email}'; document.getElementById('partner-password').value = 'secret1'; document.getElementById('partner-login-form').requestSubmit()`);
-  check('18 the partner login page shows it too', await b.waitFor(`/Too many sign-in attempts/.test(document.getElementById('login-error').innerText)`), await b.js(`document.getElementById('login-error').innerText`));
-  for (let i = 0; i < 8; i++) await adminLogin(ADMIN.email, 'guess' + i, spread(i));
+  await b.js(`document.getElementById('partner-email').value = '${p2Email}'; document.getElementById('partner-password').value = 'secret1'`);
+  for (let i = 0; i < 8; i++) await partnerLogin(p2Email, 'wrong', spread(i));
+  await b.js(`document.getElementById('partner-login-form').requestSubmit()`);
+  check('18 the partner login page shows it too', await b.waitFor(`/Too many sign-in attempts/.test(${shown})`), await b.js(shown));
   await b.go(SITE + '/admin/index.html', `!!document.getElementById('admin-login-form')`);
-  await b.js(`document.getElementById('admin-email').value = '${ADMIN.email}'; document.getElementById('admin-password').value = '${ADMIN.password}'; document.getElementById('admin-login-form').requestSubmit()`);
-  check('19 and the admin login page', await b.waitFor(`/Too many sign-in attempts/.test(document.getElementById('login-error').innerText)`), await b.js(`document.getElementById('login-error').innerText`));
+  await b.js(`document.getElementById('admin-email').value = '${ADMIN.email}'; document.getElementById('admin-password').value = '${ADMIN.password}'`);
+  for (let i = 0; i < 8; i++) await adminLogin(ADMIN.email, 'guess' + i, spread(i));
+  await b.js(`document.getElementById('admin-login-form').requestSubmit()`);
+  check('19 and the admin login page', await b.waitFor(`/Too many sign-in attempts/.test(${shown})`), await b.js(shown));
   check('20 no JavaScript errors on the login pages', b.errors.length === 0, b.errors.join(' ; '));
 
   console.log(failures === 0 ? '\nALL PASSED' : '\n' + failures + ' FAILED');

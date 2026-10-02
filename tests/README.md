@@ -30,7 +30,7 @@ From the project folder:
 node tests/run-all.js
 ```
 
-It takes about 25 minutes and ends with a summary. To run only some suites, name them: `node tests/run-all.js pledge-journey notify`.
+It takes about 25 minutes and ends with a summary. To run only some suites, name them: `node tests/run-all.js pledge-journey notify`. A suite that is still running after 20 minutes, or that waits more than a minute for the browser, is stopped and counted as failed, so one stuck test cannot hold up the rest.
 
 Most suites end with **ALL PASSED** or say which check failed. The older ones print what they saw ("photo shown after upload: ...") instead; the summary still flags JavaScript errors, failed requests and crashes in those, and the full output of every suite is in `tests/.output/<suite>.log` (that folder is not saved in git).
 

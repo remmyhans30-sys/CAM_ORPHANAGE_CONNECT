@@ -43,14 +43,22 @@ function verdict(code, output) {
   return 'ran (it prints what it saw: see the log)';
 }
 
+// The longest suite (site-audit) takes about 11 minutes; one still running after this is stuck.
+const SUITE_LIMIT_MINUTES = 20;
+
 function runSuite(name) {
   return new Promise((resolve) => {
     const log = path.join(site.OUTPUT, name + '.log');
     let output = '';
     const child = spawn(process.execPath, [path.join(__dirname, 'suites', name + '.js')], { cwd: __dirname });
+    const timer = setTimeout(() => {
+      output += '\nSTOPPED: still running after ' + SUITE_LIMIT_MINUTES + ' minutes, so it looked stuck.\n';
+      child.kill();
+    }, SUITE_LIMIT_MINUTES * 60 * 1000);
     child.stdout.on('data', (d) => { output += d; });
     child.stderr.on('data', (d) => { output += d; });
     child.on('exit', (code) => {
+      clearTimeout(timer);
       fs.writeFileSync(log, output);
       resolve({ name, code, result: verdict(code, output) });
     });

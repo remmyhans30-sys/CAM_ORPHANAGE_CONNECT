@@ -7,6 +7,7 @@ const { spawn } = require('child_process');
 const { OUTPUT } = require('./site');
 
 const PORT = 9333;
+const ANSWER_SECONDS = 60;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let launched = null;
 
@@ -73,11 +74,20 @@ async function connect() {
     if (d.method === 'Network.loadingFailed' && !d.params.canceled) netIssues.push('FAILED ' + d.params.errorText + ' ' + (urls[d.params.requestId] || ''));
     if (d.method === 'Page.javascriptDialogOpening') {
       dialogs.push(d.params.message);
-      send('Page.handleJavaScriptDialog', { accept: true });
+      send('Page.handleJavaScriptDialog', { accept: true }).catch(() => {});
     }
     if (d.id && pending[d.id]) { pending[d.id](d); delete pending[d.id]; }
   };
-  const send = (method, params) => new Promise((r) => { const i = ++id; pending[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
+  // A browser that stops answering fails the test instead of leaving it waiting forever.
+  const send = (method, params) => new Promise((resolve, reject) => {
+    const i = ++id;
+    const timer = setTimeout(() => {
+      delete pending[i];
+      reject(new Error('The browser did not answer ' + method + ' within ' + ANSWER_SECONDS + ' seconds.'));
+    }, ANSWER_SECONDS * 1000);
+    pending[i] = (d) => { clearTimeout(timer); resolve(d); };
+    ws.send(JSON.stringify({ id: i, method, params }));
+  });
   const js = async (expr) => {
     const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
     return r.result.exceptionDetails ? 'JS ERROR: ' + r.result.exceptionDetails.exception.description.split('\n')[0] : r.result.result.value;
