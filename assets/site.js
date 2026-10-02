@@ -144,6 +144,18 @@
     });
   }
 
+  // The Phone setting may hold several numbers separated by commas: one per line, each a call link.
+  function showPhoneNumbers(el, value) {
+    el.textContent = '';
+    value.split(/\s*[,;]\s*/).filter(Boolean).forEach(function (number, i) {
+      if (i) el.appendChild(document.createElement('br'));
+      var link = document.createElement('a');
+      link.href = 'tel:' + number.replace(/[^\d+]/g, '');
+      link.textContent = number;
+      el.appendChild(link);
+    });
+  }
+
   function loadSiteInfo() {
     var anyInfo = document.querySelector('[data-site]');
     if (!anyInfo) return;
@@ -153,12 +165,16 @@
         var key = el.getAttribute('data-site');
         var value = info[key];
         if (key === 'description' && !value) return;
-        var row = document.querySelector('[data-site-row="' + key + '"]');
+        var row = el.closest('[data-site-row]');
         if (!value) {
           if (row) row.hidden = true;
           return;
         }
         if (row) row.hidden = false;
+        if (key === 'phone') {
+          showPhoneNumbers(el, value);
+          return;
+        }
         el.textContent = value;
         if (key === 'email') {
           el.setAttribute('href', 'mailto:' + value);

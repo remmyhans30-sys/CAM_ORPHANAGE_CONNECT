@@ -273,6 +273,7 @@ ul { margin: 0; padding: 0 }
 
 .contact-list { list-style: none; display: grid; gap: 1.1rem }
 .contact-list li { display: grid; grid-template-columns: 2.6rem 1fr; gap: 0.9rem; align-items: start }
+.contact-list li[hidden] { display: none }
 .contact-list i { width: 2.6rem; height: 2.6rem; border-radius: 50%; background: rgba(18, 128, 74, 0.12); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 1.15rem }
 .contact-list strong { display: block; font-family: var(--font-head); color: var(--forest) }
 .contact-list a { word-break: break-word }
@@ -295,6 +296,7 @@ ul { margin: 0; padding: 0 }
 .site-footer ul { list-style: none; display: grid; gap: 0.5rem }
 .site-footer a { color: rgba(255, 255, 255, 0.86); text-decoration: none }
 .site-footer a:hover { color: var(--gold); text-decoration: underline }
+.site-footer [data-site="phone"] { display: inline-block; vertical-align: top }
 .footer-brand .brand-text, .footer-brand .brand-text span { color: #fff }
 .footer-brand p { margin-top: 1rem; max-width: 24rem }
 .footer-bottom { border-top: 1px solid rgba(255, 255, 255, 0.16); padding: 1.2rem 0; font-size: 0.92rem; display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; justify-content: space-between }
