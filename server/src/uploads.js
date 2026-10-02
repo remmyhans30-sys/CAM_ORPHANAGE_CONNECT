@@ -7,8 +7,9 @@ const db = require('./db');
 // They live in server/uploads, which is never served as plain files: documents are
 // opened through an authenticated route, photos through a public one that only
 // serves photo-type uploads, and videos only through short-lived signed links given
-// to people who are allowed to see them.
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
+// to people who are allowed to see them. UPLOAD_DIR can point somewhere else; the
+// automated tests use it so their files never mix with the real ones.
+const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(__dirname, '..', 'uploads');
 const MAX_BYTES = 3 * 1024 * 1024;
 // Videos are bigger. The limits can be lowered on a host with little disk space.
 const MAX_VIDEO_MB = Math.min(20, Math.max(1, Number(process.env.VIDEO_MAX_MB) || 15));

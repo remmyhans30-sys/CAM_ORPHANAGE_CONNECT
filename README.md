@@ -111,6 +111,7 @@ Sign-up requires ticking that the person is 18 or older and agrees to the terms 
 | `login/` | Sign in, sign up, forgot password, choose a new password |
 | `donor/` | Donor pages: verified orphanages and their needs, each home's full profile (`orphanage.html`), the pledge window (`pledge.js`), messages and the donor's own profile |
 | `shared/` | The chat window (`chat.js`), the visit-request form (`visits.js`) and the stories-and-videos viewer (`updates.js`), with their styles, used by the portals and admin |
+| `tests/` | Automated tests that run the whole site on a throwaway copy: `node tests/run-all.js` (see `tests/README.md`) |
 | `orphanage/` | Orphanage portal: profile, needs, verification status |
 | `admin/` | Admin panel: dashboard, verification, donors, finance and more |
 | `partner/` | Partner portal: profile and verification, browse orphanages, messages |

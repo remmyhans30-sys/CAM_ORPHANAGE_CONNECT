@@ -1,0 +1,12 @@
+{
+  "name": "cam-orphanage-connect-tests",
+  "private": true,
+  "description": "Automated tests for CAM Orphanage Connect (see README.md)",
+  "scripts": {
+    "test": "node run-all.js"
+  },
+  "dependencies": {
+    "mailparser": "^3.9.33",
+    "smtp-server": "^3.19.16"
+  }
+}
