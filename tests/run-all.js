@@ -65,6 +65,10 @@ function runSuite(name) {
     console.log('Unknown suite(s): ' + unknown.join(', ') + '\nKnown: ' + known.join(', '));
     process.exit(2);
   }
+  if (typeof WebSocket === 'undefined') {
+    console.log('The browser tests need Node.js 22 or newer (this is ' + process.version + '). Install the LTS version from https://nodejs.org.');
+    process.exit(2);
+  }
   fs.mkdirSync(site.OUTPUT, { recursive: true });
   const s = site.dbSettings();
   console.log('Test site: ' + site.SITE + ' | test database: ' + s.database + ' on ' + s.host + ':' + s.port + ' (deleted and rebuilt)');

@@ -15,7 +15,7 @@ These tests use the site the way people do: they sign up, get approved, pledge, 
 
 ## What you need
 
-- Node.js 18 or newer, and the site's own packages (`cd server`, `npm install`, as for running the site).
+- Node.js 22 or newer (the site itself runs on 18, but the browser tests use the WebSocket support that came with 22), and the site's own packages (`cd server`, `npm install`, as for running the site).
 - MySQL running. The tests use the same MySQL login as the site (`server/.env`), but **their own database, `cam_orphanage_connect_test`, which is deleted and rebuilt every time**. Your real database is never touched. To use another server or login, set `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_PASSWORD` (and `TEST_DB_NAME`, which must end in `_test`).
 - Microsoft Edge or Google Chrome (it runs hidden). Set `BROWSER` to its path if it is installed somewhere unusual.
 - Once, in this folder: `npm install` (a small local mail server that catches the test emails).
