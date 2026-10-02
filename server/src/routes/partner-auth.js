@@ -12,6 +12,7 @@ const support = require('../repo/support');
 const common = require('../repo/common');
 const { saveUpload, deleteUpload, UploadError } = require('../uploads');
 const chat = require('../chat');
+const loginGuard = require('../loginGuard');
 
 const router = express.Router();
 
@@ -103,12 +104,15 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
-  const user = await db.one("SELECT * FROM users WHERE email = ? AND role = 'partner' AND status = 'active'", [email.trim().toLowerCase()]);
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+  loginGuard.check('partner', email, req.ip);
+  const user = await db.one("SELECT * FROM users WHERE email = ? AND role = 'partner' AND status = 'active'", [String(email).trim().toLowerCase()]);
+  if (!user || !bcrypt.compareSync(String(password), user.password_hash)) {
+    loginGuard.fail('partner', email, req.ip);
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
   const partner = await partners.getByOwner(user.id);
   if (!partner) return res.status(401).json({ error: 'Invalid email or password.' });
+  loginGuard.succeed(email, req.ip);
 
   await db.run('UPDATE users SET last_login_at = ? WHERE id = ?', [db.sqlTime(), user.id]);
   res.json({ token: issueToken(partner), partner: partnerProfile(partner) });

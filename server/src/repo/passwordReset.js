@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { HttpError } = require('../errors');
 const mailer = require('../mailer');
+const loginGuard = require('../loginGuard');
 
 // Password reset by email. The emailed token is long and random; only its SHA-256 fingerprint is
 // stored (password_reset_tokens), so a copy of the database cannot be used to reset anyone.
@@ -71,9 +72,9 @@ async function resetPassword(token, newPassword) {
     throw new HttpError(400, 'Password must be at least 6 characters.');
   }
 
-  await db.tx(async () => {
+  const email = await db.tx(async () => {
     const row = await db.one(
-      'SELECT id, user_id FROM password_reset_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > ? FOR UPDATE',
+      'SELECT t.id, t.user_id, u.email FROM password_reset_tokens t JOIN users u ON u.id = t.user_id WHERE t.token_hash = ? AND t.used_at IS NULL AND t.expires_at > ? FOR UPDATE',
       [fingerprint(token), db.sqlTime()]
     );
     if (!row) throw new HttpError(400, 'This reset link has expired or was already used. Please ask for a new one.');
@@ -81,7 +82,10 @@ async function resetPassword(token, newPassword) {
     await db.run('UPDATE users SET password_hash = ?, failed_login_count = 0, locked_until = NULL WHERE id = ?', [bcrypt.hashSync(newPassword, 10), row.user_id]);
     // This link and any older ones stop working.
     await db.run('UPDATE password_reset_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [db.sqlTime(), row.user_id]);
+    return row.email;
   });
+  // Someone locked out by wrong passwords can sign in with the new one straight away.
+  loginGuard.clear(email);
 }
 
 module.exports = { requestReset, resetPassword };

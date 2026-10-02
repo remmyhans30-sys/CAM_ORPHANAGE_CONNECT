@@ -84,6 +84,14 @@ admin tokens and do not work on the admin routes above.
 Signing up with role `volunteer` (orphanage) also creates a `pending` orphanage
 record linked to the account, so it appears in the admin verification queue.
 
+All three logins (`/api/auth/login`, `/api/users/login`, `/api/partner-auth/login`)
+go through `src/loginGuard.js`. Within `LOGIN_LOCK_MINUTES` (15) it answers 429 after
+`LOGIN_MAX_ATTEMPTS` (5) wrong passwords for one email from one address (only that
+address waits), `LOGIN_MAX_PER_EMAIL` (50) for one email from all addresses, or
+`LOGIN_MAX_PER_ADDRESS` (100) from one address for any emails. Unknown emails count
+the same way. A correct password clears that address's counts for the email; a
+password reset clears all of them.
+
 ### Orphanage portal (user token, orphanage accounts only)
 
 | Method | Path                          | Description                                          |

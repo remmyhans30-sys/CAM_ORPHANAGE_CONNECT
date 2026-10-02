@@ -8,6 +8,7 @@ const donors = require('../repo/donors');
 const passwordReset = require('../repo/passwordReset');
 const common = require('../repo/common');
 const mailer = require('../mailer');
+const loginGuard = require('../loginGuard');
 
 const router = express.Router();
 
@@ -79,10 +80,13 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Please enter both email and password.' });
   }
 
-  const user = await db.one("SELECT * FROM users WHERE email = ? AND role IN ('donor', 'orphanage') AND status = 'active'", [email.trim().toLowerCase()]);
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+  loginGuard.check('users', email, req.ip);
+  const user = await db.one("SELECT * FROM users WHERE email = ? AND role IN ('donor', 'orphanage') AND status = 'active'", [String(email).trim().toLowerCase()]);
+  if (!user || !bcrypt.compareSync(String(password), user.password_hash)) {
+    loginGuard.fail('users', email, req.ip);
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
+  loginGuard.succeed(email, req.ip);
 
   await db.run('UPDATE users SET last_login_at = ? WHERE id = ?', [db.sqlTime(), user.id]);
   res.json({ token: issueToken(user), user: toPublicUser(user) });

@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { admins } = require('../repo/admin-data');
 const { authenticate } = require('../middleware/auth');
+const loginGuard = require('../loginGuard');
 
 const router = express.Router();
 
@@ -13,10 +14,13 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
+  loginGuard.check('admin', email, req.ip);
   const admin = await admins.byEmail(email);
   if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
+    loginGuard.fail('admin', email, req.ip);
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
+  loginGuard.succeed(email, req.ip);
 
   const token = jwt.sign(
     { type: 'admin', id: admin.id, email: admin.email, role: admin.role },
