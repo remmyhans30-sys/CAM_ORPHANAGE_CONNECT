@@ -229,9 +229,12 @@ async function savePayment(id, current, body, actor) {
     .some((k) => Object.prototype.hasOwnProperty.call(body, k));
   if (!touched) return;
 
-  const existing = await db.one('SELECT * FROM orphanage_payment_accounts WHERE orphanage_id = ? ORDER BY id DESC LIMIT 1', [id]);
+  const existing = await db.one(
+    `SELECT a.*, m.name AS method_name FROM orphanage_payment_accounts a
+     JOIN payment_methods m ON m.id = a.payment_method_id WHERE a.orphanage_id = ? ORDER BY a.id DESC LIMIT 1`, [id]);
   const pick = (key, old) => (Object.prototype.hasOwnProperty.call(body, key) ? common.text(body[key], 120) : old);
-  const provider = pick('paymentProvider', existing ? (existing.provider_name || null) : null);
+  // A listed method (MTN Mobile Money...) is stored as the method itself, so keep it when only other fields change.
+  const provider = pick('paymentProvider', existing ? (existing.provider_name || existing.method_name) : null);
   const holder = pick('paymentAccountName', existing ? existing.account_holder : null);
   const number = pick('paymentAccountNumber', existing ? existing.account_number : null);
 

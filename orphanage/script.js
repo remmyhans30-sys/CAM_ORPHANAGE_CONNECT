@@ -549,7 +549,9 @@ async function removeNeed(need) {
 
 // Pledges received
 function formatDate(value) {
-    const date = new Date(String(value).replace(' ', 'T') + 'Z');
+    // The server sends ISO time with its "Z"; older "YYYY-MM-DD HH:MM:SS" text is UTC too.
+    const text = String(value);
+    const date = new Date(/Z$/.test(text) ? text : text.replace(' ', 'T') + 'Z');
     return isNaN(date) ? value : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 

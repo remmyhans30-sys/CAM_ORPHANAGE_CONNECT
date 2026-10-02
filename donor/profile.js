@@ -130,7 +130,9 @@
     pledges.forEach(function (pledge) {
       total += pledge.amount;
       const row = document.createElement('tr');
-      const date = new Date(String(pledge.createdAt).replace(' ', 'T') + 'Z');
+      // The server sends ISO time with its "Z"; older "YYYY-MM-DD HH:MM:SS" text is UTC too.
+      const text = String(pledge.createdAt);
+      const date = new Date(/Z$/.test(text) ? text : text.replace(' ', 'T') + 'Z');
       [
         isNaN(date) ? pledge.createdAt : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
         pledge.orphanageName,
