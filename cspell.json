@@ -1,0 +1,11 @@
+{
+  "version": "0.2",
+  "language": "en,fr",
+  "words": [
+    "FCFA", "XAF", "Français", "errorlevel", "nonode", "alwaysdata", "bcrypt", "bcryptjs",
+    "mysql", "mysql2", "nodemailer", "Cameroon", "Cameroonian", "Buea", "Bamenda", "Yaounde",
+    "Douala", "Kribi", "Limbe", "Bafoussam", "MINAS", "dawn", "jsdelivr", "Wikimedia",
+    "orphanage", "orphanages", "unscrambled", "uploader", "pledged", "unpledged"
+  ],
+  "ignorePaths": ["node_modules", "server/node_modules", "assets/img", "server/uploads", "package-lock.json"]
+}

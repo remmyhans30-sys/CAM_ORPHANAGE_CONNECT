@@ -1,108 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>CAM Orphanage Connect</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="assets/home.css">
-    </head>
-    <body>
-        <nav class="site-nav">
-            <a class="nav-brand" href="index.html">
-                <svg class="brand-heart" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50 84 C 20 61, 9 35, 27 18 C 39 7, 50 18, 50 33 C 50 18, 61 7, 73 18 C 91 35, 80 61, 50 84 Z" fill="url(#heartGradNav)"/>
-                    <circle cx="50" cy="11" r="5.5" fill="#2E8B57"/>
-                    <defs>
-                        <linearGradient id="heartGradNav" x1="9" y1="7" x2="91" y2="84">
-                            <stop offset="0" stop-color="#4ec37f"/>
-                            <stop offset="1" stop-color="#1f6b45"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <p class="brand-word">Cam Orphanage<span>Connect</span></p>
-            </a>
-            <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#programs">Programs</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-            <div class="nav-actions">
-                <a class="btn-outline-nav" href="login/index.html">Sign In</a>
-                <a class="btn-solid-nav" href="login/register.html">Sign Up</a>
-            </div>
-            <button class="nav-toggle" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
-        </nav>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supporting children’s homes across Cameroon | CAM Orphanage Connect</title>
+  <meta name="description" content="CAM Orphanage Connect connects verified children’s homes in Cameroon with donors and partner organizations. Join as a donor, orphanage or partner.">
+  <meta name="theme-color" content="#0A4D32">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 88C18 63 6 35 26 16 39 4 50 16 50 33 50 16 61 4 74 16 94 35 82 63 50 88Z' fill='%2312804A'/%3E%3Ccircle cx='50' cy='9' r='6' fill='%23E9B93A'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <div id="site-header"></div>
+  <main id="main">
+    <section class="hero">
+      <img src="assets/img/classroom-1920.jpg" srcset="assets/img/classroom-960.jpg 960w, assets/img/classroom-1920.jpg 1920w" sizes="100vw" alt="Pupils in green school uniforms at their desks while a teacher in a bright African print shirt speaks to the class" fetchpriority="high" decoding="async">
+      <div class="wrap hero-inner">
+        <span class="eyebrow">Children's homes across Cameroon</span>
+        <h1>Every child deserves a home that is seen and supported.</h1>
+        <p class="lead">CAM Orphanage Connect brings verified children's homes together with donors and partner organizations, so help reaches real needs, openly and safely.</p>
+        <div class="btn-row">
+          <a class="btn btn-gold btn-lg" href="login/register.html?role=user"><i class="bi bi-heart-fill"></i> Give as a donor</a>
+          <a class="btn btn-light btn-lg" href="login/register.html?role=volunteer"><i class="bi bi-house-heart"></i> Register your orphanage</a>
+          <a class="btn btn-ghost-light btn-lg" href="login/register.html?role=partner"><i class="bi bi-buildings"></i> Become a partner</a>
+        </div>
+        <p class="hero-note"><i class="bi bi-shield-check"></i> Free to join. Every orphanage is checked by our team before it appears.</p>
+      </div>
+    </section>
 
-        <header class="home-hero" id="home">
-            <div class="home-hero-overlay"></div>
-            <div class="home-hero-content">
-                <span class="hero-badge">Verified Orphanages in Cameroon</span>
-                <h1>Together We<span>Change Lives</span></h1>
-                <p>Cam Orphanage Connect is dedicated to providing love, care, education and hope for a brighter future for every child in Cameroon.</p>
-                <div class="hero-cta">
-                    <a class="btn-hero-primary" href="login/register.html"><i class="bi bi-heart-fill"></i> Get Started</a>
-                    <a class="btn-hero-secondary" href="login/index.html"><i class="bi bi-box-arrow-in-right"></i> Sign In</a>
-                </div>
-            </div>
-        </header>
+    <section class="stats" aria-label="Platform figures">
+      <div class="wrap">
+        <div class="stats-card">
+          <div class="stat"><div class="stat-number" data-stat="verifiedOrphanages">-</div><div class="stat-label">Verified orphanages</div></div>
+          <div class="stat"><div class="stat-number" data-stat="openNeeds">-</div><div class="stat-label">Open needs</div></div>
+          <div class="stat"><div class="stat-number" data-stat="totalPledged">-</div><div class="stat-label">Pledged so far</div></div>
+          <div class="stat"><div class="stat-number" data-stat="approvedDonors">-</div><div class="stat-label">Approved donors</div></div>
+          <div class="stat"><div class="stat-number" data-stat="verifiedPartners">-</div><div class="stat-label">Verified partners</div></div>
+        </div>
+        <p class="stats-note" id="statsNote">Live figures from the platform.</p>
+      </div>
+    </section>
 
-        <section class="features-section" id="programs">
-            <div class="features-heading">
-                <h2>How We Help</h2>
-                <p>Every donation and every hour of support goes toward one of these four pillars.</p>
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Three ways to take part</span>
+          <h2>Whoever you are, there is a place for you here.</h2>
+          <p>Donors, children's homes and partner organizations each get their own space, built around what they need to do.</p>
+        </div>
+        <div class="grid grid-3">
+          <article class="audience-card reveal">
+            <img src="assets/img/children-smiling-1280.jpg" alt="Two smiling children standing close together outdoors" loading="lazy" decoding="async">
+            <div class="audience-body">
+              <h3>Donors</h3>
+              <p class="tagline">Give to a need you can see.</p>
+              <ul class="ticks"><li><i class="bi bi-check-circle-fill"></i><span>Browse verified homes and their specific needs</span></li><li><i class="bi bi-check-circle-fill"></i><span>Pledge from 500 XAF toward a need and watch it fill up</span></li><li><i class="bi bi-check-circle-fill"></i><span>Message the home directly, or stay anonymous</span></li><li><i class="bi bi-check-circle-fill"></i><span>Keep all your pledges in one place</span></li></ul>
+              <div class="btn-row"><a class="btn btn-primary" href="login/register.html?role=user">Join as a donor</a><a class="text-link" href="for-donors.html">Learn more <i class="bi bi-arrow-right"></i></a></div>
             </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <span class="feature-icon f-green"><i class="bi bi-book"></i></span>
-                    <h3>Education</h3>
-                    <p>Quality education for a better tomorrow.</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon f-blue"><i class="bi bi-heart-pulse"></i></span>
-                    <h3>Healthcare</h3>
-                    <p>Health and wellness for every child.</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon f-gold"><i class="bi bi-people"></i></span>
-                    <h3>Support</h3>
-                    <p>Community support that makes a difference.</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon f-purple"><i class="bi bi-flower1"></i></span>
-                    <h3>Growth</h3>
-                    <p>Skills and opportunities for a brighter future.</p>
-                </div>
+          </article>
+          <article class="audience-card reveal">
+            <img src="assets/img/learning-1280.jpg" alt="Pupils in a Cameroonian classroom working together on tablets with their teacher" loading="lazy" decoding="async">
+            <div class="audience-body">
+              <h3>Orphanages</h3>
+              <p class="tagline">Be seen. Be supported.</p>
+              <ul class="ticks"><li><i class="bi bi-check-circle-fill"></i><span>Create a profile with your story and your needs</span></li><li><i class="bi bi-check-circle-fill"></i><span>Upload your registration documents once</span></li><li><i class="bi bi-check-circle-fill"></i><span>Receive pledges and messages from supporters</span></li><li><i class="bi bi-check-circle-fill"></i><span>Earn the verified badge donors look for</span></li></ul>
+              <div class="btn-row"><a class="btn btn-primary" href="login/register.html?role=volunteer">Register your orphanage</a><a class="text-link" href="for-orphanages.html">Learn more <i class="bi bi-arrow-right"></i></a></div>
             </div>
-        </section>
+          </article>
+          <article class="audience-card reveal">
+            <img src="assets/img/village-kitchen-1280.jpg" alt="A woman in a bright printed dress stirring a large pot over a wood fire" loading="lazy" decoding="async">
+            <div class="audience-body">
+              <h3>Partners</h3>
+              <p class="tagline">Multiply your impact.</p>
+              <ul class="ticks"><li><i class="bi bi-check-circle-fill"></i><span>For NGOs, companies, diaspora groups and foundations</span></li><li><i class="bi bi-check-circle-fill"></i><span>Propose a matching pledge for donor gifts</span></li><li><i class="bi bi-check-circle-fill"></i><span>Message verified homes directly</span></li><li><i class="bi bi-check-circle-fill"></i><span>Be recognised as a verified partner</span></li></ul>
+              <div class="btn-row"><a class="btn btn-primary" href="login/register.html?role=partner">Become a partner</a><a class="text-link" href="for-partners.html">Learn more <i class="bi bi-arrow-right"></i></a></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
 
-        <footer class="site-footer" id="about">
-            <div class="footer-brand">
-                <svg class="brand-heart" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50 84 C 20 61, 9 35, 27 18 C 39 7, 50 18, 50 33 C 50 18, 61 7, 73 18 C 91 35, 80 61, 50 84 Z" fill="url(#heartGradFooter)"/>
-                    <circle cx="50" cy="11" r="5.5" fill="#2E8B57"/>
-                    <defs>
-                        <linearGradient id="heartGradFooter" x1="9" y1="7" x2="91" y2="84">
-                            <stop offset="0" stop-color="#4ec37f"/>
-                            <stop offset="1" stop-color="#1f6b45"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <span>Cam Orphanage <b>Connect</b></span>
-            </div>
-            <p>Hope &middot; Care &middot; A Brighter Future</p>
-            <ul class="footer-links" id="contact">
-                <li><a href="login/index.html">Sign In</a></li>
-                <li><a href="login/register.html">Sign Up</a></li>
-                <li><a href="mailto:hello@camorphanageconnect.org">Contact us</a></li>
-            </ul>
-            <p>© 2026 Cam Orphanage Connect. All rights reserved.</p>
-        </footer>
+    <section class="section section-alt">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">How it works</span>
+          <h2>From a home's story to a child's next school term.</h2>
+        </div>
+        <div class="reveal">
+        <ol class="steps"><li><h3>Orphanages register</h3><p>A home creates its profile, adds its official registration number and uploads its documents.</p></li><li><h3>Our team verifies</h3><p>We review every application and ask for more information when something is missing.</p></li><li><h3>Donors and partners give</h3><p>Approved supporters browse verified homes and pledge to the needs that matter to them.</p></li><li><h3>Everyone stays in touch</h3><p>Built-in messages connect homes with their supporters, with the team looking after safety.</p></li></ol>
+        </div>
+        <p class="reveal" style="text-align:center;margin-top:2rem"><a class="btn btn-outline" href="how-it-works.html">See the full process</a></p>
+      </div>
+    </section>
 
-        <script src="assets/home.js"></script>
-    </body>
+    <section class="section section-white">
+      <div class="wrap split">
+        <div class="reveal">
+          <span class="eyebrow">Trust and safety</span>
+          <h2>Careful at every step, because children come first.</h2>
+          <p>Giving should feel safe, and running a children's home should not mean exposing the children. We built the platform around that.</p>
+          <div class="grid" style="gap:1.4rem">
+            <div class="feature"><span class="feature-icon"><i class="bi bi-file-earmark-check"></i></span><div><h3>Documents are checked</h3><p>Orphanages share their registration number and certificates. Our team reviews them before anything goes public.</p></div></div><div class="feature"><span class="feature-icon"><i class="bi bi-person-check"></i></span><div><h3>Everyone is approved</h3><p>Donors are approved and partners are verified before they can browse homes or send messages.</p></div></div><div class="feature"><span class="feature-icon"><i class="bi bi-chat-square-text"></i></span><div><h3>Conversations are looked after</h3><p>The team can read direct chats between homes and supporters and step in when needed.</p></div></div><div class="feature"><span class="feature-icon"><i class="bi bi-bar-chart-line"></i></span><div><h3>Progress is visible</h3><p>Every need shows how much has been pledged against its goal.</p></div></div>
+          </div>
+          <p style="margin-top:1.5rem"><a class="text-link" href="safeguarding.html">Read our safeguarding and privacy promise <i class="bi bi-arrow-right"></i></a></p>
+        </div>
+        <div class="split-image reveal"><img src="assets/img/hand-pump-1280.jpg" alt="Two children collecting water from a hand pump on a sunny morning" loading="lazy" decoding="async"></div>
+      </div>
+    </section>
+
+    <section class="country">
+      <img src="assets/img/mount-cameroon-1920.jpg" srcset="assets/img/mount-cameroon-960.jpg 960w, assets/img/mount-cameroon-1920.jpg 1920w" sizes="100vw" alt="Mount Cameroon rising above rooftops under a bright blue sky" loading="lazy" decoding="async">
+      <div class="wrap" style="padding-top:clamp(4rem,9vw,7rem);padding-bottom:clamp(4rem,9vw,7rem)">
+        <div class="section-head reveal" style="margin-bottom:0">
+          <span class="eyebrow">Made for Cameroon</span>
+          <h2>From the foot of Mount Cameroon to the far north.</h2>
+          <p style="color:rgba(255,255,255,0.92)">Any officially registered children's home in Cameroon can join, in any region. The platform is built around how people here live and give.</p>
+        </div>
+        <div class="grid grid-3 reveal">
+          <div class="feature"><span class="feature-icon"><i class="bi bi-translate"></i></span><div><h3>English and French</h3><p>Orphanages can tell their story in English or in French.</p></div></div><div class="feature"><span class="feature-icon"><i class="bi bi-phone"></i></span><div><h3>Mobile money friendly</h3><p>Donors can note MTN Mobile Money or Orange Money as their preferred way to give.</p></div></div><div class="feature"><span class="feature-icon"><i class="bi bi-geo-alt"></i></span><div><h3>Local by design</h3><p>Homes are listed by town and region, so supporters can find the community they care about.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Everyday life</span>
+          <h2>Children's homes are part of their communities.</h2>
+          <p>Behind every profile is a place where people get up early, cook, fetch water, study and play.</p>
+        </div>
+        <div class="photo-grid reveal">
+          <figure><img src="assets/img/hand-pump-1280.jpg" alt="Two children collecting water from a hand pump on a sunny morning" loading="lazy" decoding="async"><figcaption>Fetching water at a village hand pump</figcaption></figure>
+          <figure><img src="assets/img/rope-jumping-960.jpg" alt="Children playing with a rope on a sandy village street in northern Cameroon" loading="lazy" decoding="async"><figcaption>Playing together in northern Cameroon</figcaption></figure>
+          <figure><img src="assets/img/village-kitchen-1280.jpg" alt="A woman in a bright printed dress stirring a large pot over a wood fire" loading="lazy" decoding="async"><figcaption>Cooking for the community</figcaption></figure>
+          <figure><img src="assets/img/market-1280.jpg" alt="Colourful umbrellas shading market stalls in Foumban" loading="lazy" decoding="async"><figcaption>Market day in Foumban</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <div class="wrap wrap-narrow">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Questions</span>
+          <h2>Good to know before you start.</h2>
+        </div>
+        <div class="reveal"><details class="faq"><summary>Is it free to join?</summary><div class="faq-body"><p>Yes. Creating an account as a donor, orphanage or partner costs nothing.</p></div></details><details class="faq"><summary>Does money pass through this website?</summary><div class="faq-body"><p>Not yet. A pledge is a promise recorded against a specific need, so the orphanage and our team can see support building up. You and the orphanage can then agree how the gift is sent using the built-in messages, and the team is there to help.</p></div></details><details class="faq"><summary>How do you know an orphanage is genuine?</summary><div class="faq-body"><p>Every orphanage must give its official registration number and upload verification documents. Our team reviews them, and may ask for more information, before the orphanage appears to donors.</p></div></details><details class="faq"><summary>Why does my donor account need approval?</summary><div class="faq-body"><p>To keep children’s homes safe. Only accounts our team has reviewed can browse orphanage profiles and message them.</p></div></details></div>
+        <p style="text-align:center;margin-top:1.5rem"><a class="text-link" href="faq.html">See all questions and answers <i class="bi bi-arrow-right"></i></a></p>
+      </div>
+    </section>
+
+    <section class="cta-band pattern">
+      <div class="wrap reveal">
+        <h2>Ready to take part?</h2>
+        <p>It is free to join. Choose the way you want to help and create your account in a few minutes.</p>
+        <div class="btn-row">
+          <a class="btn btn-gold btn-lg" href="login/register.html?role=user">Give as a donor</a>
+          <a class="btn btn-light btn-lg" href="login/register.html?role=volunteer">Register your orphanage</a>
+          <a class="btn btn-ghost-light btn-lg" href="login/register.html?role=partner">Become a partner</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="site-footer"></div>
+  <script src="assets/site.js"></script>
+</body>
 </html>
